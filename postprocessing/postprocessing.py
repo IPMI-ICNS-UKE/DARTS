@@ -60,6 +60,9 @@ class ImageROI:
     def return_image(self):
         return self.image
 
+    def getWavelength (self):
+        return self.wavelength
+
 
 
 class BaseCaImageProcessor:
@@ -95,3 +98,29 @@ class BaseCaImageProcessor:
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
         return self.ratio_list
+
+
+class BaseBleaching:
+    def give_name (self):
+        return "Bleaching correction..."
+
+    def execute (self, input_roi, parameters):
+        bleaching_corrected = self.bleachingCorrection(input_roi, parameters)
+        return bleaching_corrected
+
+    def bleachingCorrection (self, input_roi, parameters):
+        wavelength = input_roi.getWavelength
+        if (wavelength == parameters ["wavelength_1"]):
+            pass
+        elif (wavelength == parameters ["wavelength_2"]):
+            pass
+        return input_roi
+
+
+class BleachingExponentialFit (BaseBleaching):
+    def __init__(self):
+        pass
+
+
+
+
