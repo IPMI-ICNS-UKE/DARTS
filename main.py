@@ -1,4 +1,4 @@
-from postprocessing.postprocessing import BaseCaImageProcessor
+from postprocessing.postprocessing import BaseATPImageProcessor
 
 
 if __name__ == '__main__':
@@ -9,7 +9,7 @@ if __name__ == '__main__':
         "wavelength_2": 1
     }
 
-    Processor = BaseCaImageProcessor(path, parameters)
+    Processor = BaseATPImageProcessor(path, parameters)
 
     Processor.segment_cells()
     Processor.start_postprocessing()
