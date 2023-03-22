@@ -3,7 +3,7 @@ from postprocessing.postprocessing import BaseCaImageProcessor
 
 if __name__ == '__main__':
 
-    path = "Data/test.tif"
+    path = "Data/170424 2_1.tif"
     parameters = {
         "wavelength_1": 1,
         "wavelength_2": 1
