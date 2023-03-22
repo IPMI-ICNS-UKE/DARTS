@@ -40,6 +40,9 @@ class MembraneSegmentation (BaseSegmentation):
     def calculate_Congruence (self, channel_roi1, channel_roi2):
         pass
 
+    def give_name ():
+        return "Membransegmentierung"
+
 
 
 
@@ -72,7 +75,7 @@ class BaseCell:
 
     def execute_processing_step(self, step, parameters):
         if (isinstance(step, MembraneSegmentation)):
-            segmentedMembraneMask = step.execute(self.channel1, self.channel2, parameters)
+            segmentedMembraneMask = step.execute(self.channel1, self.channel2, parameters) # not very handsome code
             self.channel1 = step.applyMembraneMask(self.channel1, segmentedMembraneMask)
             self.channel2 = step.applyMembraneMask(self.channel2, segmentedMembraneMask)
         else:
