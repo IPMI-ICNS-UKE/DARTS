@@ -27,10 +27,6 @@ class MembraneSegmentation (BaseSegmentation):
         threshold = 0
         return segmented_Membrane
 
-    # returns a list of areas that divide a circular ROI into n sub-ROIs
-    def applyDartboardOnMembrane(self, membrane_roi, n):
-        pass
-
     # reduces channel_roi-image with the help of a "binary" membrane mask
     def applyMembraneMask (self, channel_roi, membrane_mask):
         intersection = []
@@ -40,7 +36,7 @@ class MembraneSegmentation (BaseSegmentation):
     def calculate_Congruence (self, channel_roi1, channel_roi2):
         pass
 
-    def give_name ():
+    def give_name (self):
         return "Membransegmentierung"
 
 
@@ -112,9 +108,6 @@ class ImageROI:
 
 
 
-
-
-
 class BaseATPImageProcessor:
     def __init__(self, path, parameter_dict):
         self.image = io.imread(path)
@@ -125,12 +118,14 @@ class BaseATPImageProcessor:
         self.membraneSegmentation = MembraneSegmentation()
         self.decon = BaseDecon()
         self.bleaching = BaseBleaching()
-        self.bg_correction = None
-        self.dartboard = None
-        self.ratioCalculation = None
+        self.bg_correction = BackgroundSubtraction()
+        self.dartboard = Dartboard()
+        self.ratioCalculation = RatioCalculation()
+
         self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
-        self.processing_steps = [self.decon, self.bleaching, self.bg_correction, self.membraneSegmentation, self.dartboard, self.ratioCalculation]
+        self.processing_steps = [self.decon, self.bleaching, self.bg_correction,\
+                                 self.membraneSegmentation, self.dartboard, self.ratioCalculation]
 
 
     def segment_cells(self):
@@ -174,6 +169,42 @@ class BleachingExponentialFit (BaseBleaching):
     def __init__(self):
         pass
 
+
+
+class BackgroundSubtraction:
+    def execute (self, channel, parameters):
+        return self.subtract_background(channel)
+
+    def subtract_background(self, channel):
+        pass
+
+    def give_name(self):
+        return "Background subtracted"
+
+class Dartboard:
+    def __init__(self, n):
+        self.numberOfFields = n
+
+    def execute (self, channel, parameters):
+        return self.applyDartboardOnMembrane(channel, parameters)
+
+    # returns areas that divide a circular ROI into n sub-ROIs
+    def applyDartboardOnMembrane(self, channel_membrane, parameters):
+        pass
+
+class RatioCalculation:
+    def execute (self, dartboard_channel1, dartboard_channel2, parameters):
+        return self.calculateRatioDartboard(dartboard_channel1, dartboard_channel2, parameters)
+
+    def calculateRatioDartboard (self, dartboard_channel1, dartboard_channel2, parameters):
+        ratio = []
+        for area1, area2 in zip(dartboard_channel1, dartboard_channel2):
+            r = area1.measure() / area2.measure()
+            ratio.append(r)
+        return ratio
+
+    def give_name(self):
+        return "Ratio für Dartboard-Bereiche berechnet"
 
 
 
