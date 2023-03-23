@@ -32,7 +32,7 @@ class BaseSegmentation:
                 x_coords = [x + float(input_image.shape[1] / 2) for x in x_coords]
                 y_coords = coords[0]
                 coord_list2.append(list(zip(x_coords, y_coords)))
-        coord_list2.sort(key=lambda coord_list1: coord_list1[2])
+        coord_list2.sort(key=lambda coord_list2: coord_list2[2])
         return coord_list2
 
 
