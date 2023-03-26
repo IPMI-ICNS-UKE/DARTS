@@ -47,12 +47,14 @@ class MembraneSegmentation (BaseSegmentation):
         segmented_Membrane = None
         gaussian_blur_sigma = 2.0
         threshold = 0
-        return segmented_Membrane
+        #return segmented_Membrane
+        return channel1_roi
 
     # reduces channel_roi-image with the help of a "binary" membrane mask
     def applyMembraneMask (self, channel_roi, membrane_mask):
         intersection = []
-        return intersection
+        #return intersection
+        return channel_roi
 
     # Are the membranes in the two channels congruent?
     def calculate_Congruence (self, channel_roi1, channel_roi2):
@@ -93,10 +95,13 @@ class BaseCell:
         pass
 
     def execute_processing_step(self, step, parameters):
-        if (isinstance(step, MembraneSegmentation) or isinstance(step, RatioCalculation)):
+        if (isinstance(step, MembraneSegmentation)):
             segmentedMembraneMask = step.execute(self.channel1, self.channel2, parameters) # not very handsome code
             self.channel1 = step.applyMembraneMask(self.channel1, segmentedMembraneMask)
             self.channel2 = step.applyMembraneMask(self.channel2, segmentedMembraneMask)
+        elif (isinstance(step, RatioCalculation)):
+            self.channel1 = step.execute(self.channel1, self.channel2, parameters)
+            self.channel2 = step.execute(self.channel1, self.channel2, parameters)
         else:
             self.channel1 = step.execute(self.channel1, parameters)
             self.channel2 = step.execute(self.channel2, parameters)
@@ -153,8 +158,7 @@ class BaseATPImageProcessor:
 
         self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
-        self.processing_steps = [self.decon, self.bleaching, self.bg_correction,\
-                                 self.membraneSegmentation, self.dartboard, self.ratioCalculation]
+        self.processing_steps = [self.decon, self.membraneSegmentation, self.bleaching, self.dartboard, self.ratioCalculation]
 
 
     def segment_cells(self):
@@ -188,6 +192,8 @@ class BaseBleaching:
 
     def bleachingCorrection (self, input_roi, parameters):
         wavelength = input_roi.getWavelength()
+
+        # bleaching corrections in reference channel and sensor channel are different
         if (wavelength == parameters ["wavelength_1"]):
             pass
         elif (wavelength == parameters ["wavelength_2"]):
@@ -225,10 +231,16 @@ class Dartboard:
 
     # returns areas that divide a circular ROI into n sub-ROIs
     def applyDartboardOnMembrane(self, channel_membrane, parameters):
-        pass
+        dartboard_areas = []
+        dartboard_areas.append (DartboardArea())
+        return dartboard_areas
 
     def give_name(self):
         return "dartboard erstellt"
+
+class DartboardArea:
+    def measure (self):
+        return 0
 
 class RatioCalculation:
     def execute (self, dartboard_channel1, dartboard_channel2, parameters):
@@ -236,11 +248,12 @@ class RatioCalculation:
         return self.calculateRatioDartboard(dartboard_channel1, dartboard_channel2, parameters)
 
     def calculateRatioDartboard (self, dartboard_channel1, dartboard_channel2, parameters):
-        ratio = []
+        ratios = []
         #for area1, area2 in zip(dartboard_channel1, dartboard_channel2):
         #    r = area1.measure() / area2.measure()
-        #    ratio.append(r)
-        return ratio
+        #    ratios.append(r)
+        #return ratios
+        return dartboard_channel1
 
     def give_name(self):
         return "Ratio für Dartboard-Bereiche berechnet"
