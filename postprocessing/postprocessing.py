@@ -113,8 +113,6 @@ class BaseCell:
         return ratio
 
 
-
-
 class ImageROI:
     def __init__(self, image, roi_coord, wl):
 
@@ -145,6 +143,7 @@ class BaseATPImageProcessor:
     def __init__(self, path, parameter_dict, segmentation_model):
         self.image = io.imread(path)
         self.parameters = parameter_dict
+        self.seg_model = segmentation_model
         self.cell_list = []
         self.ratio_list = []
         self.seg_model = segmentation_model
