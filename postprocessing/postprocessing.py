@@ -2,19 +2,20 @@ import skimage.io as io
 from csbdeep.utils import normalize
 from matplotlib import pyplot as plt
 import numpy as np
-
+from postprocessing import membrane_detection
 
 class BaseSegmentation:
     def __init__(self):
-        pass
+        self.membraneDetector = membrane_detection.MembraneDetector()
 
+    # returns a list of corresponding cells in both channels [(cell1_channel1, cell1_channel2), (cell2_channel1, cell2_channel2), ...]
+    def find_cell_pairs (self, input_image_path):
+        test_input_path = "/Users/dejan/Downloads/MemBrite-Fix-488-568-640-yeast-mix.jpg"
+        cell_list_wavelength1 = self.membraneDetector.detect_membranes_in_image(test_input_path)
+        cell_list_wavelength2 = self.membraneDetector.detect_membranes_in_image(test_input_path)
+        zip_list = list(zip(cell_list_wavelength1, cell_list_wavelength2))
 
-    def find_cell_pairs (self, input_image):
-        cell_list_wavelength1 = []
-        cell_list_wavelength2 = []
-        return zip(cell_list_wavelength1,cell_list_wavelength2)
-
-
+        return zip_list
 
 
 class MembraneSegmentation (BaseSegmentation):
@@ -130,14 +131,14 @@ class ATPImageProcessor:
 
         self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
-        self.processing_steps = [self.decon, self.membrane_segmentation, self.bleaching, self.dartboard, self.ratio_calculation]
+        self.processing_steps = [self.decon, self.bleaching, self.dartboard, self.ratio_calculation]
 
 
     def segment_cells(self):
-        segmented_cellpairs = self.segmentation.find_cell_pairs(self.image)  # [[cell1roi488, cell1roi561], [], ...]
-        for cellpair in segmented_cellpairs:
-            self.cell_list.append(BaseCell(ImageROI(cellpair[0], self.wl1),
-                                          ImageROI(cellpair[1], self.wl2)))
+        segmented_cell_in_both_channels= self.segmentation.find_cell_pairs(self.image)  # [[cell1roi488, cell1roi561], [], ...]
+        for cellpair in segmented_cell_in_both_channels:
+            self.cell_list.append(BaseCell(ImageROI(cellpair[0], 0, self.wl1),
+                                           ImageROI(cellpair[1], 0, self.wl2)))
 
     def start_postprocessing(self):
         for cell in self.cell_list:
@@ -162,7 +163,7 @@ class BaseBleaching:
         return bleaching_corrected
 
     def bleachingCorrection (self, input_roi, parameters):
-        wavelength = input_roi.getWavelength()
+        wavelength = input_roi.get_wavelength()
 
         # bleaching corrections in reference channel and sensor channel are different
         if (wavelength == parameters ["wavelength_1"]):
@@ -204,7 +205,8 @@ class Dartboard:
     def apply_dartboard_on_membrane(self, channel_membrane, parameters):
         dartboard_areas = []
         dartboard_areas.append (DartboardArea())
-        return dartboard_areas
+        #return dartboard_areas
+        return channel_membrane
 
     def give_name(self):
         return "dartboard erstellt"
