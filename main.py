@@ -1,8 +1,4 @@
-from postprocessing.postprocessing import BaseATPImageProcessor, plot_cells
-from stardist.models import StarDist2D
-import tensorflow as tf
-
-
+from postprocessing.processing import ImageProcessor
 
 if __name__ == '__main__':
 
@@ -12,12 +8,10 @@ if __name__ == '__main__':
         "wavelength_1": 1,
         "wavelength_2": 1
     }
-    segmentation_model = StarDist2D.from_pretrained('2D_versatile_fluo')
-    Processor = BaseATPImageProcessor(path, parameters, segmentation_model)
+    Processor = ImageProcessor(path, parameters)
 
-    Processor.segment_cells()
-    plot_cells(processor=Processor, path=save_path)
+    Processor.select_rois()
 
-    Processor.start_postprocessing()
+#    Processor.start_postprocessing()
     #
     # results = Processor.return_ratios()

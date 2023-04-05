@@ -4,11 +4,22 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
+
+
+
+
+
 class BaseSegmentation:
     def __init__(self):
         pass
 
     def give_coord_channel1(self, input_image, seg_model):
+        """
+
+        :param input_image:
+        :param seg_model:
+        :return:
+        """
         # gives list of all coordinates of ROIS in channel1
         coord_list1 = []
         seg_img_channel1, output_specs_channel1 = seg_model.predict_instances(normalize(np.hsplit(input_image, 2)[0]),
@@ -22,6 +33,7 @@ class BaseSegmentation:
         return coord_list1
 
     def give_coord_channel2(self, input_image, seg_model):
+        # mit offset bestimmen
         # gives list of all coordinates of ROIS in channel2
         coord_list2 = []
         seg_img_channel2, output_specs_channel2 = seg_model.predict_instances(normalize(np.hsplit(input_image, 2)[1]),
@@ -158,6 +170,8 @@ class BaseATPImageProcessor:
         self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
         self.processing_steps = [self.decon, self.membraneSegmentation, self.bleaching, self.dartboard, self.ratioCalculation]
+        # Reihenfolge??? -> Reihenfolge mit DropDown Menu bestimmen?
+        # lieber als set implementieren?
 
 
     def segment_cells(self):
@@ -172,7 +186,8 @@ class BaseATPImageProcessor:
         for cell in self.cell_list:
            cell.channel_registration()
            for step in self.processing_steps:
-                   cell.execute_processing_step(step, self.parameters)
+                   #cell.execute_processing_step(step, self.parameters)
+                    step.run(cell, self.parameter)
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -247,19 +262,6 @@ class RatioCalculation:
         return self.calculateRatioDartboard(dartboard_channel1, dartboard_channel2, parameters)
 
     def calculateRatioDartboard (self, dartboard_channel1, dartboard_channel2, parameters):
-        ratios = []
-        #for area1, area2 in zip(dartboard_channel1, dartboard_channel2):
-        #    r = area1.measure() / area2.measure()
-        #    ratios.append(r)
-        #return ratios
-        return dartboard_channel1
-
-    def give_name(self):
-        return "Ratio für Dartboard-Bereiche berechnet"
-
-
-
-
 def plot_cells(processor, path):
     fig, axs = plt.subplots(len(processor.cell_list), 2)
     axs[0, 0].set_title("channel1 wavelength: " + str(processor.cell_list[0].channel1.wavelength))
