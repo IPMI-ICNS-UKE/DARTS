@@ -2,7 +2,7 @@ import skimage.io as io
 from csbdeep.utils import normalize
 from matplotlib import pyplot as plt
 import numpy as np
-
+from postprocessing import membrane_detection
 
 
 
@@ -11,7 +11,16 @@ import numpy as np
 
 class BaseSegmentation:
     def __init__(self):
-        pass
+        self.membraneDetector = membrane_detection.MembraneDetector()
+
+    # returns a list of corresponding cells in both channels [(cell1_channel1, cell1_channel2), (cell2_channel1, cell2_channel2), ...]
+    def find_cell_pairs (self, input_image_path):
+        test_input_path = "/Users/dejan/Downloads/MemBrite-Fix-488-568-640-yeast-mix.jpg"
+        cell_list_wavelength1 = self.membraneDetector.detect_membranes_in_image(test_input_path)
+        cell_list_wavelength2 = self.membraneDetector.detect_membranes_in_image(test_input_path)
+        zip_list = list(zip(cell_list_wavelength1, cell_list_wavelength2))
+
+        return zip_list
 
     def give_coord_channel1(self, input_image, seg_model):
         """
@@ -47,29 +56,30 @@ class BaseSegmentation:
         coord_list2.sort(key=lambda coord_list2: coord_list2[2])
         return coord_list2
 
+
 class MembraneSegmentation (BaseSegmentation):
 
-    def execute(self, channel1_roi, channel2_roi, parameters):
-        processed_roi = self.createMembraneMask (channel1_roi, channel2_roi, parameters)
+    def execute(self, channel1roi, channel2roi, parameters):
+        processed_roi = self.create_membrane_mask (channel1roi, channel2roi, parameters)
         print (self.give_name())
         return processed_roi
 
     # same ROI for both channels needed
-    def createMembraneMask (self, channel1_roi, channel2_roi, parameters):
-        segmented_Membrane = None
+    def create_membrane_mask (self, channel1roi, channel2roi, parameters):
+        segmented_membrane = None
         gaussian_blur_sigma = 2.0
         threshold = 0
-        #return segmented_Membrane
-        return channel1_roi
+        #return segmented_membrane
+        return channel1roi
 
     # reduces channel_roi-image with the help of a "binary" membrane mask
-    def applyMembraneMask (self, channel_roi, membrane_mask):
+    def apply_membrane_mask (self, channel_roi, membrane_mask):
         intersection = []
         #return intersection
         return channel_roi
 
     # Are the membranes in the two channels congruent?
-    def calculate_Congruence (self, channel_roi1, channel_roi2):
+    def calculate_congruence (self, channel_roi_1, channel_roi_2):
         pass
 
     def give_name (self):
@@ -108,9 +118,9 @@ class BaseCell:
 
     def execute_processing_step(self, step, parameters):
         if (isinstance(step, MembraneSegmentation)):
-            segmentedMembraneMask = step.execute(self.channel1, self.channel2, parameters) # not very handsome code
-            self.channel1 = step.applyMembraneMask(self.channel1, segmentedMembraneMask)
-            self.channel2 = step.applyMembraneMask(self.channel2, segmentedMembraneMask)
+            segmented_membrane_mask = step.execute(self.channel1, self.channel2, parameters) # not very handsome code
+            self.channel1 = step.apply_membrane_mask(self.channel1, segmented_membrane_mask)
+            self.channel2 = step.apply_membrane_mask(self.channel2, segmented_membrane_mask)
         elif (isinstance(step, RatioCalculation)):
             self.channel1 = step.execute(self.channel1, self.channel2, parameters)
             self.channel2 = step.execute(self.channel1, self.channel2, parameters)
@@ -127,72 +137,60 @@ class BaseCell:
 
 class ImageROI:
     def __init__(self, image, roi_coord, wl):
-
-        x1 = int(min(point[0] for point in roi_coord))
-        x2 = int(max(point[0] for point in roi_coord))
-        y1 = int(min(point[1] for point in roi_coord))
-        y2 = int(max(point[1] for point in roi_coord))
-
-        # ((y1, y2), (x1, x2)) = roi_coord
-        # self.image = image[:, y1:y2, x1:x2]
-        self.image = image[y1:y2, x1:x2]
+        self.image = 0 #image[y1:y2, x1:x2]
         self.wavelength = wl
 
     def return_image(self):
         return self.image
 
     def return_membrane (self):
-        return self.membrane
+        return 0
 
-    def getWavelength (self):
+    def get_wavelength (self):
         return self.wavelength
 
 
 
 
 
-class BaseATPImageProcessor:
-    def __init__(self, path, parameter_dict, segmentation_model):
+class ATPImageProcessor:
+    def __init__(self, path, parameter_dict):
         self.image = io.imread(path)
         self.parameters = parameter_dict
         self.seg_model = segmentation_model
         self.cell_list = []
-        self.ratio_list = []
-        self.seg_model = segmentation_model
         self.segmentation = BaseSegmentation()
-        self.membraneSegmentation = MembraneSegmentation()
+        self.membrane_segmentation = MembraneSegmentation()
         self.decon = BaseDecon()
         self.bleaching = BaseBleaching()
         self.bg_correction = BackgroundSubtraction()
         self.dartboard = Dartboard(10)
-        self.ratioCalculation = RatioCalculation()
+        self.ratio_calculation = RatioCalculation()
 
         self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
-        self.processing_steps = [self.decon, self.membraneSegmentation, self.bleaching, self.dartboard, self.ratioCalculation]
-        # Reihenfolge??? -> Reihenfolge mit DropDown Menu bestimmen?
-        # lieber als set implementieren?
+
+        self.processing_steps = [self.decon, self.bleaching, self.dartboard, self.ratio_calculation]
 
 
     def segment_cells(self):
-        roi_coord_list_1 = self.segmentation.give_coord_channel1(self.image, self.seg_model)
-        roi_coord_list_2 = self.segmentation.give_coord_channel2(self.image, self.seg_model)
-        for coord1, coord2 in zip(roi_coord_list_1, roi_coord_list_2):
-            self.cell_list.append(BaseCell(ImageROI(self.image, coord1, self.wl1),
-                                           ImageROI(self.image, coord2, self.wl2)))
+        segmented_cell_in_both_channels= self.segmentation.find_cell_pairs(self.image)  # [[cell1roi488, cell1roi561], [], ...]
+        for cellpair in segmented_cell_in_both_channels:
+            self.cell_list.append(BaseCell(ImageROI(cellpair[0], 0, self.wl1),
+                                           ImageROI(cellpair[1], 0, self.wl2)))
 
     def start_postprocessing(self):
-        self.segment_cells()
         for cell in self.cell_list:
-           cell.channel_registration()
-           for step in self.processing_steps:
-                   #cell.execute_processing_step(step, self.parameters)
-                    step.run(cell, self.parameter)
+
+            cell.channel_registration()
+            for step in self.processing_steps:
+                cell.execute_processing_step(step, self.parameters)
 
     def return_ratios(self):
+        ratio_list = []
         for cell in self.cell_list:
-            self.ratio_list.append(cell.calculate_ratio())
-        return self.ratio_list
+            ratio_list.append(cell.calculate_ratio())
+        return ratio_list
 
 
 class BaseBleaching:
@@ -205,7 +203,7 @@ class BaseBleaching:
         return bleaching_corrected
 
     def bleachingCorrection (self, input_roi, parameters):
-        wavelength = input_roi.getWavelength()
+        wavelength = input_roi.get_wavelength()
 
         # bleaching corrections in reference channel and sensor channel are different
         if (wavelength == parameters ["wavelength_1"]):
@@ -241,13 +239,14 @@ class Dartboard:
 
     def execute (self, channel, parameters):
         print(self.give_name())
-        return self.applyDartboardOnMembrane(channel, parameters)
+        return self.apply_dartboard_on_membrane(channel, parameters)
 
     # returns areas that divide a circular ROI into n sub-ROIs
-    def applyDartboardOnMembrane(self, channel_membrane, parameters):
+    def apply_dartboard_on_membrane(self, channel_membrane, parameters):
         dartboard_areas = []
         dartboard_areas.append (DartboardArea())
-        return dartboard_areas
+        #return dartboard_areas
+        return channel_membrane
 
     def give_name(self):
         return "dartboard erstellt"
@@ -259,9 +258,23 @@ class DartboardArea:
 class RatioCalculation:
     def execute (self, dartboard_channel1, dartboard_channel2, parameters):
         print(self.give_name())
-        return self.calculateRatioDartboard(dartboard_channel1, dartboard_channel2, parameters)
+        return self.calculate_ratio_dartboard(dartboard_channel1, dartboard_channel2, parameters)
 
-    def calculateRatioDartboard (self, dartboard_channel1, dartboard_channel2, parameters):
+
+    def calculate_ratio_dartboard (self, dartboard_channel1, dartboard_channel2, parameters):
+        ratios = []
+        #for area1, area2 in zip(dartboard_channel1, dartboard_channel2):
+        #    r = area1.measure() / area2.measure()
+        #    ratios.append(r)
+        #return ratios
+        return dartboard_channel1
+
+    def give_name(self):
+        return "Ratio für Dartboard-Bereiche berechnet"
+
+
+
+
 def plot_cells(processor, path):
     fig, axs = plt.subplots(len(processor.cell_list), 2)
     axs[0, 0].set_title("channel1 wavelength: " + str(processor.cell_list[0].channel1.wavelength))
