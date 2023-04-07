@@ -20,48 +20,39 @@ class ImageProcessor:
         self.cell_list = []
         self.ratio_list = []
         self.nb_rois = None
-        self.roi_coord = []
+        self.roi_minmax_list = []
+        self.roi_coord_list = []
 
         self.segmentation = SegmentationSD()
         self.decon = None
         self.bleaching = None
 
-        #self.seg_model = segmentation_model
-        #self.membraneSegmentation = None
-        #self.bg_correction = None
-        #self.dartboard = None
-        #self.ratioCalculation = None
-
         self.wl1 = self.parameters["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"]  # wavelength channel2
         self.processing_steps = [self.decon, self. bleaching]
-        #self.processing_steps = [self.decon, self.membraneSegmentation, self.bleaching, self.dartboard,
-        #                         self.ratioCalculation]
-        # Reihenfolge??? -> Reihenfolge mit DropDown Menu bestimmen?
-        # lieber als set implementieren?
 
     def select_rois(self):
 
         # TODO: Segmentierung über die Zeit?
         # TODO: specify which channel to segment first
         seg_image = self.channel1[0]
-        roi_coord_1 = self.segmentation.give_coord(seg_image)
-        roi_coord_2 = roi_coord_1[0, 1, :] + (self.x_max // 2)
+        roi_coord = self.segmentation.give_coord(seg_image)
 
-        self.nb_rois = len(roi_coord_1)
+        self.nb_rois = len(roi_coord)
 
         # TODO: how to specify offset
         yoffset = .03 * self.y_max
         xoffset = .03 * self.x_max
         for i in range(self.nb_rois):
-            ymin = np.min(roi_coord_1[i, 0, :]) - yoffset
-            ymax = np.max(roi_coord_1[i, 0, :]) + yoffset
-            xmin = np.min(roi_coord_1[i, 1, :]) - xoffset
-            xmax = np.max(roi_coord_1[i, 1, :]) + xoffset
+            ymin = np.min(roi_coord[i, 0, :]) - yoffset
+            ymax = np.max(roi_coord[i, 0, :]) + yoffset
+            xmin = np.min(roi_coord[i, 1, :]) - xoffset
+            xmax = np.max(roi_coord[i, 1, :]) + xoffset
 
             slice_roi = np.s_[:,int(ymin):int(ymax), int(xmin):int(xmax)]
-            roi_c = [[xmin, ymin],[xmax,ymax]]
-            self.roi_coord.append(roi_c)
+            roi_m = [[xmin, ymin],[xmax,ymax]]
+            self.roi_minmax_list.append(roi_m)
+            self.roi_coord_list.append(roi_coord)
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
@@ -80,7 +71,6 @@ class ImageProcessor:
         wratios = np.ones(self.nb_rois+1)
         wratios[1:] *= 0.5
 
-
         fig = plt.figure(layout="constrained",figsize=((self.nb_rois+1)*2 , 3))
         gs = GridSpec(2, self.nb_rois+1, figure=fig, width_ratios=wratios)
         ax1 = fig.add_subplot(gs[:, 0])
@@ -91,7 +81,7 @@ class ImageProcessor:
             ax3 = fig.add_subplot(gs[1, i+1])
             ax2.imshow(self.cell_list[i].give_image_channel1()[0], vmin=cmap_min, vmax=cmap_max)
             ax3.imshow(self.cell_list[i].give_image_channel2()[0], vmin=cmap_min, vmax=cmap_max)
-            [[xmin, ymin], [xmax, ymax]] = self.roi_coord[i]
+            [[xmin, ymin], [xmax, ymax]] = self.roi_minmax_list[i]
 
             w = xmax-xmin
             h = ymax-ymin
