@@ -31,6 +31,12 @@ class CellImage:
         ratio = self.channel1.return_image()/self.channel2.return_image()
         return ratio
 
+    def give_image_channel1(self):
+        return self.channel1.return_image()
+
+    def give_image_channel2(self):
+        return self.channel2.return_image()
+
 
 
 class ChannelImage:

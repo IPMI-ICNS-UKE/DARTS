@@ -2,8 +2,9 @@ import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD
-from matplotlib import pyplot as plt
-
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Rectangle
 
 class ImageProcessor:
     def __init__(self, path, parameter_dict):
@@ -19,7 +20,7 @@ class ImageProcessor:
         self.cell_list = []
         self.ratio_list = []
         self.nb_rois = None
-        self.roi_coord = None
+        self.roi_coord = []
 
         self.segmentation = SegmentationSD()
         self.decon = None
@@ -48,7 +49,6 @@ class ImageProcessor:
         roi_coord_2 = roi_coord_1[0, 1, :] + (self.x_max // 2)
 
         self.nb_rois = len(roi_coord_1)
-        self.roi_coord = np.zeros((self.nb_rois, 2))
 
         # TODO: how to specify offset
         yoffset = .03 * self.y_max
@@ -59,21 +59,69 @@ class ImageProcessor:
             xmin = np.min(roi_coord_1[i, 1, :]) - xoffset
             xmax = np.max(roi_coord_1[i, 1, :]) + xoffset
 
-            roi1 = self.channel1[int(ymin):int(ymax), int(xmin):int(xmax)]
-            roi2 = self.channel2[int(ymin):int(ymax), int(xmin):int(xmax)]
+            slice_roi = np.s_[:,int(ymin):int(ymax), int(xmin):int(xmax)]
+            roi_c = [[xmin, ymin],[xmax,ymax]]
+            self.roi_coord.append(roi_c)
+
+            roi1 = self.channel1[slice_roi]
+            roi2 = self.channel2[slice_roi]
             self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
                                             ChannelImage(roi2, self.wl2)))
 
 
     def plot_rois(self):
 
-        fig, ax = plt.subplots()
-        ax.imshow(self.image)
+        def format_axes(fig):
+            for i, ax in enumerate(fig.axes):
+                ax.set_axis_off()
+
+        cmap_min = self.image[0].min()
+        cmap_max = self.image[0].max()
+        wratios = np.ones(self.nb_rois+1)
+        wratios[1:] *= 0.5
+
+
+        fig = plt.figure(layout="constrained",figsize=((self.nb_rois+1)*2 , 3))
+        gs = GridSpec(2, self.nb_rois+1, figure=fig, width_ratios=wratios)
+        ax1 = fig.add_subplot(gs[:, 0])
+        ax1.imshow(self.image[0], vmin=cmap_min, vmax=cmap_max)
+
         for i in range(self.nb_rois):
-            ymin = np.min(roi_coord_1[i, 0, :]) - yoffset
-            ymax = np.max(roi_coord_1[i, 0, :]) + yoffset
-            xmin = np.min(roi_coord_1[i, 1, :]) - xoffset
-            xmax = np.max(roi_coord_1[i, 1, :]) + xoffset
+            ax2 = fig.add_subplot(gs[0, i+1])
+            ax3 = fig.add_subplot(gs[1, i+1])
+            ax2.imshow(self.cell_list[i].give_image_channel1()[0], vmin=cmap_min, vmax=cmap_max)
+            ax3.imshow(self.cell_list[i].give_image_channel2()[0], vmin=cmap_min, vmax=cmap_max)
+            [[xmin, ymin], [xmax, ymax]] = self.roi_coord[i]
+
+            w = xmax-xmin
+            h = ymax-ymin
+            os = self.image.shape[1]//2
+            ax1.add_patch(Rectangle((xmin, ymin), w, h,
+                                 edgecolor='blue',
+                                 facecolor='none',
+                                 lw=1))
+            ax1.add_patch(Rectangle((xmin+os, ymin), w, h,
+                                    edgecolor='red',
+                                    facecolor='none',
+                                    lw=1))
+            ax2.add_patch(Rectangle((0,0), w-1, h-1,
+                                    edgecolor='blue',
+                                    facecolor='none',
+                                    lw=1))
+            ax3.add_patch(Rectangle((0,0), w-1, h-1,
+                                    edgecolor='red',
+                                    facecolor='none',
+                                    lw=1))
+            ax1.text(xmin+0.5*w, ymin+0.5*h, str(i+1), va="center", ha="center", c="blue")
+            ax1.text((xmin+0.5*w)+os, ymin+0.5*h, str(i+1), va="center", ha="center", c="red")
+
+            ax2.text(0.5, 0.5, str(i+1), transform=ax2.transAxes, va="center", ha="center", c="blue")
+            ax3.text(0.5, 0.5, str(i+1), transform=ax3.transAxes, va="center", ha="center", c="red")
+
+        format_axes(fig)
+
+        plt.show(block=False)
+        return fig
 
 
 
@@ -91,10 +139,5 @@ class ImageProcessor:
             self.ratio_list.append(cell.calculate_ratio())
         return self.ratio_list
 
-
-    def plot_cells(cell_list):
-        nb_cells = len(cell_list)
-
-        fig, ax = plt.subplots()
 
 
