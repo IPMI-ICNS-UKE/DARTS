@@ -221,4 +221,4 @@ def plot_cells(processor, path):
         axs[row, 1].imshow(processor.cell_list[row].channel2.image)
     plt.savefig(path + "cropped_cells")
 
-
+#commit message added
