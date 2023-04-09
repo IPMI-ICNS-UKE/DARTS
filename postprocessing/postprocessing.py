@@ -1,4 +1,5 @@
 import skimage.io as io
+from skimage import color
 from csbdeep.utils import normalize
 from matplotlib import pyplot as plt
 import numpy as np
@@ -8,44 +9,19 @@ class BaseSegmentation:
     def __init__(self):
         self.membraneDetector = membrane_detection.MembraneDetector()
 
-    # returns a list of corresponding cells in both channels [(cell1_channel1, cell1_channel2), (cell2_channel1, cell2_channel2), ...]
-    def find_cell_pairs (self, input_image_path):
-        test_input_path = "/Users/dejan/Downloads/MemBrite-Fix-488-568-640-yeast-mix.jpg"
-        cell_list_wavelength1 = self.membraneDetector.detect_membranes_in_image(test_input_path)
-        cell_list_wavelength2 = self.membraneDetector.detect_membranes_in_image(test_input_path)
-        zip_list = list(zip(cell_list_wavelength1, cell_list_wavelength2))
+    # returns a list of corresponding cell membranes in both channels [(cell1_channel1, cell1_channel2), (cell2_channel1, cell2_channel2), ...]
+    def find_cell_pairs (self, image):
+        # returns the rectangular ROIs containing the cell membranes
+        # returns the original image but without the areas surrounding the membranes (mask has already been applied)
+        membrane_ROIs_bounding_boxes, original_image_only_membranes = self.membraneDetector.return_membrane_ROIs(image)
 
-        return zip_list
-
-
-class MembraneSegmentation (BaseSegmentation):
-
-    def execute(self, channel1roi, channel2roi, parameters):
-        processed_roi = self.create_membrane_mask (channel1roi, channel2roi, parameters)
-        print (self.give_name())
-        return processed_roi
-
-    # same ROI for both channels needed
-    def create_membrane_mask (self, channel1roi, channel2roi, parameters):
-        segmented_membrane = None
-        gaussian_blur_sigma = 2.0
-        threshold = 0
-        #return segmented_membrane
-        return channel1roi
-
-    # reduces channel_roi-image with the help of a "binary" membrane mask
-    def apply_membrane_mask (self, channel_roi, membrane_mask):
-        intersection = []
-        #return intersection
-        return channel_roi
-
-    # Are the membranes in the two channels congruent?
-    def calculate_congruence (self, channel_roi_1, channel_roi_2):
-        pass
-
-    def give_name (self):
-        return "Membransegmentierung"
-
+        #now the bounding boxes can be applied to both channels in the same order
+        cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(original_image_only_membranes,
+                                                                                         membrane_ROIs_bounding_boxes) #image needs to be specified as channel 1 image
+        cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(original_image_only_membranes,
+                                                                                         membrane_ROIs_bounding_boxes) #image needs to be specified as channel 2 image
+        zipped_cell_list = list(zip(cropped_cell_images_channel1, cropped_cell_images_channel2))
+        return zipped_cell_list
 
 
 
@@ -78,16 +54,8 @@ class BaseCell:
         pass
 
     def execute_processing_step(self, step, parameters):
-        if (isinstance(step, MembraneSegmentation)):
-            segmented_membrane_mask = step.execute(self.channel1, self.channel2, parameters) # not very handsome code
-            self.channel1 = step.apply_membrane_mask(self.channel1, segmented_membrane_mask)
-            self.channel2 = step.apply_membrane_mask(self.channel2, segmented_membrane_mask)
-        elif (isinstance(step, RatioCalculation)):
-            self.channel1 = step.execute(self.channel1, self.channel2, parameters)
-            self.channel2 = step.execute(self.channel1, self.channel2, parameters)
-        else:
-            self.channel1 = step.execute(self.channel1, parameters)
-            self.channel2 = step.execute(self.channel2, parameters)
+        self.channel1 = step.execute(self.channel1, parameters)
+        self.channel2 = step.execute(self.channel2, parameters)
 
         self.steps_executed.append(step.give_name())
 
@@ -95,19 +63,21 @@ class BaseCell:
         ratio = self.channel1.return_image()/self.channel2.return_image()
         return ratio
 
+    def get_imageROI_channel1 (self):
+        return self.channel1
 
+    def get_imageROI_channel2(self):
+        return self.channel2
 
 
 class ImageROI:
     def __init__(self, image, roi_coord, wl):
-        self.image = 0 #image[y1:y2, x1:x2]
+        self.image = image
         self.wavelength = wl
 
     def return_image(self):
         return self.image
 
-    def return_membrane (self):
-        return 0
 
     def get_wavelength (self):
         return self.wavelength
@@ -118,11 +88,10 @@ class ImageROI:
 
 class ATPImageProcessor:
     def __init__(self, path, parameter_dict):
-        self.image = io.imread(path)
+        self.image = color.rgb2gray(io.imread(path))
         self.parameters = parameter_dict
         self.cell_list = []
         self.segmentation = BaseSegmentation()
-        self.membrane_segmentation = MembraneSegmentation()
         self.decon = BaseDecon()
         self.bleaching = BaseBleaching()
         self.bg_correction = BackgroundSubtraction()
@@ -136,6 +105,7 @@ class ATPImageProcessor:
 
     def segment_cells(self):
         segmented_cell_in_both_channels= self.segmentation.find_cell_pairs(self.image)  # [[cell1roi488, cell1roi561], [], ...]
+        # print (len(segmented_cell_in_both_channels))
         for cellpair in segmented_cell_in_both_channels:
             self.cell_list.append(BaseCell(ImageROI(cellpair[0], 0, self.wl1),
                                            ImageROI(cellpair[1], 0, self.wl2)))
@@ -151,6 +121,13 @@ class ATPImageProcessor:
         for cell in self.cell_list:
             ratio_list.append(cell.calculate_ratio())
         return ratio_list
+
+    def save_image_files (self, save_path):
+        i = 1
+        for cell in self.cell_list:
+            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.get_imageROI_channel1().return_image())
+            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.get_imageROI_channel2().return_image())
+            i += 1
 
 
 class BaseBleaching:
@@ -216,17 +193,17 @@ class DartboardArea:
         return 0
 
 class RatioCalculation:
-    def execute (self, dartboard_channel1, dartboard_channel2, parameters):
+    def execute (self, channel, parameters): # needs to be changed
         print(self.give_name())
-        return self.calculate_ratio_dartboard(dartboard_channel1, dartboard_channel2, parameters)
+        return self.calculate_ratio_dartboard(channel, parameters)
 
-    def calculate_ratio_dartboard (self, dartboard_channel1, dartboard_channel2, parameters):
+    def calculate_ratio_dartboard (self, channel, parameters):
         ratios = []
         #for area1, area2 in zip(dartboard_channel1, dartboard_channel2):
         #    r = area1.measure() / area2.measure()
         #    ratios.append(r)
         #return ratios
-        return dartboard_channel1
+        return channel
 
     def give_name(self):
         return "Ratio für Dartboard-Bereiche berechnet"

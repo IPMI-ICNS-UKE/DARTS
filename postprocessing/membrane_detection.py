@@ -1,125 +1,82 @@
-#!/usr/bin/env python
-__author__ = "Sreenivas Bhattiprolu"
-# modified by Dejan Kovacevic
-
-import cv2
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+from skimage import io, color, filters as filters
 from scipy import ndimage
-from skimage import measure, color, io
-from skimage.segmentation import clear_border
+import matplotlib.patches as mpatches
+from skimage.segmentation import watershed
+import skimage.measure as measure
+from skimage.morphology import area_closing
+from skimage.feature import peak_local_max
+from skimage.measure import regionprops, label
 
-"""
-This code performs detection of cells marked with a fluorophore on the membrane.
+import numpy as np
+import math
 
-Step 1: Read image and define pixel size (if needed to convert results into micrometers, not pixels)
-Step 2: Denoising and thresholding
-Step 3: Create a binary mask; clean up, if required 
-Step 4: Label cell membranes in the masked image
-# Step 5: Measure the properties of each labelled particle 
-# Step 6: Output results into a csv file
-"""
+
 
 class MembraneDetector:
 
-    # returns a list containing the images of distinct membranes in a fluorescence microscopy image
-    def detect_membranes_in_image(self, image_path):
-        pass
-        # STEP 1
-        img = cv2.imread(image_path, 0)
-        # img = cv2.imread ("/Users/dejan/Documents/Doktorarbeit/Beispielbilder Segmentierung/Owncloud/230302_ATPOS_Beladung_100x_488-4.tif", 0)
+    # returns a list containing the images of membranes in a fluorescence microscopy image
+    def return_membrane_ROIs (self, image):
+        original_image = image.copy()
+        # manipulate image with gaussian filtering and Otsu's thresholding
+        image = filters.gaussian(image, 1)
+        image = image < filters.threshold_otsu(image)
 
-        pixels_to_um = 0.5  # (1 px = 500 nm)
+        # Fill holes within the cells in the binary image
+        image_closed = area_closing(image, area_threshold=550, connectivity=2)
 
-        # cropped_img = img[0:450, :]   #Crop the scalebar region
+        # separation of the objects in the image by watershed
+        # does not really work(?)
+        # alternatively use find contours and draw contours
+        distance = ndimage.distance_transform_edt(image_closed)
+        coords = peak_local_max(distance, footprint=np.ones((3, 3)), labels=image_closed)
+        mask = np.zeros(distance.shape, dtype=bool)
+        mask[tuple(coords.T)] = True
+        markers, _ = ndimage.label(mask)
+        labels = watershed(-distance, markers, mask=image_closed)
 
-        # STEP 2
-        gaussian_blurred = cv2.GaussianBlur (img, (1,1),0)
+        # measure the properties of the regions and exclude the regions with small areas
+        regions = measure.regionprops(labels)
+        regions = [r for r in regions if r.area > 500 and r.area < 2000]
 
-        # Otherwise, try Median or NLM
-        # plt.hist(img.flat, bins=100, range=(0,255))
+        # remove the non-segmented areas from the original image
+        mask = image == False  # just the 2D boolean-array in image
+        original_image[mask] = 0  # clear the original image
 
-        # Change the grey image to binary by thresholding.
-        ret, thresh = cv2.threshold(gaussian_blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-
-        # STEP 3
-
-        # kernel = np.ones((3, 3), np.uint8)
-        # eroded = cv2.erode(thresh, kernel, iterations=1)
-        # dilated = cv2.dilate(eroded, kernel, iterations=1)
-
-        # Now, we need to apply threshold, meaning convert uint8 image to boolean.
-        mask = thresh == 255  # Sets TRUE for all 255 valued pixels and FALSE for 0
-        mask = clear_border(mask)   #Removes edge touching particles.
-
-        io.imshow(mask)  # cv2.imshow() not working on boolean arrays so using io
-        # io.imshow(mask[250:280, 250:280])   #Zoom in to see pixelated binary image
-
-        # STEP 4
-
-        # Now we have well separated particles and background. Each particle is like an object.
-        # The scipy ndimage package has a function 'label' that will number each object with a unique ID.
-
-        # The 'structure' parameter defines the connectivity for the labeling.
-        # This specifies when to consider a pixel to be connected to another nearby pixel,
-        # i.e. to be part of the same object.
-
-        # use 8-connectivity, diagonal pixels will be included as part of a structure
-        # this is ImageJ default but we have to specify this for Python, or 4-connectivity will be used
-        # 4 connectivity would be [[0,1,0],[1,1,1],[0,1,0]]
-        s = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-        # label_im, nb_labels = ndimage.label(mask)
-
-        labeled_mask, num_labels = ndimage.label(mask, structure=s)
-
-        # The function outputs a new image that contains a different integer label
-        # for each object, and also the number of objects found.
-
-        # color the labels to see the effect
-        img2 = color.label2rgb(labeled_mask, bg_label=0)
-
-        # cv2.imshow('Colored Grains', img2)
-        # cv2.waitKey(0)
-
-        # View just by making mask=threshold and also mask = dilation (after morph operations)
-
-        # Total number of labels found are...
-        # print(num_labels)
-
-
-        # STEP 5
-
-        # regionprops function in skimage measure module calculates useful parameters for each object.
-
-        clusters = measure.regionprops(labeled_mask, img)  # send in original image for Intensity measurements
-
+        # process the segmented regions
         fig, ax = plt.subplots(figsize=(10, 6))
-        # ax.imshow(img)
-        ax.imshow(thresh)
-        membrane_images = []
+        ax.imshow(image)
 
-        cell_number = 0
-        for region in clusters:
-            # take regions with large enough areas
-            if region.area > 50:  # and region.area < 1000:
-                # draw rectangle around segmented area
-                minr, minc, maxr, maxc = region.bbox
-                rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                          fill=False, edgecolor='white', linewidth=1.5)
-                ax.add_patch(rect)
-                cropped_image = img[(minr):(maxr), (minc):(maxc)]
-                # cv2.imwrite("test_segmentaiton_" + str (cell_number) + ".jpg", cropped_image)
-                # cell_number += 1
-                membrane_images.append(cropped_image)
+        membrane_ROIs_bounding_boxes = []
+        for region in regions:
+            # create bounding box and append it to the "ROI-list"
+            minr, minc, maxr, maxc = region.bbox
+            membrane_ROIs_bounding_boxes.append((minr, minc, maxr, maxc))
 
-        ax.set_axis_off()
-        plt.tight_layout()
-        plt.show()
+            # create rectangle
+            rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                      fill=False, edgecolor='red', linewidth=1.5)
+            ax.add_patch(rect)
 
-        return membrane_images
+        return membrane_ROIs_bounding_boxes, original_image
 
+
+    # receives a list of bounding boxes defining the ROIs
+    # applies the ROIs on an image and returns a list of cropped images
+    def get_cropped_ROIs_from_image (self, img, membrane_ROIs_bounding_boxes):
+        cropped_ROIs_with_cells = []
+        for bbox in membrane_ROIs_bounding_boxes:
+            cropped_image = img[(bbox[0]):(bbox[2]), (bbox[1]):(bbox[3])]  #minr, minc, maxr, maxc = region.bbox
+            cropped_ROIs_with_cells.append(cropped_image)
+        return cropped_ROIs_with_cells
+
+
+
+
+
+# Output of measurements to csv-file
 """
 # The output of the function is a list of object properties.
 
@@ -160,41 +117,3 @@ output_file.close()  # Closes the file, otherwise it would be read only.
 """
 
 
-
-
-"""
-OLD CODE: 
-
-import matplotlib.pyplot as plt
-from skimage import data
-from skimage.filters import threshold_otsu, gaussian, threshold_triangle
-from skimage import io
-from skimage.color import rgb2gray
-
-#read image and create grayscale image
-original_image = io.imread("MemBrite-Fix-488-568-640-yeast-mix.jpg")
-grayscale_image = rgb2gray(original_image)
-
-#smoothen image with gaussian filter
-gaussian_blurred = gaussian(grayscale_image, 0.2)
-
-#thresholding
-thresh = threshold_otsu(gaussian_blurred)
-binary = gaussian_blurred > thresh
-
-#plotting
-fig, axes = plt.subplots(ncols=2, figsize=(10, 5))
-ax = axes.ravel()
-ax[0] = plt.subplot(1, 2, 1)
-ax[1] = plt.subplot(1, 2, 2, sharex=ax[0], sharey=ax[0])
-
-ax[0].imshow(original_image, cmap=plt.cm.gray)
-ax[0].set_title('Original image')
-ax[0].axis('off')
-
-ax[1].imshow(binary, cmap=plt.cm.gray)
-ax[1].set_title('Smoothened and thresholded')
-ax[1].axis('off')
-
-plt.show()
-"""
