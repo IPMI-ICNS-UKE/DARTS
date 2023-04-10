@@ -9,7 +9,7 @@ import skimage.measure as measure
 from skimage.morphology import area_closing
 from skimage.feature import peak_local_max
 from skimage.measure import regionprops, label
-
+from skimage.util import invert
 import numpy as np
 import math
 
@@ -21,12 +21,21 @@ class MembraneDetector:
     def return_membrane_ROIs (self, image):
         original_image = image.copy()
         # manipulate image with gaussian filtering and Otsu's thresholding
-        image = filters.gaussian(image, 1)
-        image = image < filters.threshold_otsu(image)
+        image = filters.gaussian(image, 2)
+        image = image < filters.threshold_triangle(image)
+
+        #invert image so that holes can be properly filled
+        image_inverted = invert(image)
+
 
         # Fill holes within the cells in the binary image
-        image_closed = area_closing(image, area_threshold=550, connectivity=2)
+        image_closed = area_closing(image_inverted, area_threshold=100000, connectivity=2)
 
+        # label the cell membranes
+        labels = label(image_closed, connectivity = 2)
+
+        # Watershed causes trouble...
+        """
         # separation of the objects in the image by watershed
         # does not really work(?)
         # alternatively use find contours and draw contours
@@ -36,14 +45,15 @@ class MembraneDetector:
         mask[tuple(coords.T)] = True
         markers, _ = ndimage.label(mask)
         labels = watershed(-distance, markers, mask=image_closed)
+        """
 
         # measure the properties of the regions and exclude the regions with small areas
         regions = measure.regionprops(labels)
-        regions = [r for r in regions if r.area > 500 and r.area < 2000]
+        regions = [r for r in regions if r.area > 8000 and r.area < 12000]
 
         # remove the non-segmented areas from the original image
-        mask = image == False  # just the 2D boolean-array in image
-        original_image[mask] = 0  # clear the original image
+        mask = image == True  # just the 2D boolean-array in image
+        original_image[mask] = 0
 
         # process the segmented regions
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -58,8 +68,9 @@ class MembraneDetector:
             # create rectangle
             rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                       fill=False, edgecolor='red', linewidth=1.5)
-            ax.add_patch(rect)
 
+            ax.add_patch(rect)
+        plt.show()
         return membrane_ROIs_bounding_boxes, original_image
 
 

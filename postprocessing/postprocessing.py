@@ -1,9 +1,12 @@
 import skimage.io as io
+import tifffile
 from skimage import color
 from csbdeep.utils import normalize
 from matplotlib import pyplot as plt
 import numpy as np
 from postprocessing import membrane_detection
+from skimage.util import img_as_ubyte
+from tifffile import imread
 
 class BaseSegmentation:
     def __init__(self):
@@ -88,7 +91,8 @@ class ImageROI:
 
 class ATPImageProcessor:
     def __init__(self, path, parameter_dict):
-        self.image = color.rgb2gray(io.imread(path))
+        
+        self.image = tifffile.imread(path)
         self.parameters = parameter_dict
         self.cell_list = []
         self.segmentation = BaseSegmentation()

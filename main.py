@@ -2,8 +2,8 @@ from postprocessing.postprocessing import ATPImageProcessor, plot_cells
 
 if __name__ == '__main__':
     # path = "/Users/dejan/Documents/GitHub/T-DARTS/MemBrite-Fix-488-568-640-yeast-mix.tif"
-    # path = "/Users/dejan/Documents/GitHub/T-DARTS/230302_ATPOS_Beladung_100x_488-5.tif"
-    path = "/Users/dejan/Documents/GitHub/T-DARTS/Blutausstrich.jpg"
+    path = "/Users/dejan/Documents/GitHub/T-DARTS/230302_ATPOS_Beladung_100x_488-5.tif"
+    # path = "/Users/dejan/Documents/GitHub/T-DARTS/Blutausstrich.jpg"
 
     save_path = "/Users/dejan/Documents/Doktorarbeit/Python_save_path"
     parameters = {
