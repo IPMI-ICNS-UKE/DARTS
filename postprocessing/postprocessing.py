@@ -1,35 +1,39 @@
 import skimage.io as io
 import tifffile
-from skimage import color
-from csbdeep.utils import normalize
 from matplotlib import pyplot as plt
-import numpy as np
 from postprocessing import membrane_detection
-from skimage.util import img_as_ubyte
-from tifffile import imread
+
 
 class BaseSegmentation:
     def __init__(self):
         self.membraneDetector = membrane_detection.MembraneDetector()
 
-    # returns a list of corresponding cell membranes in both channels [(cell1_channel1, cell1_channel2), (cell2_channel1, cell2_channel2), ...]
-    def find_cell_pairs (self, image):
-        # returns the rectangular ROIs containing the cell membranes
-        # returns the original image but without the areas surrounding the membranes (mask has already been applied)
-        membrane_ROIs_bounding_boxes, original_image_only_membranes = self.membraneDetector.return_membrane_ROIs(image)
+    def find_cell_pairs(self, image_wavelength_1, image_wavelength_2):
+        """
+        Finds the pairs of cells in two corresponding fluorescence microscopy images and returns a zipped list of the
+        ROIs containing the cells.
 
-        #now the bounding boxes can be applied to both channels in the same order
-        cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(original_image_only_membranes,
-                                                                                         membrane_ROIs_bounding_boxes) #image needs to be specified as channel 1 image
-        cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(original_image_only_membranes,
-                                                                                         membrane_ROIs_bounding_boxes) #image needs to be specified as channel 2 image
-        zipped_cell_list = list(zip(cropped_cell_images_channel1, cropped_cell_images_channel2))
-        return zipped_cell_list
+        :param image_wavelength_1: image in the first wavelength, for example 488nm
+        :param image_wavelength_2: image in the second wavelength, for example 561nm
+        :return:  a list in the following style:
+                    [[cell_1_channel_1, cell_1_channel_2], [cell_2_channel_1, cell_2_channel_2], ...]
+        """
+        membrane_ROIs_bounding_boxes, mask = self.membraneDetector.return_membrane_ROIs(image_wavelength_1)
 
+        # apply the generated mask on both images
+        image_channel1 = self.membraneDetector.apply_mask_on_image(image_wavelength_1, mask, 0)
+        image_channel2 = self.membraneDetector.apply_mask_on_image(image_wavelength_2, mask, 0)
+
+        # now the bounding boxes can be applied to both channels in the same order
+        cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(image_channel1,
+                                                                                         membrane_ROIs_bounding_boxes)
+        cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(image_channel2,
+                                                                                         membrane_ROIs_bounding_boxes)
+        zip_cell_list = list(zip(cropped_cell_images_channel1, cropped_cell_images_channel2))
+        return zip_cell_list
 
 
 class BaseDecon:
-
     def execute(self, input_roi, parameters):
         processed_roi = self.deconvolve(input_roi, parameters)
         print(self.give_name())
@@ -40,7 +44,6 @@ class BaseDecon:
 
     def deconvolve(self, input_roi, parameters):
         return input_roi
-
 
 
 class BaseCell:
@@ -74,7 +77,7 @@ class BaseCell:
 
 
 class ImageROI:
-    def __init__(self, image, roi_coord, wl):
+    def __init__(self, image, wl):
         self.image = image
         self.wavelength = wl
 
@@ -86,13 +89,17 @@ class ImageROI:
         return self.wavelength
 
 
-
-
-
 class ATPImageProcessor:
-    def __init__(self, path, parameter_dict):
-        
-        self.image = tifffile.imread(path)
+    """
+    A Processor of fluorescence microscope images, which show the signal of an ATP-sensor on the membrane of cells.
+    The sensor is a ratiometric sensor. That's why there are two channels. One of the channels serves as the reference
+    channel. The other channel represents the ATP-dependent channel.
+    """
+    def __init__(self, path_wavelength_1, path_wavelength_2, parameter_dict):
+
+        self.image_wavelength_1 = tifffile.imread(path_wavelength_1)
+        self.image_wavelength_2 = tifffile.imread(path_wavelength_2)
+
         self.parameters = parameter_dict
         self.cell_list = []
         self.segmentation = BaseSegmentation()
@@ -102,19 +109,26 @@ class ATPImageProcessor:
         self.dartboard = Dartboard(10)
         self.ratio_calculation = RatioCalculation()
 
-        self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
-        self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
+        self.wl1 = self.parameters["wavelength_1"]  # wavelength channel1
+        self.wl2 = self.parameters["wavelength_2"]  # wavelength channel2
         self.processing_steps = [self.decon, self.bleaching, self.dartboard, self.ratio_calculation]
 
-
     def segment_cells(self):
-        segmented_cell_in_both_channels= self.segmentation.find_cell_pairs(self.image)  # [[cell1roi488, cell1roi561], [], ...]
-        # print (len(segmented_cell_in_both_channels))
-        for cellpair in segmented_cell_in_both_channels:
-            self.cell_list.append(BaseCell(ImageROI(cellpair[0], 0, self.wl1),
-                                           ImageROI(cellpair[1], 0, self.wl2)))
+        """
+        Segments the cell membranes in the images of both wavelengths and creates a cell list with new cells, which
+        contain the representations of the membrane in both channels
+        """
+        segmented_cells_in_both_channels = self.segmentation.find_cell_pairs(self.image_wavelength_1,
+                                                                             self.image_wavelength_2)
+        for cellpair in segmented_cells_in_both_channels:
+            self.cell_list.append(BaseCell(ImageROI(cellpair[0], self.wl1),
+                                           ImageROI(cellpair[1], self.wl2)))
 
     def start_postprocessing(self):
+        """
+        Starts the postprocessing-pipeline after segmentaiton of the cells. Each cell has to execute a list of defined
+        steps
+        """
         for cell in self.cell_list:
             cell.channel_registration()
             for step in self.processing_steps:
@@ -126,7 +140,11 @@ class ATPImageProcessor:
             ratio_list.append(cell.calculate_ratio())
         return ratio_list
 
-    def save_image_files (self, save_path):
+    def save_image_files(self, save_path):
+        """
+        Saves the image files within the cells of the celllist in the given path.
+        :param save_path: The target path.
+        """
         i = 1
         for cell in self.cell_list:
             io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.get_imageROI_channel1().return_image())
@@ -135,21 +153,18 @@ class ATPImageProcessor:
 
 
 class BaseBleaching:
-    def give_name (self):
-        return "Bleaching correction..."
-
-    def execute (self, input_roi, parameters):
-        bleaching_corrected = self.bleachingCorrection(input_roi, parameters)
+    def execute(self, input_roi, parameters):
+        bleaching_corrected = self.bleaching_correction(input_roi, parameters)
         print(self.give_name())
         return bleaching_corrected
 
-    def bleachingCorrection (self, input_roi, parameters):
+    def bleaching_correction(self, input_roi, parameters):
         wavelength = input_roi.get_wavelength()
 
         # bleaching corrections in reference channel and sensor channel are different
-        if (wavelength == parameters ["wavelength_1"]):
+        if wavelength == parameters["wavelength_1"]:
             pass
-        elif (wavelength == parameters ["wavelength_2"]):
+        elif wavelength == parameters["wavelength_2"]:
             pass
         return input_roi
 
@@ -162,9 +177,8 @@ class BleachingExponentialFit (BaseBleaching):
         pass
 
 
-
 class BackgroundSubtraction:
-    def execute (self, channel, parameters):
+    def execute(self, channel, parameters):
         print(self.give_name())
         return self.subtract_background(channel)
 
@@ -174,30 +188,32 @@ class BackgroundSubtraction:
     def give_name(self):
         return "Background subtracted"
 
+
 class Dartboard:
     def __init__(self, n):
         self.numberOfFields = n
 
-    def execute (self, channel, parameters):
+    def execute(self, channel, parameters):
         print(self.give_name())
         return self.apply_dartboard_on_membrane(channel, parameters)
 
     # returns areas that divide a circular ROI into n sub-ROIs
     def apply_dartboard_on_membrane(self, channel_membrane, parameters):
         dartboard_areas = []
-        dartboard_areas.append (DartboardArea())
-        #return dartboard_areas
+        dartboard_areas.append(DartboardArea())
         return channel_membrane
 
     def give_name(self):
         return "dartboard erstellt"
 
+
 class DartboardArea:
-    def measure (self):
+    def measure(self):
         return 0
 
+
 class RatioCalculation:
-    def execute (self, channel, parameters): # needs to be changed
+    def execute(self, channel, parameters):  # needs to be changed
         print(self.give_name())
         return self.calculate_ratio_dartboard(channel, parameters)
 
@@ -213,8 +229,6 @@ class RatioCalculation:
         return "Ratio für Dartboard-Bereiche berechnet"
 
 
-
-
 def plot_cells(processor, path):
     fig, axs = plt.subplots(len(processor.cell_list), 2)
     axs[0, 0].set_title("channel1 wavelength: " + str(processor.cell_list[0].channel1.wavelength))
@@ -225,4 +239,3 @@ def plot_cells(processor, path):
         axs[row, 1].imshow(processor.cell_list[row].channel2.image)
     plt.savefig(path + "cropped_cells")
 
-#commit message added
