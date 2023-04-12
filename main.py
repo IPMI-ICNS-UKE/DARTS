@@ -1,4 +1,5 @@
 from postprocessing.postprocessing import ATPImageProcessor, plot_cells
+from stardist.models import StarDist2D
 
 if __name__ == '__main__':
     path_wavelength_1 = "/Users/dejan/Documents/GitHub/T-DARTS/230302_ATPOS_Beladung_100x_488-5.tif"
@@ -10,7 +11,10 @@ if __name__ == '__main__':
         "wavelength_2": 561
     }
 
-    Processor = ATPImageProcessor(path_wavelength_1, path_wavelength_2, parameters)
+    # prints a list of available models
+    StarDist2D.from_pretrained()
+    segmentation_model = StarDist2D.from_pretrained('2D_versatile_fluo')
+    Processor = ATPImageProcessor(path_wavelength_1, path_wavelength_2, segmentation_model, parameters)
 
     Processor.segment_cells()
     Processor.start_postprocessing()

@@ -2,11 +2,11 @@ import skimage.io as io
 import tifffile
 from matplotlib import pyplot as plt
 from postprocessing import membrane_detection
-
+from stardist.models import StarDist2D
 
 class BaseSegmentation:
-    def __init__(self):
-        self.membraneDetector = membrane_detection.MembraneDetector()
+    def __init__(self, segmentation_model):
+        self.membraneDetector = membrane_detection.MembraneDetector(segmentation_model)
 
     def find_cell_pairs(self, image_wavelength_1, image_wavelength_2):
         """
@@ -18,18 +18,20 @@ class BaseSegmentation:
         :return:  a list in the following style:
                     [[cell_1_channel_1, cell_1_channel_2], [cell_2_channel_1, cell_2_channel_2], ...]
         """
-        membrane_ROIs_bounding_boxes, mask = self.membraneDetector.return_membrane_ROIs(image_wavelength_1)
-
-        # apply the generated mask on both images
-        image_channel1 = self.membraneDetector.apply_mask_on_image(image_wavelength_1, mask, 0)
-        image_channel2 = self.membraneDetector.apply_mask_on_image(image_wavelength_2, mask, 0)
+        membrane_ROIs_bounding_boxes = self.membraneDetector.find_cell_ROIs(image_wavelength_1)
 
         # now the bounding boxes can be applied to both channels in the same order
-        cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(image_channel1,
+        cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_1,
                                                                                          membrane_ROIs_bounding_boxes)
-        cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(image_channel2,
+        cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_2,
                                                                                          membrane_ROIs_bounding_boxes)
+
+        # creates a list of cropped cell images:    [(cell_1_channel_1, cell_1_channel_2),
+        #                                            (cell_2_channel_1, cell_2_channel_2), ..]
         zip_cell_list = list(zip(cropped_cell_images_channel1, cropped_cell_images_channel2))
+
+        # modifies the channel images by segmenting the membrane (congruent in both channels)
+        zip_cell_list[:] = [self.membraneDetector.segment_membrane_in_roi_cell_pair(tuple) for tuple in zip_cell_list]
         return zip_cell_list
 
 
@@ -95,14 +97,14 @@ class ATPImageProcessor:
     The sensor is a ratiometric sensor. That's why there are two channels. One of the channels serves as the reference
     channel. The other channel represents the ATP-dependent channel.
     """
-    def __init__(self, path_wavelength_1, path_wavelength_2, parameter_dict):
+    def __init__(self, path_wavelength_1, path_wavelength_2, segmentation_model, parameter_dict):
 
         self.image_wavelength_1 = tifffile.imread(path_wavelength_1)
         self.image_wavelength_2 = tifffile.imread(path_wavelength_2)
 
         self.parameters = parameter_dict
         self.cell_list = []
-        self.segmentation = BaseSegmentation()
+        self.segmentation = BaseSegmentation(segmentation_model)
         self.decon = BaseDecon()
         self.bleaching = BaseBleaching()
         self.bg_correction = BackgroundSubtraction()

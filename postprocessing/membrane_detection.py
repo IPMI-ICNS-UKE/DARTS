@@ -7,85 +7,103 @@ from skimage.morphology import area_closing
 from skimage.morphology import binary_erosion, binary_dilation, remove_small_holes
 from skimage.measure import label
 from skimage.util import invert
+from skimage import io
+from csbdeep.utils import normalize
 
 
 class MembraneDetector:
     """
     A class that is able to detect the plasma membranes of cells in fluorescence microscopy images.
     """
+    def __init__(self, segmentation_model):
+        # creates a pretrained model
+        self.segm_model = segmentation_model
 
-    def return_membrane_ROIs(self, image):
+    def find_cell_ROIs(self, img):
         """
-        Returns a list containing the rectangular ROIs surrounding cell membranes in a fluorescence microscopy image and
-        a mask for the original image to separate the membranes from the rest.
+        Finds the cell images in an image and returns the rectangular
+        bounding boxes ("ROIs") and also a masks for the membrane in these ROIs
 
-        :param image: the fluorescence microscopy image
-        :return:
-        membrane_ROIs_bounding_boxes -  is the ordered list containing the rectangular ROIs;
-        mask -  is the binary mask for manipulation of the original image (see apply_mask_on_image(img, mask))
+        :param img: the input image, usually a fluorescence microscopy image
+        :return: returns an ordered list of ROIs and a boolean mask to segment
         """
-        # manipulate image with gaussian filtering and thresholding
-        image = filters.gaussian(image, 2)
-        image = image < filters.threshold_li(image)
+        original_image = img.copy()
+
+        # smoothing and thresholding
+        img = filters.gaussian(img, 2)
+        img = img < filters.threshold_triangle(img)
 
         # remove small holes; practically removing small objects from the inside of the cell membrane
-        image = remove_small_holes(image, area_threshold=1000, connectivity=2)
+        img = remove_small_holes(img, area_threshold=1000, connectivity=2)
 
         # invert image so that holes can be properly filled
-        image_inverted = invert(image)
+        img = invert(img)
 
         # dilate image to close holes in the membrane
         number_of_iterations = 4
-        image_inverted_dilated = self.binary_dilate_n_times(image_inverted, number_of_iterations)
+        img = self.binary_dilate_n_times(img, number_of_iterations)
 
         # Fill holes within the cell membranes in the binary image
-        image_inverted_dilated_closed = area_closing(image_inverted_dilated, area_threshold=200000, connectivity=2)
+        img = area_closing(img, area_threshold=200000, connectivity=2)
 
         # erode again after dilation (same number of iterations)
-        image_inverted_eroded_closed = self.binary_erode_n_times(image_inverted_dilated_closed, number_of_iterations)
+        img = self.binary_erode_n_times(img, number_of_iterations)
 
-        # label the cells
-        labels = label(image_inverted_eroded_closed, connectivity=2)
+        # assign the value 255 to all black spots in the image and the value 0 to all white areas
+        # kopie_mit_einsen = np.ones_like(img)
+        mask_positive = img == True
+        mask_negative = img == False
 
-        # Watershed causes trouble...
-        """
-        # separation of the objects in the image by watershed
-        # does not really work(?)
-        # alternatively use find contours and draw contours
-        distance = ndimage.distance_transform_edt(image_closed)
-        coords = peak_local_max(distance, footprint=np.ones((3, 3)), labels=image_closed)
-        mask = np.zeros(distance.shape, dtype=bool)
-        mask[tuple(coords.T)] = True
-        markers, _ = ndimage.label(mask)
-        labels = watershed(-distance, markers, mask=image_closed)
-        """
+        original_img_masked = original_image.copy()
+        original_img_masked[mask_positive] = 255
+        original_img_masked[mask_negative] = 0
+        # io.imshow(original_img_masked)
+        # plt.show()
 
-        # measure the properties of the regions and exclude the regions with small areas
+        # labelling of the cell images with Stardist2D
+        labels, _ = self.segm_model.predict_instances(normalize(original_img_masked))
         regions = measure.regionprops(labels)
+        regions = [r for r in regions if r.area > 6000]
 
-        # only include regions with an area within a certain range, experimentally determined range...
-        regions = [r for r in regions if 6000 < r.area < 13000]
-
-        # create mask for the original image; mask will be returned by this function
-        mask = image == True  # just the 2D boolean-array in image
-
-        # process the segmented regions
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.imshow(image)
+        ax.imshow(original_image)
 
         membrane_ROIs_bounding_boxes = []
+
         for region in regions:
             # create bounding box and append it to the "ROI-list"
             minr, minc, maxr, maxc = region.bbox
             membrane_ROIs_bounding_boxes.append((minr, minc, maxr, maxc))
 
-            # create rectangle
+            # create rectangle for visualisation
             rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                       fill=False, edgecolor='red', linewidth=1.5)
-
             ax.add_patch(rect)
         plt.show()
-        return membrane_ROIs_bounding_boxes, mask
+
+        return membrane_ROIs_bounding_boxes
+
+    def segment_membrane_in_roi_cell_pair(self, roi_tuple):
+        """
+        Segments the membrane in a cell image consisting of two ROIs (one for each channel). Sets the
+        values outside the membrane to 0. The same membrane-area will be applied to both channels.
+
+        :param roi_channel1: the ROI of the first channel, acts as reference for segmentation
+        :param roi_channel2: the ROI of the second channel
+        :return: a tuple containing the two membrane ROIs (one for each channel), congruent to each other
+        """
+        gaussian = filters.gaussian(roi_tuple[0], 1.5)
+        binary_image = gaussian < filters.threshold_li(gaussian)
+
+        # remove small holes; practically removing small objects from the inside of the cell membrane
+        # inverted logic
+        small_objects_removed = remove_small_holes(binary_image, area_threshold=1000, connectivity=2)
+
+        membrane_mask = small_objects_removed == True
+        roi_channel1_masked = self.apply_mask_on_image(roi_tuple[0], membrane_mask, 0)
+        roi_channel2_masked = self.apply_mask_on_image(roi_tuple[1], membrane_mask, 0)
+
+        return (roi_channel1_masked, roi_channel2_masked)
 
     def apply_mask_on_image(self, img, mask, n):
         """
@@ -183,5 +201,3 @@ for cluster_props in clusters:
     output_file.write('\n')
 output_file.close()  # Closes the file, otherwise it would be read only.
 """
-
-
