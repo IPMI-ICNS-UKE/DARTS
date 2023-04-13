@@ -5,6 +5,7 @@ import matplotlib.patches as mpatches
 import skimage.measure as measure
 from skimage.morphology import area_closing
 from skimage.morphology import binary_erosion, binary_dilation, remove_small_holes
+from skimage.segmentation import clear_border
 from skimage.measure import label
 from skimage.util import invert
 from skimage import io
@@ -33,6 +34,8 @@ class MembraneDetector:
         img = filters.gaussian(img, 2)
         img = img < filters.threshold_triangle(img)
 
+
+
         # remove small holes; practically removing small objects from the inside of the cell membrane
         img = remove_small_holes(img, area_threshold=1000, connectivity=2)
 
@@ -48,6 +51,9 @@ class MembraneDetector:
 
         # erode again after dilation (same number of iterations)
         img = self.binary_erode_n_times(img, number_of_iterations)
+
+        # remove objects on the edge
+        img = clear_border(img)
 
         # assign the value 255 to all black spots in the image and the value 0 to all white areas
         # kopie_mit_einsen = np.ones_like(img)

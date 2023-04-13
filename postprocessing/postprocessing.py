@@ -19,6 +19,8 @@ class BaseSegmentation:
         :return:  a list in the following style:
                     [[cell_1_channel_1, cell_1_channel_2], [cell_2_channel_1, cell_2_channel_2], ...]
         """
+
+        # find the cells in the first frame of the reference channel
         membrane_ROIs_bounding_boxes, cell_masks = self.membraneDetector.find_cell_ROIs(image_wavelength_1)
 
         # now the bounding boxes can be applied to both channels in the same order
