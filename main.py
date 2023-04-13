@@ -1,5 +1,6 @@
 from postprocessing.postprocessing import ATPImageProcessor, plot_cells
 from stardist.models import StarDist2D
+import time
 
 if __name__ == '__main__':
     path_wavelength_1 = "/Users/dejan/Documents/GitHub/T-DARTS/230302_ATPOS_Beladung_100x_488-5.tif"
@@ -19,6 +20,6 @@ if __name__ == '__main__':
     Processor.segment_cells()
     Processor.start_postprocessing()
     Processor.save_image_files(save_path)
-
     # results = Processor.return_ratios()
+
 

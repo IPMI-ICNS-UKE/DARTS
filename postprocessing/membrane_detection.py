@@ -22,7 +22,7 @@ class MembraneDetector:
     def find_cell_ROIs(self, img):
         """
         Finds the cell images in an image and returns the rectangular
-        bounding boxes ("ROIs") and also a masks for the membrane in these ROIs
+        bounding boxes ("ROIs") and also a masks for the cell areas in these ROIs
 
         :param img: the input image, usually a fluorescence microscopy image
         :return: returns an ordered list of ROIs and a boolean mask to segment
@@ -57,8 +57,7 @@ class MembraneDetector:
         original_img_masked = original_image.copy()
         original_img_masked[mask_positive] = 255
         original_img_masked[mask_negative] = 0
-        # io.imshow(original_img_masked)
-        # plt.show()
+
 
         # labelling of the cell images with Stardist2D
         labels, _ = self.segm_model.predict_instances(normalize(original_img_masked))
@@ -69,6 +68,7 @@ class MembraneDetector:
         ax.imshow(original_image)
 
         membrane_ROIs_bounding_boxes = []
+        cropped_masks = []
 
         for region in regions:
             # create bounding box and append it to the "ROI-list"
@@ -79,17 +79,19 @@ class MembraneDetector:
             rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                       fill=False, edgecolor='red', linewidth=1.5)
             ax.add_patch(rect)
+            cropped_mask = mask_negative[minr:maxr, minc:maxc]
+
+            cropped_masks.append(cropped_mask)
         plt.show()
 
-        return membrane_ROIs_bounding_boxes
+        return membrane_ROIs_bounding_boxes, cropped_masks
 
     def segment_membrane_in_roi_cell_pair(self, roi_tuple):
         """
         Segments the membrane in a cell image consisting of two ROIs (one for each channel). Sets the
         values outside the membrane to 0. The same membrane-area will be applied to both channels.
 
-        :param roi_channel1: the ROI of the first channel, acts as reference for segmentation
-        :param roi_channel2: the ROI of the second channel
+        :param roi_tuple: a tuple containing the ROIs of two corresponding cell images (channel_1_roi, channel_2_roi)
         :return: a tuple containing the two membrane ROIs (one for each channel), congruent to each other
         """
         gaussian = filters.gaussian(roi_tuple[0], 1.5)
@@ -98,12 +100,31 @@ class MembraneDetector:
         # remove small holes; practically removing small objects from the inside of the cell membrane
         # inverted logic
         small_objects_removed = remove_small_holes(binary_image, area_threshold=1000, connectivity=2)
-
         membrane_mask = small_objects_removed == True
+
         roi_channel1_masked = self.apply_mask_on_image(roi_tuple[0], membrane_mask, 0)
         roi_channel2_masked = self.apply_mask_on_image(roi_tuple[1], membrane_mask, 0)
 
         return (roi_channel1_masked, roi_channel2_masked)
+
+    def cut_out_cells_from_ROIs (self, cropped_cell_images_tuple, cell_masks):
+        """
+        Applies the previously generated mask containing the cell area on the cropped cell image. Sometimes other cells
+        overlap into the ROI of a cell.
+
+        :param cropped_cell_images_one_channel: list of rectangular cell image ROIs
+        :param cell_masks: boolean masks to be applied on the ROIs
+        :return: return the "cleaned" ROIs of the cells
+        """
+        rois_copied = cropped_cell_images_tuple.copy()
+        cleaned_rois = []
+        for i in range(len(cropped_cell_images_tuple)):
+            current_mask = cell_masks[i]
+            channel_1_cleaned = self.apply_mask_on_image(rois_copied[i][0], current_mask, 0)
+            channel_2_cleaned = self.apply_mask_on_image(rois_copied[i][1], current_mask, 0)
+            cleaned_rois.append((channel_1_cleaned, channel_2_cleaned))
+        return cleaned_rois
+
 
     def apply_mask_on_image(self, img, mask, n):
         """
