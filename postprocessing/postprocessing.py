@@ -10,18 +10,18 @@ class BaseSegmentation:
 
     def find_cell_pairs(self, image_wavelength_1, image_wavelength_2):
         """
-        Finds the pairs of cells in two corresponding fluorescence microscopy images and returns a zipped list of the
-        ROIs containing the cells. The membranes of the main cells in the ROIs are separated from cell images
+        Finds the pairs of cells in two corresponding fluorescence microscopy image time series and returns a zipped
+        list of the ROIs containing the cells. The membranes of the main cells in the ROIs are separated from cell images
         overlapping with the ROI.
 
-        :param image_wavelength_1: image in the first wavelength, for example 488nm
-        :param image_wavelength_2: image in the second wavelength, for example 561nm
+        :param image_wavelength_1: image stack in the first wavelength, for example 488nm
+        :param image_wavelength_2: image stack in the second wavelength, for example 561nm
         :return:  a list in the following style:
                     [[cell_1_channel_1, cell_1_channel_2], [cell_2_channel_1, cell_2_channel_2], ...]
         """
 
         # find the cells in the first frame of the reference channel
-        membrane_ROIs_bounding_boxes, cell_masks = self.membraneDetector.find_cell_ROIs(image_wavelength_1)
+        membrane_ROIs_bounding_boxes, cell_masks = self.membraneDetector.find_cell_ROIs(image_wavelength_1[0])
 
         # now the bounding boxes can be applied to both channels in the same order
         cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_1,
@@ -29,14 +29,15 @@ class BaseSegmentation:
         cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_2,
                                                                                          membrane_ROIs_bounding_boxes)
 
-        # creates a list of cropped cell images:    [(cell_1_channel_1, cell_1_channel_2),
-        #                                            (cell_2_channel_1, cell_2_channel_2), ..]
+        # creates a list of cropped cell images in tuples:    [(cell_1_channel_1, cell_1_channel_2),
+        #                                                      (cell_2_channel_1, cell_2_channel_2), ..]
         zip_cell_list = list(zip(cropped_cell_images_channel1, cropped_cell_images_channel2))
 
         # modifies the channel images by segmenting the membrane (congruent in both channels)
         zip_cell_list[:] = [self.membraneDetector.segment_membrane_in_roi_cell_pair(tuple) for tuple in zip_cell_list]
 
         zip_cell_list = self.membraneDetector.cut_out_cells_from_ROIs(zip_cell_list, cell_masks)
+        # print("anzahl tupel zip cell list " + str(len(zip_cell_list)))
 
         return zip_cell_list
 
@@ -137,10 +138,14 @@ class ATPImageProcessor:
         Starts the postprocessing-pipeline after segmentaiton of the cells. Each cell has to execute a list of defined
         steps
         """
-        for cell in self.cell_list:
-            cell.channel_registration()
-            for step in self.processing_steps:
-                cell.execute_processing_step(step, self.parameters)
+        if (len(self.cell_list) > 0):
+            for cell in self.cell_list:
+                cell.channel_registration()
+                for step in self.processing_steps:
+                    cell.execute_processing_step(step, self.parameters)
+        else:
+            print ("No cells have been detected!")
+
 
     def return_ratios(self):
         ratio_list = []
