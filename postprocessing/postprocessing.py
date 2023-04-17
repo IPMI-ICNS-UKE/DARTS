@@ -4,6 +4,11 @@ from matplotlib import pyplot as plt
 from postprocessing import membrane_detection
 from stardist.models import StarDist2D
 
+
+
+
+
+
 class BaseSegmentation:
     def __init__(self, segmentation_model):
         self.membraneDetector = membrane_detection.MembraneDetector(segmentation_model)
@@ -19,6 +24,42 @@ class BaseSegmentation:
         :return:  a list in the following style:
                     [[cell_1_channel_1, cell_1_channel_2], [cell_2_channel_1, cell_2_channel_2], ...]
         """
+
+    def give_coord_channel1(self, input_image, seg_model):
+        """
+
+        :param input_image:
+        :param seg_model:
+        :return:
+        """
+        # gives list of all coordinates of ROIS in channel1
+        coord_list1 = []
+        seg_img_channel1, output_specs_channel1 = seg_model.predict_instances(normalize(np.hsplit(input_image, 2)[0]),
+                                                                              prob_thresh=0.6, nms_thresh=0.2)
+        if len(output_specs_channel1['coord']) >= 0:
+            for coords in output_specs_channel1['coord']:
+                x_coords = coords[1]
+                y_coords = coords[0]
+                coord_list1.append(list(zip(x_coords, y_coords)))
+        coord_list1.sort(key=lambda coord_list1: coord_list1[2])
+        return coord_list1
+
+    def give_coord_channel2(self, input_image, seg_model):
+        # mit offset bestimmen
+        # gives list of all coordinates of ROIS in channel2
+        coord_list2 = []
+        seg_img_channel2, output_specs_channel2 = seg_model.predict_instances(normalize(np.hsplit(input_image, 2)[1]),
+                                                                              prob_thresh=0.6, nms_thresh=0.2)
+        if len(output_specs_channel2['coord']) >= 0:
+            for coords in output_specs_channel2['coord']:
+                x_coords = coords[1]
+                x_coords = [x + float(input_image.shape[1] / 2) for x in x_coords]
+                y_coords = coords[0]
+                coord_list2.append(list(zip(x_coords, y_coords)))
+        coord_list2.sort(key=lambda coord_list2: coord_list2[2])
+        return coord_list2
+
+
 
         # find the cells in the first frame of the reference channel
         membrane_ROIs_bounding_boxes, cell_masks = self.membraneDetector.find_cell_ROIs(image_wavelength_1[0])
@@ -81,8 +122,10 @@ class BaseCell:
     def get_imageROI_channel1 (self):
         return self.channel1
 
+
     def get_imageROI_channel2(self):
         return self.channel2
+
 
 
 class ImageROI:
@@ -110,6 +153,7 @@ class ATPImageProcessor:
         self.image_wavelength_2 = tifffile.imread(path_wavelength_2)
 
         self.parameters = parameter_dict
+        self.seg_model = segmentation_model
         self.cell_list = []
         self.segmentation = BaseSegmentation(segmentation_model)
         self.decon = BaseDecon()
@@ -118,8 +162,14 @@ class ATPImageProcessor:
         self.dartboard = Dartboard(10)
         self.ratio_calculation = RatioCalculation()
 
+
         self.wl1 = self.parameters["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["wavelength_2"]  # wavelength channel2
+
+        self.wl1 = self.parameters["wavelength_1"] # wavelength channel1
+        self.wl2 = self.parameters["wavelength_2"] # wavelength channel2
+
+
         self.processing_steps = [self.decon, self.bleaching, self.dartboard, self.ratio_calculation]
 
     def segment_cells(self):
@@ -134,6 +184,7 @@ class ATPImageProcessor:
                                            ImageROI(cellpair[1], self.wl2)))
 
     def start_postprocessing(self):
+
         """
         Starts the postprocessing-pipeline after segmentaiton of the cells. Each cell has to execute a list of defined
         steps
@@ -145,6 +196,13 @@ class ATPImageProcessor:
                     cell.execute_processing_step(step, self.parameters)
         else:
             print ("No cells have been detected!")
+
+
+        for cell in self.cell_list:
+
+            cell.channel_registration()
+            for step in self.processing_steps:
+                cell.execute_processing_step(step, self.parameters)
 
 
     def return_ratios(self):
@@ -230,7 +288,12 @@ class RatioCalculation:
         print(self.give_name())
         return self.calculate_ratio_dartboard(channel, parameters)
 
+
     def calculate_ratio_dartboard (self, channel, parameters):
+
+
+    def calculate_ratio_dartboard (self, dartboard_channel1, dartboard_channel2, parameters):
+
         ratios = []
         #for area1, area2 in zip(dartboard_channel1, dartboard_channel2):
         #    r = area1.measure() / area2.measure()
