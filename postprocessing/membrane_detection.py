@@ -1,125 +1,216 @@
-#!/usr/bin/env python
-__author__ = "Sreenivas Bhattiprolu"
-# modified by Dejan Kovacevic
-
-import cv2
-import numpy as np
+from __future__ import print_function
 import matplotlib.pyplot as plt
+from skimage import filters as filters
 import matplotlib.patches as mpatches
-from scipy import ndimage
-from skimage import measure, color, io
+import skimage.measure as measure
+from skimage.morphology import area_closing
+from skimage.morphology import binary_erosion, binary_dilation, remove_small_holes
 from skimage.segmentation import clear_border
+from skimage.measure import label
+from skimage.util import invert
+from skimage import io
+from csbdeep.utils import normalize
 
-"""
-This code performs detection of cells marked with a fluorophore on the membrane.
-
-Step 1: Read image and define pixel size (if needed to convert results into micrometers, not pixels)
-Step 2: Denoising and thresholding
-Step 3: Create a binary mask; clean up, if required 
-Step 4: Label cell membranes in the masked image
-# Step 5: Measure the properties of each labelled particle 
-# Step 6: Output results into a csv file
-"""
 
 class MembraneDetector:
+    """
+    A class that is able to detect the plasma membranes of cells in fluorescence microscopy images.
+    """
+    def __init__(self, segmentation_model):
+        # creates a pretrained model
+        self.segm_model = segmentation_model
 
-    # returns a list containing the images of distinct membranes in a fluorescence microscopy image
-    def detect_membranes_in_image(self, image_path):
-        pass
-        # STEP 1
-        img = cv2.imread(image_path, 0)
-        # img = cv2.imread ("/Users/dejan/Documents/Doktorarbeit/Beispielbilder Segmentierung/Owncloud/230302_ATPOS_Beladung_100x_488-4.tif", 0)
+    def find_cell_ROIs(self, img):
+        """
+        Finds the cell images in an image stack and returns the rectangular
+        bounding boxes ("ROIs") and also a masks for the cell areas in these ROIs
 
-        pixels_to_um = 0.5  # (1 px = 500 nm)
+        :param img: the input image stack, usually a fluorescence microscopy image stack in tiff format
+        :return: returns an ordered list of ROIs and a boolean mask to segment
+        """
+        original_image = img.copy()
 
-        # cropped_img = img[0:450, :]   #Crop the scalebar region
-
-        # STEP 2
-        gaussian_blurred = cv2.GaussianBlur (img, (1,1),0)
-
-        # Otherwise, try Median or NLM
-        # plt.hist(img.flat, bins=100, range=(0,255))
-
-        # Change the grey image to binary by thresholding.
-        ret, thresh = cv2.threshold(gaussian_blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-
-        # STEP 3
-
-        # kernel = np.ones((3, 3), np.uint8)
-        # eroded = cv2.erode(thresh, kernel, iterations=1)
-        # dilated = cv2.dilate(eroded, kernel, iterations=1)
-
-        # Now, we need to apply threshold, meaning convert uint8 image to boolean.
-        mask = thresh == 255  # Sets TRUE for all 255 valued pixels and FALSE for 0
-        mask = clear_border(mask)   #Removes edge touching particles.
-
-        io.imshow(mask)  # cv2.imshow() not working on boolean arrays so using io
-        # io.imshow(mask[250:280, 250:280])   #Zoom in to see pixelated binary image
-
-        # STEP 4
-
-        # Now we have well separated particles and background. Each particle is like an object.
-        # The scipy ndimage package has a function 'label' that will number each object with a unique ID.
-
-        # The 'structure' parameter defines the connectivity for the labeling.
-        # This specifies when to consider a pixel to be connected to another nearby pixel,
-        # i.e. to be part of the same object.
-
-        # use 8-connectivity, diagonal pixels will be included as part of a structure
-        # this is ImageJ default but we have to specify this for Python, or 4-connectivity will be used
-        # 4 connectivity would be [[0,1,0],[1,1,1],[0,1,0]]
-        s = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-        # label_im, nb_labels = ndimage.label(mask)
-
-        labeled_mask, num_labels = ndimage.label(mask, structure=s)
-
-        # The function outputs a new image that contains a different integer label
-        # for each object, and also the number of objects found.
-
-        # color the labels to see the effect
-        img2 = color.label2rgb(labeled_mask, bg_label=0)
-
-        # cv2.imshow('Colored Grains', img2)
-        # cv2.waitKey(0)
-
-        # View just by making mask=threshold and also mask = dilation (after morph operations)
-
-        # Total number of labels found are...
-        # print(num_labels)
+        # smoothing and thresholding
+        img = filters.gaussian(img, 2)
+        # triangle for 100x images, li for 63x images
+        img = img < filters.threshold_li(img)
+        # img = img < filters.threshold_triangle(img)
 
 
-        # STEP 5
 
-        # regionprops function in skimage measure module calculates useful parameters for each object.
+        # remove small holes; practically removing small objects from the inside of the cell membrane
+        # param area_threshold = 1000 for 100x images, 500 for 63x images
+        img = remove_small_holes(img, area_threshold=500, connectivity=2)
 
-        clusters = measure.regionprops(labeled_mask, img)  # send in original image for Intensity measurements
+
+        # invert image so that holes can be properly filled
+        img = invert(img)
+
+        # dilate image to close holes in the membrane
+        number_of_iterations = 4
+        img = self.binary_dilate_n_times(img, number_of_iterations)
+
+        # Fill holes within the cell membranes in the binary image
+        # param area_threshold = 200000 for 100x images, 100000 for 63x images
+        img = area_closing(img, area_threshold=100000, connectivity=2)
+
+        # erode again after dilation (same number of iterations)
+        img = self.binary_erode_n_times(img, number_of_iterations)
+
+        # remove objects on the edge
+        img = clear_border(img)
+
+        # assign the value 255 to all black spots in the image and the value 0 to all white areas
+        # kopie_mit_einsen = np.ones_like(img)
+        mask_positive = img == True
+        mask_negative = img == False
+
+        original_img_masked = original_image.copy()
+        original_img_masked[mask_positive] = 255
+        original_img_masked[mask_negative] = 0
+
+
+        # labelling of the cell images with Stardist2D
+        labels, _ = self.segm_model.predict_instances(normalize(original_img_masked))
+        regions = measure.regionprops(labels)
+        # exclude labels that are too small
+        # r.area > 6000 for 100x images, >500 for 63x images
+        regions = [r for r in regions if r.area > 500]
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        # ax.imshow(img)
-        ax.imshow(thresh)
-        membrane_images = []
+        ax.imshow(original_image)
 
-        cell_number = 0
-        for region in clusters:
-            # take regions with large enough areas
-            if region.area > 50:  # and region.area < 1000:
-                # draw rectangle around segmented area
-                minr, minc, maxr, maxc = region.bbox
-                rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                          fill=False, edgecolor='white', linewidth=1.5)
-                ax.add_patch(rect)
-                cropped_image = img[(minr):(maxr), (minc):(maxc)]
-                # cv2.imwrite("test_segmentaiton_" + str (cell_number) + ".jpg", cropped_image)
-                # cell_number += 1
-                membrane_images.append(cropped_image)
+        membrane_ROIs_bounding_boxes = []
+        cropped_masks = []
 
-        ax.set_axis_off()
-        plt.tight_layout()
+        for region in regions:
+            # create bounding box and append it to the "ROI-list"
+            minr, minc, maxr, maxc = region.bbox
+            membrane_ROIs_bounding_boxes.append((minr, minc, maxr, maxc))
+
+            # create rectangle for visualisation
+            rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                      fill=False, edgecolor='red', linewidth=1.5)
+            ax.add_patch(rect)
+            cropped_mask = mask_negative[minr:maxr, minc:maxc]
+
+            cropped_masks.append(cropped_mask)
         plt.show()
 
-        return membrane_images
+        return membrane_ROIs_bounding_boxes, cropped_masks
 
+    def segment_membrane_in_roi_cell_pair(self, roi_tuple):
+        """
+        Segments the membrane in a cell image stack consisting of two ROIs (one for each channel), Sets the
+        values outside the membrane to 0. The same membrane-area will be applied to both channels.
+
+        :param roi_tuple: a tuple containing the ROIs of two corresponding cell image stacks (channel_1_roi, channel_2_roi)
+        :return: a tuple containing the two membrane ROIs (one for each channel), congruent to each other
+        """
+        roi_tuple_channel_1 = roi_tuple[0].copy()
+        roi_tuple_channel_2 = roi_tuple[1].copy()
+
+        for frame_i in range(len(roi_tuple[0])):
+            gaussian = filters.gaussian(roi_tuple[0][frame_i], 1.5)
+            binary_image = gaussian < filters.threshold_li(gaussian)
+
+            # remove small holes; practically removing small objects from the inside of the cell membrane
+            # inverted logic
+            # param area_threshold = 1000 for 100x images, 500 for 63x images
+            small_objects_removed = remove_small_holes(binary_image, area_threshold=500, connectivity=2)
+            membrane_mask = small_objects_removed == True
+
+            roi_tuple_channel_1[frame_i] = self.apply_mask_on_image(roi_tuple[0][frame_i], membrane_mask, 0)
+            roi_tuple_channel_2[frame_i] = self.apply_mask_on_image(roi_tuple[1][frame_i], membrane_mask, 0)
+
+        return (roi_tuple_channel_1, roi_tuple_channel_2)
+
+    def cut_out_cells_from_ROIs (self, cropped_cell_images_tuple, cell_masks):
+        """
+        Applies the previously generated mask containing the cell area on the cropped cell image stack. Sometimes other cells
+        overlap into the ROI of a cell.
+
+        :param cropped_cell_images_tuple: tuple containing two corresponding cell image stacks
+        :param cell_masks: boolean masks to be applied on the ROIs
+        :return: return the "cleaned" ROIs of the cells
+        """
+        images_tuple_copy = cropped_cell_images_tuple.copy()
+        cleaned_rois = []
+        for tuple_i in range(len(cropped_cell_images_tuple)):  # for each tuple
+            current_mask = cell_masks[tuple_i]
+
+            for frame in range(len(cropped_cell_images_tuple[0][0])):  # for each frame
+                cropped_cell_images_tuple[tuple_i][0][frame] = self.apply_mask_on_image(cropped_cell_images_tuple[tuple_i][0][frame],
+                                                                                 current_mask,
+                                                                                 0)
+                cropped_cell_images_tuple[tuple_i][1][frame] = self.apply_mask_on_image(cropped_cell_images_tuple[tuple_i][0][frame],
+                                                                                 current_mask,
+                                                                                 0)
+            cleaned_rois.append((cropped_cell_images_tuple[tuple_i][0],
+                                 cropped_cell_images_tuple[tuple_i][1]))
+        return cleaned_rois
+
+
+    def apply_mask_on_image(self, img, mask, n):
+        """
+        Applies a boolean mask on an image-array. Every value in the image that the mask is "True" for will be changed
+        to the parameter n.
+
+        :param img: the image-array to be modified
+        :param n: target value of the elements in the img that are "True" in the mask
+        :param mask: boolean mask which will be applied. Needs to have the same size as img
+        :return: returns the modified image
+        """
+        original_image = img
+        original_image[mask] = n
+        return original_image
+
+    def get_cropped_ROIs_from_image(self, img, membrane_ROIs_bounding_boxes):
+        """
+        Returns a list containing the cropped rectangular image stacks from the source image stack, based on the regions of interest
+        in the list membrane_ROIs_bounding_boxes.
+
+        :param img: the source image stack
+        :param membrane_ROIs_bounding_boxes: the ordered list containing the regions of interest ("bounding boxes")
+        :return: an ordered list containing the images representing the regions of interest in an image
+        """
+        cropped_ROIs_with_cells = []
+        for bbox in membrane_ROIs_bounding_boxes:
+            number_of_frames = len(img)
+            min_y, max_y, min_x, max_x = (bbox[0]), (bbox[2]), (bbox[1]), (bbox[3])
+            cropped_image = img[0:number_of_frames, min_y:max_y, min_x:max_x]
+            cropped_ROIs_with_cells.append(cropped_image)
+        return cropped_ROIs_with_cells
+
+    def binary_erode_n_times(self, img, n):
+        """
+        Returns the binary-eroded input image "img" after n iterations.
+        :param img: the input image
+        :param n: the number of iterations
+        :return: the n-times binary-eroded image
+        """
+        img_eroded = img
+        for x in range(n):
+            img_eroded = binary_erosion(img_eroded)
+        return img_eroded
+
+    def binary_dilate_n_times(self, img, n):
+        """
+        Returns the binary-dilated input image "img" after n iterations.
+        :param img: the input image
+        :param n: the number of iterations
+        :return: the n-times binary-dilated image
+        """
+        img_dilated = img
+        for x in range(n):
+            img_dilated = binary_dilation(img_dilated)
+        return img_dilated
+
+
+
+
+
+# Output of measurements to csv-file
 """
 # The output of the function is a list of object properties.
 
@@ -157,44 +248,4 @@ for cluster_props in clusters:
         output_file.write(',' + str(to_print))
     output_file.write('\n')
 output_file.close()  # Closes the file, otherwise it would be read only.
-"""
-
-
-
-
-"""
-OLD CODE: 
-
-import matplotlib.pyplot as plt
-from skimage import data
-from skimage.filters import threshold_otsu, gaussian, threshold_triangle
-from skimage import io
-from skimage.color import rgb2gray
-
-#read image and create grayscale image
-original_image = io.imread("MemBrite-Fix-488-568-640-yeast-mix.jpg")
-grayscale_image = rgb2gray(original_image)
-
-#smoothen image with gaussian filter
-gaussian_blurred = gaussian(grayscale_image, 0.2)
-
-#thresholding
-thresh = threshold_otsu(gaussian_blurred)
-binary = gaussian_blurred > thresh
-
-#plotting
-fig, axes = plt.subplots(ncols=2, figsize=(10, 5))
-ax = axes.ravel()
-ax[0] = plt.subplot(1, 2, 1)
-ax[1] = plt.subplot(1, 2, 2, sharex=ax[0], sharey=ax[0])
-
-ax[0].imshow(original_image, cmap=plt.cm.gray)
-ax[0].set_title('Original image')
-ax[0].axis('off')
-
-ax[1].imshow(binary, cmap=plt.cm.gray)
-ax[1].set_title('Smoothened and thresholded')
-ax[1].axis('off')
-
-plt.show()
 """
