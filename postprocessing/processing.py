@@ -1,42 +1,61 @@
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD
+from postprocessing.segmentation import SegmentationSD, SegmentationATP
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
 class ImageProcessor:
-    def __init__(self, path, parameter_dict):
-        self.image = io.imread(path)
-        # separate image into 2 channels: left half and right half
-        if self.image.ndim == 3:      # for time series
-            self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
-            self.t_max, self.y_max, self.x_max = self.image.shape
-        elif self.image.ndim == 2:    # for static images
-            self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
-            self.y_max, self.x_max = self.image.shape
+    def __init__(self, parameter_dict):
+
         self.parameters = parameter_dict
+    # handle different input formats: either two channels in one image or one image per channel
+        if self.parameters["properties"]["channel_format"] == "two-in-one":
+            self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
+            # separate image into 2 channels: left half and right half
+            if self.image.ndim == 3:      # for time series
+                self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
+                self.t_max, self.y_max, self.x_max = self.image.shape
+            elif self.image.ndim == 2:    # for static images
+                self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
+                self.y_max, self.x_max = self.image.shape
+        elif self.parameters["properties"]["channel_format"] == "single":
+            self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
+            self.channel2 = io.imread(self.parameters["inputoutput"]["path_to_input_channel2"])
+            if self.channel1.ndim == 3:      # for time series
+                self.image = np.concatenate((self.channel1, self.channel2), axis=2)
+                self.t_max, self.y_max, self.x_max = self.image.shape
+            elif self.channel1.ndim == 2:
+                self.image = np.concatenate((self.channel1, self.channel2), axis=1)
+                self.y_max, self.x_max = self.image.shape
+
         self.cell_list = []
         self.ratio_list = []
         self.nb_rois = None
         self.roi_minmax_list = []
         self.roi_coord_list = []
 
-        self.segmentation = SegmentationSD()
+        if self.parameters["properties"]["ATP"]:
+            self.segmentation = SegmentationATP()
+        else:
+            self.segmentation = SegmentationSD()
         self.decon = None
         self.bleaching = None
 
-        self.wl1 = self.parameters["wavelength_1"]  # wavelength channel1
-        self.wl2 = self.parameters["wavelength_2"]  # wavelength channel2
+        self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
+        self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
         self.processing_steps = [self.decon, self. bleaching]
 
     def select_rois(self):
 
         # TODO: Segmentierung über die Zeit?
         # TODO: specify which channel to segment first
+
         seg_image = self.channel1[0]
+        print("yes2")
         roi_coord = self.segmentation.give_coord(seg_image)
+        print("yes3")
 
         self.nb_rois = len(roi_coord)
 

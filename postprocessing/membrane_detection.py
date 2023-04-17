@@ -20,6 +20,51 @@ class MembraneDetector:
         # creates a pretrained model
         self.segm_model = segmentation_model
 
+    def give_masked_image(self, img):
+        """
+        Returns a masked image
+        :param img: the input image stack, usually a fluorescence microscopy image stack in tiff format
+        """
+        original_image = img.copy()
+
+        # smoothing and thresholding
+        img = filters.gaussian(img, 2)
+        # triangle for 100x images, li for 63x images
+        img = img < filters.threshold_li(img)
+        # img = img < filters.threshold_triangle(img)
+
+        # remove small holes; practically removing small objects from the inside of the cell membrane
+        # param area_threshold = 1000 for 100x images, 500 for 63x images
+        img = remove_small_holes(img, area_threshold=500, connectivity=2)
+
+        # invert image so that holes can be properly filled
+        img = invert(img)
+
+        # dilate image to close holes in the membrane
+        number_of_iterations = 4
+        img = self.binary_dilate_n_times(img, number_of_iterations)
+
+        # Fill holes within the cell membranes in the binary image
+        # param area_threshold = 200000 for 100x images, 100000 for 63x images
+        img = area_closing(img, area_threshold=100000, connectivity=2)
+
+        # erode again after dilation (same number of iterations)
+        img = self.binary_erode_n_times(img, number_of_iterations)
+
+        # remove objects on the edge
+        img = clear_border(img)
+
+        # assign the value 255 to all black spots in the image and the value 0 to all white areas
+        # kopie_mit_einsen = np.ones_like(img)
+        mask_positive = img == True
+        mask_negative = img == False
+
+        original_img_masked = original_image.copy()
+        original_img_masked[mask_positive] = 255
+        original_img_masked[mask_negative] = 0
+
+        return original_img_masked
+
     def find_cell_ROIs(self, img):
         """
         Finds the cell images in an image stack and returns the rectangular
