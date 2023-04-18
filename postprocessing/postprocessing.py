@@ -1,14 +1,15 @@
 import skimage.io as io
 import tifffile
 from matplotlib import pyplot as plt
-from postprocessing import membrane_detection
+from postprocessing import membrane_detection, Cell_Image_Registration
 from stardist.models import StarDist2D
 
 class BaseSegmentation:
     def __init__(self, segmentation_model):
         self.membraneDetector = membrane_detection.MembraneDetector(segmentation_model)
+        self.cellRegistrator = Cell_Image_Registration.CellImageRegistrator ()
 
-    def find_cell_pairs(self, image_wavelength_1, image_wavelength_2):
+    def find_cell_membrane_pairs(self, image_wavelength_1, image_wavelength_2):
         """
         Finds the pairs of cells in two corresponding fluorescence microscopy image time series and returns a zipped
         list of the ROIs containing the cells. The membranes of the main cells in the ROIs are separated from cell images
@@ -21,13 +22,32 @@ class BaseSegmentation:
         """
 
         # find the cells in the first frame of the reference channel
-        membrane_ROIs_bounding_boxes, cell_masks = self.membraneDetector.find_cell_ROIs(image_wavelength_1[0])
+        membrane_ROIs_bounding_boxes_channel_1, cell_masks = self.membraneDetector.find_cell_ROIs(image_wavelength_1[0])
 
         # now the bounding boxes can be applied to both channels in the same order
         cropped_cell_images_channel1 = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_1,
-                                                                                         membrane_ROIs_bounding_boxes)
+                                                                                         membrane_ROIs_bounding_boxes_channel_1)
+
         cropped_cell_images_channel2 = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_2,
-                                                                                         membrane_ROIs_bounding_boxes)
+                                                                                         membrane_ROIs_bounding_boxes_channel_1)
+
+
+        # register cropped cells in first frame and override the ROIs of the cell images in channel 2
+        for i in range(len(cropped_cell_images_channel1)):
+            current_channel1_image = cropped_cell_images_channel1[i][0]  # takes the first frame of the current cell image in channel
+            current_channel2_image = cropped_cell_images_channel2[i][0]
+
+            x_offset, y_offset = self.cellRegistrator.measure_offset(current_channel1_image, current_channel2_image)
+
+            corrected_bounding_box = self.cellRegistrator.return_corrected_ROI(-x_offset,
+                                                                               -y_offset,
+                                                                               membrane_ROIs_bounding_boxes_channel_1[i])
+            cropped_cell_images_channel2[i] = self.membraneDetector.get_cropped_ROIs_from_image(image_wavelength_2,
+                                                                                                corrected_bounding_box)[0]
+
+        # saves the registered and cropped raw images of the cells on the computer
+        save_path = "/Users/dejan/Documents/Doktorarbeit/Python_save_path/raw_cell_images"
+        self.save_cropped_cell_images(cropped_cell_images_channel1, cropped_cell_images_channel2, save_path)
 
         # creates a list of cropped cell images in tuples:    [(cell_1_channel_1, cell_1_channel_2),
         #                                                      (cell_2_channel_1, cell_2_channel_2), ..]
@@ -36,10 +56,21 @@ class BaseSegmentation:
         # modifies the channel images by segmenting the membrane (congruent in both channels)
         zip_cell_list[:] = [self.membraneDetector.segment_membrane_in_roi_cell_pair(tuple) for tuple in zip_cell_list]
 
-        zip_cell_list = self.membraneDetector.cut_out_cells_from_ROIs(zip_cell_list, cell_masks)
-        # print("anzahl tupel zip cell list " + str(len(zip_cell_list)))
+        zip_cell_list = self.membraneDetector.cut_out_cells_from_ROIs(zip_cell_list, cell_masks) # needs to be updated after implementation of registration
 
         return zip_cell_list
+
+    def save_cropped_cell_images(self, channel_1_cell_images, channel_2_cell_images, save_path):
+        """
+        Saves the unprocessed but cropped raw cell images on the computer
+        """
+        i = 1
+        for i in range(len(channel_1_cell_images)):
+            io.imsave(save_path + '/raw_cropped_cell_image_channel_1_nr_' + str(i) + '.tif',
+                      channel_1_cell_images[i])
+            io.imsave(save_path + '/raw_cropped_cell_image_channel_2_nr_' + str(i) + '.tif',
+                      channel_2_cell_images[i])
+            i += 1
 
 
 class BaseDecon:
@@ -127,8 +158,8 @@ class ATPImageProcessor:
         Segments the cell membranes in the images of both wavelengths and creates a cell list with new cells, which
         contain the representations of the membrane in both channels
         """
-        segmented_cells_in_both_channels = self.segmentation.find_cell_pairs(self.image_wavelength_1,
-                                                                             self.image_wavelength_2)
+        segmented_cells_in_both_channels = self.segmentation.find_cell_membrane_pairs(self.image_wavelength_1,
+                                                                                      self.image_wavelength_2)
         for cellpair in segmented_cells_in_both_channels:
             self.cell_list.append(BaseCell(ImageROI(cellpair[0], self.wl1),
                                            ImageROI(cellpair[1], self.wl2)))

@@ -33,15 +33,12 @@ class MembraneDetector:
         # smoothing and thresholding
         img = filters.gaussian(img, 2)
         # triangle for 100x images, li for 63x images
-        img = img < filters.threshold_li(img)
-        # img = img < filters.threshold_triangle(img)
-
-
+        img = img < filters.threshold_triangle(img)
+        # img = img < filters.threshold_li(img)
 
         # remove small holes; practically removing small objects from the inside of the cell membrane
         # param area_threshold = 1000 for 100x images, 500 for 63x images
-        img = remove_small_holes(img, area_threshold=500, connectivity=2)
-
+        img = remove_small_holes(img, area_threshold=1000, connectivity=2)
 
         # invert image so that holes can be properly filled
         img = invert(img)
@@ -52,7 +49,7 @@ class MembraneDetector:
 
         # Fill holes within the cell membranes in the binary image
         # param area_threshold = 200000 for 100x images, 100000 for 63x images
-        img = area_closing(img, area_threshold=100000, connectivity=2)
+        img = area_closing(img, area_threshold=200000, connectivity=2)
 
         # erode again after dilation (same number of iterations)
         img = self.binary_erode_n_times(img, number_of_iterations)
@@ -61,7 +58,6 @@ class MembraneDetector:
         img = clear_border(img)
 
         # assign the value 255 to all black spots in the image and the value 0 to all white areas
-        # kopie_mit_einsen = np.ones_like(img)
         mask_positive = img == True
         mask_negative = img == False
 
@@ -69,13 +65,12 @@ class MembraneDetector:
         original_img_masked[mask_positive] = 255
         original_img_masked[mask_negative] = 0
 
-
         # labelling of the cell images with Stardist2D
         labels, _ = self.segm_model.predict_instances(normalize(original_img_masked))
         regions = measure.regionprops(labels)
         # exclude labels that are too small
         # r.area > 6000 for 100x images, >500 for 63x images
-        regions = [r for r in regions if r.area > 500]
+        regions = [r for r in regions if r.area > 6000]
 
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.imshow(original_image)
@@ -117,7 +112,7 @@ class MembraneDetector:
             # remove small holes; practically removing small objects from the inside of the cell membrane
             # inverted logic
             # param area_threshold = 1000 for 100x images, 500 for 63x images
-            small_objects_removed = remove_small_holes(binary_image, area_threshold=500, connectivity=2)
+            small_objects_removed = remove_small_holes(binary_image, area_threshold=1000, connectivity=2)
             membrane_mask = small_objects_removed == True
 
             roi_tuple_channel_1[frame_i] = self.apply_mask_on_image(roi_tuple[0][frame_i], membrane_mask, 0)
@@ -143,7 +138,7 @@ class MembraneDetector:
                 cropped_cell_images_tuple[tuple_i][0][frame] = self.apply_mask_on_image(cropped_cell_images_tuple[tuple_i][0][frame],
                                                                                  current_mask,
                                                                                  0)
-                cropped_cell_images_tuple[tuple_i][1][frame] = self.apply_mask_on_image(cropped_cell_images_tuple[tuple_i][0][frame],
+                cropped_cell_images_tuple[tuple_i][1][frame] = self.apply_mask_on_image(cropped_cell_images_tuple[tuple_i][1][frame],
                                                                                  current_mask,
                                                                                  0)
             cleaned_rois.append((cropped_cell_images_tuple[tuple_i][0],
@@ -162,6 +157,7 @@ class MembraneDetector:
         :return: returns the modified image
         """
         original_image = img
+
         original_image[mask] = n
         return original_image
 
@@ -177,9 +173,10 @@ class MembraneDetector:
         cropped_ROIs_with_cells = []
         for bbox in membrane_ROIs_bounding_boxes:
             number_of_frames = len(img)
-            min_y, max_y, min_x, max_x = (bbox[0]), (bbox[2]), (bbox[1]), (bbox[3])
+            min_y, max_y, min_x, max_x = bbox[0], bbox[2], bbox[1], bbox[3]
             cropped_image = img[0:number_of_frames, min_y:max_y, min_x:max_x]
             cropped_ROIs_with_cells.append(cropped_image)
+
         return cropped_ROIs_with_cells
 
     def binary_erode_n_times(self, img, n):
@@ -205,9 +202,6 @@ class MembraneDetector:
         for x in range(n):
             img_dilated = binary_dilation(img_dilated)
         return img_dilated
-
-
-
 
 
 # Output of measurements to csv-file
