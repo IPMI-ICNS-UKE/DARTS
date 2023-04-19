@@ -1,16 +1,21 @@
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD, SegmentationATP
+
+#from postprocessing.segmentation import SegmentationSD, SegmentationATP
+
+from postprocessing.segmentation import SegmentationSD, ATPImageConverter
+
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
+
 class ImageProcessor:
     def __init__(self, parameter_dict):
-
         self.parameters = parameter_dict
-    # handle different input formats: either two channels in one image or one image per channel
+        
+      # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
             # separate image into 2 channels: left half and right half
@@ -29,17 +34,18 @@ class ImageProcessor:
             elif self.channel1.ndim == 2:
                 self.image = np.concatenate((self.channel1, self.channel2), axis=1)
                 self.y_max, self.x_max = self.image.shape
-
+        
+        self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
         self.ratio_list = []
         self.nb_rois = None
         self.roi_minmax_list = []
         self.roi_coord_list = []
 
-        if self.parameters["properties"]["ATP"]:
-            self.segmentation = SegmentationATP()
-        else:
-            self.segmentation = SegmentationSD()
+
+        self.segmentation = SegmentationSD()
+        self.ATP_image_converter = ATPImageConverter()
+
         self.decon = None
         self.bleaching = None
 
@@ -52,7 +58,11 @@ class ImageProcessor:
         # TODO: Segmentierung über die Zeit?
         # TODO: specify which channel to segment first
 
-        seg_image = self.channel1[0]
+        seg_image = self.channel1[0].copy()
+
+        if(self.ATP_flag):
+            seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image)
+
         roi_coord = self.segmentation.give_coord(seg_image)
 
         self.nb_rois = len(roi_coord)
@@ -73,9 +83,10 @@ class ImageProcessor:
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
+            if self.ATP_flag:
+                roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2)
             self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
                                             ChannelImage(roi2, self.wl2)))
-
 
     def plot_rois(self, plotall=False):
 
@@ -167,6 +178,17 @@ class ImageProcessor:
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
         return self.ratio_list
+
+    def save_image_files(self, save_path):
+        """
+        Saves the image files within the cells of the celllist in the given path.
+        :param save_path: The target path.
+        """
+        i = 1
+        for cell in self.cell_list:
+            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            i += 1
 
 
 
