@@ -17,7 +17,7 @@ def main():
 
     Processor  = ImageProcessor(parameters)
     Processor.select_rois()
-    #Processor.plot_rois()
+    Processor.plot_rois()
 
 if __name__ == '__main__':
     main()

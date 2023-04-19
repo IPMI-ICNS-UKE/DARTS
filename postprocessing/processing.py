@@ -53,9 +53,7 @@ class ImageProcessor:
         # TODO: specify which channel to segment first
 
         seg_image = self.channel1[0]
-        print("yes2")
         roi_coord = self.segmentation.give_coord(seg_image)
-        print("yes3")
 
         self.nb_rois = len(roi_coord)
 
@@ -79,57 +77,79 @@ class ImageProcessor:
                                             ChannelImage(roi2, self.wl2)))
 
 
-    def plot_rois(self):
+    def plot_rois(self, plotall=False):
 
         def format_axes(fig):
             for i, ax in enumerate(fig.axes):
                 ax.set_axis_off()
 
-        cmap_min = self.image[0].min()
-        cmap_max = self.image[0].max()
-        wratios = np.ones(self.nb_rois+1)
-        wratios[1:] *= 0.5
+        if plotall:
+            cmap_min = self.image[0].min()
+            cmap_max = self.image[0].max()
+            wratios = np.ones(self.nb_rois+1)
+            wratios[1:] *= 0.5
 
-        fig = plt.figure(layout="constrained",figsize=((self.nb_rois+1)*2 , 3))
-        gs = GridSpec(2, self.nb_rois+1, figure=fig, width_ratios=wratios)
-        ax1 = fig.add_subplot(gs[:, 0])
-        ax1.imshow(self.image[0], vmin=cmap_min, vmax=cmap_max)
+            fig = plt.figure(layout="constrained",figsize=((self.nb_rois+1)*2 , 3))
+            gs = GridSpec(2, self.nb_rois+1, figure=fig, width_ratios=wratios)
+            ax1 = fig.add_subplot(gs[:, 0])
+            ax1.imshow(self.image[0], vmin=cmap_min, vmax=cmap_max)
 
-        for i in range(self.nb_rois):
-            ax2 = fig.add_subplot(gs[0, i+1])
-            ax3 = fig.add_subplot(gs[1, i+1])
-            ax2.imshow(self.cell_list[i].give_image_channel1()[0], vmin=cmap_min, vmax=cmap_max)
-            ax3.imshow(self.cell_list[i].give_image_channel2()[0], vmin=cmap_min, vmax=cmap_max)
-            [[xmin, ymin], [xmax, ymax]] = self.roi_minmax_list[i]
+            for i in range(self.nb_rois):
+                ax2 = fig.add_subplot(gs[0, i+1])
+                ax3 = fig.add_subplot(gs[1, i+1])
+                ax2.imshow(self.cell_list[i].give_image_channel1()[0], vmin=cmap_min, vmax=cmap_max)
+                ax3.imshow(self.cell_list[i].give_image_channel2()[0], vmin=cmap_min, vmax=cmap_max)
+                [[xmin, ymin], [xmax, ymax]] = self.roi_minmax_list[i]
 
-            w = xmax-xmin
-            h = ymax-ymin
-            os = self.image.shape[1]//2
-            ax1.add_patch(Rectangle((xmin, ymin), w, h,
-                                 edgecolor='blue',
-                                 facecolor='none',
-                                 lw=1))
-            ax1.add_patch(Rectangle((xmin+os, ymin), w, h,
-                                    edgecolor='red',
-                                    facecolor='none',
-                                    lw=1))
-            ax2.add_patch(Rectangle((0,0), w-1, h-1,
-                                    edgecolor='blue',
-                                    facecolor='none',
-                                    lw=1))
-            ax3.add_patch(Rectangle((0,0), w-1, h-1,
-                                    edgecolor='red',
-                                    facecolor='none',
-                                    lw=1))
-            ax1.text(xmin+0.5*w, ymin+0.5*h, str(i+1), va="center", ha="center", c="blue")
-            ax1.text((xmin+0.5*w)+os, ymin+0.5*h, str(i+1), va="center", ha="center", c="red")
+                w = xmax-xmin
+                h = ymax-ymin
+                os = self.x_max//2
+                ax1.add_patch(Rectangle((xmin, ymin), w, h,
+                                     edgecolor='blue',
+                                     facecolor='none',
+                                     lw=1))
+                ax1.add_patch(Rectangle((xmin+os, ymin), w, h,
+                                        edgecolor='red',
+                                        facecolor='none',
+                                        lw=1))
+                ax2.add_patch(Rectangle((0,0), w-1, h-1,
+                                        edgecolor='blue',
+                                        facecolor='none',
+                                        lw=1))
+                ax3.add_patch(Rectangle((0,0), w-1, h-1,
+                                        edgecolor='red',
+                                        facecolor='none',
+                                        lw=1))
+                ax1.text(xmin+0.5*w, ymin+0.5*h, str(i+1), va="center", ha="center", c="blue")
+                ax1.text((xmin+0.5*w)+os, ymin+0.5*h, str(i+1), va="center", ha="center", c="red")
 
-            ax2.text(0.5, 0.5, str(i+1), transform=ax2.transAxes, va="center", ha="center", c="blue")
-            ax3.text(0.5, 0.5, str(i+1), transform=ax3.transAxes, va="center", ha="center", c="red")
+                ax2.text(0.5, 0.5, str(i+1), transform=ax2.transAxes, va="center", ha="center", c="blue")
+                ax3.text(0.5, 0.5, str(i+1), transform=ax3.transAxes, va="center", ha="center", c="red")
 
-        format_axes(fig)
+            format_axes(fig)
 
-        plt.show(block=False)
+            plt.show(block=False)
+        else:
+            fig, ax = plt.subplots()
+            ax.imshow(self.image[0])
+            for i in range(self.nb_rois):
+                [[xmin, ymin], [xmax, ymax]] = self.roi_minmax_list[i]
+                w = xmax-xmin
+                h = ymax-ymin
+                os = self.x_max//2
+                ax.add_patch(Rectangle((xmin, ymin), w, h,
+                                        edgecolor='blue',
+                                        facecolor='none',
+                                        lw=1))
+                ax.add_patch(Rectangle((xmin + os, ymin), w, h,
+                                        edgecolor='red',
+                                        facecolor='none',
+                                        lw=1))
+            format_axes(fig)
+            plt.show(block=False)
+
+
+
         return fig
 
 
