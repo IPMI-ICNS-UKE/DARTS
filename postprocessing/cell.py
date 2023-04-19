@@ -11,10 +11,13 @@ class CellImage:
 
     def channel_registration(self):
         print("Here comes the channel registration")
-        x_offset, y_offset = self.cell_image_registrator.measure_mean_offset_optical_flow(self.channel1.return_image(),
-                                                                                          self.channel2.return_image())
+        x_offset, y_offset = self.cell_image_registrator.measure_mean_offset_optical_flow(self.channel1.return_image()[0],
+                                                                                          self.channel2.return_image()[0])
+        print("xoffset: " + str(x_offset))
+        print("yoffset: " + str(y_offset))
+
         tform = SimilarityTransform(translation=(-x_offset, -y_offset))
-        self.channel2.image = warp(self.channel2.return_image, tform)
+        self.channel2.image = warp(self.channel2.return_image(), tform)
 
     def calculate_ratio(self):
         ratio = self.channel1.return_image()/self.channel2.return_image()

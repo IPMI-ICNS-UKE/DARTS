@@ -24,7 +24,7 @@ if __name__ == '__main__':
     Processor = ImageProcessor(path_Ca_cAMP, parameters, ATP_flag)
     # Processor.save_image_files(save_path_unprocessed_ATP_images)  # save unprocessed cropped images
     Processor.start_postprocessing()
-    Processor.save_image_files(save_path_processed_ATP_images)  # save processed cropped images
+    Processor.save_image_files(save_path_Ca_cAMP)  # save processed cropped images
 
     fig = Processor.plot_rois()
     fig.savefig(save_path_processed_ATP_images + "rois.jpg")

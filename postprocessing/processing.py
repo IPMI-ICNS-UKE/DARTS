@@ -146,8 +146,8 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.get_imageROI_channel1().return_image())
-            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.get_imageROI_channel2().return_image())
+            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
 

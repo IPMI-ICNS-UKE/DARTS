@@ -54,8 +54,6 @@ class BaseSegmentation:
         coord_list2.sort(key=lambda coord_list2: coord_list2[2])
         return coord_list2
 
-
-
 class ATPImageConverter:
     """
     Converts ATP-sensor images so that they can be processed in the segmentation pipeline.
@@ -63,9 +61,10 @@ class ATPImageConverter:
 
     def prepare_ATP_image_for_segmentation(self, img):
         """
-
-        :param img:
-        :return:
+        Prepares fluorescence microscopy images of the membrane (loaded with an ATP-sensor) so that they can get
+        segmented by the Stardist algorithm.
+        :param img: the fluorescence microscopy image
+        :return: converted copy of the image (holes filled etc.)
         """
         original_image = img.copy()
         # smoothing and thresholding
