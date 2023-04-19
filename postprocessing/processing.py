@@ -1,14 +1,17 @@
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD
+from postprocessing.segmentation import SegmentationSD, ATPImageConverter
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
+
 class ImageProcessor:
-    def __init__(self, path, parameter_dict):
+    def __init__(self, path, parameter_dict, ATP_flag):
+        self.ATP_flag = ATP_flag
         self.image = io.imread(path)
+
         # separate image into 2 channels: left half and right half
         if self.image.ndim == 3:      # for time series
             self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -16,6 +19,7 @@ class ImageProcessor:
         elif self.image.ndim == 2:    # for static images
             self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
             self.y_max, self.x_max = self.image.shape
+
         self.parameters = parameter_dict
         self.cell_list = []
         self.ratio_list = []
@@ -24,6 +28,7 @@ class ImageProcessor:
         self.roi_coord_list = []
 
         self.segmentation = SegmentationSD()
+        self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
 
@@ -35,7 +40,11 @@ class ImageProcessor:
 
         # TODO: Segmentierung über die Zeit?
         # TODO: specify which channel to segment first
-        seg_image = self.channel1[0]
+        seg_image = self.channel1[0].copy()
+
+        if(self.ATP_flag):
+            seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image)
+
         roi_coord = self.segmentation.give_coord(seg_image)
 
         self.nb_rois = len(roi_coord)
@@ -56,9 +65,10 @@ class ImageProcessor:
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
+            if self.ATP_flag:
+                roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2)
             self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
                                             ChannelImage(roi2, self.wl2)))
-
 
     def plot_rois(self):
 
@@ -128,6 +138,17 @@ class ImageProcessor:
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
         return self.ratio_list
+
+    def save_image_files(self, save_path):
+        """
+        Saves the image files within the cells of the celllist in the given path.
+        :param save_path: The target path.
+        """
+        i = 1
+        for cell in self.cell_list:
+            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            i += 1
 
 
 
