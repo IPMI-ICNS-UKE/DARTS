@@ -1,0 +1,18 @@
+[inputoutput]
+
+path_to_input_channel1 = "Data/ATP/230221_ATPOS_Optimierung_1_w1Dual-CF-488-561-camera2-488.tif"
+path_to_input_channel2 = "Data/ATP/230221_ATPOS_Optimierung_1_w1Dual-CF-488-561-camera2-561.tif"
+path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
+
+path_to_output = ""
+
+[properties]
+
+# can either be "two-in-one" or "single"
+# (where in the latter, the two input channels are in separate files)
+
+channel_format = "single"
+wavelength_1 = 488
+wavelength_2 = 561
+ATP = true
+
