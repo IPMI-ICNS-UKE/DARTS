@@ -14,8 +14,8 @@ if __name__ == '__main__':
     }
 
     if ATP:
-        path_wavelength_1 = "Data/230302_ATPOS_Beladung_100x_488-5.tif"
-        path_wavelength_2 = "Data/230302_ATPOS_Beladung_100x_561-5.tif"
+        path_wavelength_1 = "Data/230221_ATPOS_Optimierung_1_w1Dual-CF-488-561-camera2-0001.tif"
+        path_wavelength_2 = "Data/230221_ATPOS_Optimierung_1_w2Dual-CF-561-488-camera1-0001.tif"
 
         save_path = "C:/Users/hueme/Desktop/testing/C-DARTS"
 
