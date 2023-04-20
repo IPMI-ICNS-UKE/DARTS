@@ -17,14 +17,14 @@ class CellImage:
                                                                                           self.channel2.return_image()[0])
         x_offset = round(x_offset)
         y_offset = round(y_offset)
-        tform = SimilarityTransform(translation=(y_offset, 0))  # TODO: klären ob Minus oder Plus als Vorzeichen
+        tform = SimilarityTransform(translation=(y_offset, 0))  # TO DO: klären ob Minus oder Plus als Vorzeichen
         self.channel2.image = warp(self.channel2.image, tform)
         frame_number = len(self.channel2.image)
 
-        tform = SimilarityTransform(translation=(x_offset, 0))  # TODO: klären ob Minus oder Plus als Vorzeichen
+        tform = SimilarityTransform(translation=(x_offset, 0))  # TO DO: klären ob Minus oder Plus als Vorzeichen
         channel_2_copy = self.channel2.image.copy()
         for frame in range(frame_number):
-            channel_2_copy[frame] = warp(self.channel2.return_image()[frame], tform) # TODO: output is 32bit image, differs from other channel
+            channel_2_copy[frame] = warp(self.channel2.return_image()[frame], tform) # TO DO: output is 32bit image, differs from other channel
         self.channel2.set_image(channel_2_copy)
 
     def calculate_ratio(self):

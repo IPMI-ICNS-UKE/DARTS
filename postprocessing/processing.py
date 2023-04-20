@@ -1,11 +1,7 @@
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
-
-# from postprocessing.segmentation import SegmentationSD, SegmentationATP
-
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
-
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
@@ -40,7 +36,8 @@ class ImageProcessor:
         self.ratio_list = []
         self.nb_rois = None
         self.roi_minmax_list = []
-        self.roi_coord_list = []
+        # self.roi_coord_list = []
+        self.roi_bounding_boxes = []
 
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
@@ -62,24 +59,24 @@ class ImageProcessor:
         if (self.ATP_flag):
             seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image)
 
-        roi_bounding_boxes, roi_coord = self.segmentation.give_coord(seg_image)
+        self.roi_bounding_boxes = self.segmentation.give_coord(seg_image)
 
-        self.nb_rois = len(roi_coord)
+        self.nb_rois = len(self.roi_bounding_boxes)
 
         # TODO: how to specify offset
         yoffset = .01 * self.y_max
         xoffset = .01 * self.x_max
 
         for i in range(self.nb_rois):
-            ymin = roi_bounding_boxes[i][0] #- yoffset # np.min(roi_coord[i, 0, :]) - yoffset
-            ymax = roi_bounding_boxes[i][1] #+ yoffset  # np.max(roi_coord[i, 0, :]) + yoffset
-            xmin = roi_bounding_boxes[i][2] #- xoffset # np.min(roi_coord[i, 1, :]) - xoffset
-            xmax = roi_bounding_boxes[i][3] #+ xoffset # np.max(roi_coord[i, 1, :]) + xoffset
+            ymin = self.roi_bounding_boxes[i][0]  # - yoffset
+            ymax = self.roi_bounding_boxes[i][1]  # + yoffset
+            xmin = self.roi_bounding_boxes[i][2]  # - xoffset
+            xmax = self.roi_bounding_boxes[i][3]  # + xoffset
 
             slice_roi = np.s_[:, int(ymin):int(ymax), int(xmin):int(xmax)]
             roi_m = [[xmin, ymin], [xmax, ymax]]
             self.roi_minmax_list.append(roi_m)
-            self.roi_coord_list.append(roi_coord)
+            # self.roi_coord_list.append(roi_coord[i])
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
@@ -164,7 +161,7 @@ class ImageProcessor:
     def start_postprocessing(self):
         self.select_rois()
         for cell in self.cell_list:
-            # cell.channel_registration() 
+            # cell.channel_registration()
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)

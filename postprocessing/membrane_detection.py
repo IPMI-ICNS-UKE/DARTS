@@ -1,10 +1,7 @@
 from __future__ import print_function
 
 
-
 class MembraneDetector:
-
-
     def cut_out_cells_from_ROIs (self, cropped_cell_images_tuple, cell_masks):
         """
         Applies the previously generated mask containing the cell area on the cropped cell image stack. Sometimes other cells

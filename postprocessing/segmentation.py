@@ -1,6 +1,5 @@
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
-import numpy as np
 from skimage import filters as filters, measure
 from skimage.morphology import area_closing
 from skimage.morphology import binary_erosion, binary_dilation, remove_small_holes
@@ -22,43 +21,12 @@ class SegmentationSD:
             miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
             cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
 
-        return cell_images_bounding_boxes, output_specs['coord']
+        return cell_images_bounding_boxes
 
-
-class BaseSegmentation:
-    def give_coord_channel1(self, input_image, seg_model):
-
-        # gives list of all coordinates of ROIS in channel1
-        coord_list1 = []
-        seg_img_channel1, output_specs_channel1 = seg_model.predict_instances(normalize(np.hsplit(input_image, 2)[0]),
-                                                                            prob_thresh=0.6, nms_thresh=0.2)
-        if len(output_specs_channel1['coord']) >= 0:
-            for coords in output_specs_channel1['coord']:
-                x_coords = coords[1]
-                y_coords = coords[0]
-                coord_list1.append(list(zip(x_coords, y_coords)))
-        coord_list1.sort(key=lambda coord_list1: coord_list1[2])
-        return coord_list1
-
-    def give_coord_channel2(self, input_image, seg_model):
-
-        # mit offset bestimmen
-        # gives list of all coordinates of ROIS in channel2
-        coord_list2 = []
-        seg_img_channel2, output_specs_channel2 = seg_model.predict_instances(normalize(np.hsplit(input_image, 2)[1]),
-                                                                            prob_thresh=0.6, nms_thresh=0.2)
-        if len(output_specs_channel2['coord']) >= 0:
-            for coords in output_specs_channel2['coord']:
-                x_coords = coords[1]
-                x_coords = [x + float(input_image.shape[1] / 2) for x in x_coords]
-                y_coords = coords[0]
-                coord_list2.append(list(zip(x_coords, y_coords)))
-        coord_list2.sort(key=lambda coord_list2: coord_list2[2])
-        return coord_list2
 
 class ATPImageConverter:
     """
-    Converts ATP-sensor images so that they can be processed in the segmentation pipeline.
+    Converts ATP-sensor images so that they the cell images can be segmented by Stardist properly.
     """
 
     def prepare_ATP_image_for_segmentation(self, img):
