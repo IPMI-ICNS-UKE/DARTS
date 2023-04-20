@@ -9,6 +9,7 @@ from skimage.morphology import binary_erosion, binary_dilation, remove_small_hol
 from skimage.segmentation import clear_border
 from skimage.util import invert
 
+from postprocessing.membrane_detection import MembraneDetector
 
 class SegmentationSD:
     def __init__(self, model='2D_versatile_fluo'):
@@ -51,6 +52,8 @@ class BaseSegmentation:
         return coord_list2
 
 class ATPImageConverter:
+    def __init__(self):
+        self.MembraneDetector = MembraneDetector()
     """
     Converts ATP-sensor images so that they can be processed in the segmentation pipeline.
     """
@@ -137,5 +140,5 @@ class ATPImageConverter:
         small_objects_removed = remove_small_holes(binary_image, area_threshold=1000, connectivity=2)
         membrane_mask = small_objects_removed == True
 
-        channel1 = self.apply_mask_on_image(channel1, membrane_mask, 0)
-        channel2 = self.apply_mask_on_image(channel2, membrane_mask, 0)
+        channel1 = self.MembraneDetector.apply_mask_on_image(channel1, membrane_mask, 0)
+        channel2 = self.MembraneDetector.apply_mask_on_image(channel2, membrane_mask, 0)
