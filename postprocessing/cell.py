@@ -1,5 +1,7 @@
 from skimage.transform import SimilarityTransform
 from skimage.transform import warp
+from skimage import registration
+import numpy as np
 
 class CellImage:
     def __init__(self, roi1, roi2):
@@ -13,11 +15,17 @@ class CellImage:
         print("Here comes the channel registration")
         x_offset, y_offset = self.cell_image_registrator.measure_mean_offset_optical_flow(self.channel1.return_image()[0],
                                                                                           self.channel2.return_image()[0])
-        print("xoffset: " + str(x_offset))
-        print("yoffset: " + str(y_offset))
+        x_offset = round(x_offset)
+        y_offset = round(y_offset)
+        tform = SimilarityTransform(translation=(y_offset, 0))  # TODO: klären ob Minus oder Plus als Vorzeichen
+        self.channel2.image = warp(self.channel2.image, tform)
+        frame_number = len(self.channel2.image)
 
-        tform = SimilarityTransform(translation=(-x_offset, -y_offset))
-        self.channel2.image = warp(self.channel2.return_image(), tform)
+        tform = SimilarityTransform(translation=(x_offset, 0))  # TODO: klären ob Minus oder Plus als Vorzeichen
+        channel_2_copy = self.channel2.image.copy()
+        for frame in range(frame_number):
+            channel_2_copy[frame] = warp(self.channel2.return_image()[frame], tform) # TODO: output is 32bit image, differs from other channel
+        self.channel2.set_image(channel_2_copy)
 
     def calculate_ratio(self):
         ratio = self.channel1.return_image()/self.channel2.return_image()
@@ -47,18 +55,11 @@ class ChannelImage:
     def return_image(self):
         return self.image
 
-    def return_membrane (self):
-        return self.membrane
-
     def getWavelength (self):
         return self.wavelength
 
-
-from skimage import io
-from skimage import registration
-import numpy as np
-from scipy.ndimage import shift
-from matplotlib import pyplot as plt
+    def set_image(self,img):
+        self.image = img
 
 
 class CellImageRegistrator:
@@ -69,8 +70,8 @@ class CellImageRegistrator:
         """
         Performs optical flow measurement with a reference image and a corresponding offset image.
 
-        :param reference_channel_first_frame: the reference image
-        :param offset_channel_first_frame:  the cell image that has an offset compared to the reference
+        :param channel_1_image: the reference image
+        :param channel_2_image:  the cell image that has an offset compared to the reference
         :return xoff:
         """
 

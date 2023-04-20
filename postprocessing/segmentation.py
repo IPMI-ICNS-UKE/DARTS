@@ -1,7 +1,7 @@
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 import numpy as np
-from skimage import filters as filters
+from skimage import filters as filters, measure
 from skimage.morphology import area_closing
 from skimage.morphology import binary_erosion, binary_dilation, remove_small_holes
 from skimage.segmentation import clear_border
@@ -15,13 +15,15 @@ class SegmentationSD:
     def give_coord(self, input_image):
         # gives list of all coordinates of ROIS in channel1
         seg_img, output_specs = self.model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2)
-       # if len(output_specs['coord']) >= 0:
-       #     for coords in output_specs['coord']:
-       #         x_coords = coords[1]
-       #         y_coords = coords[0]
-       #         coord_list.append(list(zip(x_coords, y_coords)))
-       # coord_list.sort(key=lambda coord_list1: coord_list1[2])
-        return output_specs['coord']
+        regions = measure.regionprops(seg_img)
+        cell_images_bounding_boxes = []
+
+        for region in regions:
+            miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
+            cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
+
+        return cell_images_bounding_boxes, output_specs['coord']
+
 
 class BaseSegmentation:
     def give_coord_channel1(self, input_image, seg_model):
@@ -70,12 +72,12 @@ class ATPImageConverter:
         # smoothing and thresholding
         img = filters.gaussian(img, 2)
         # triangle for 100x images, li for 63x images
-        img = img < filters.threshold_triangle(img)
-        # img = img < filters.threshold_li(img)
+        # img = img < filters.threshold_triangle(img)
+        img = img < filters.threshold_li(img)
 
         # remove small holes; practically removing small objects from the inside of the cell membrane
         # param area_threshold = 1000 for 100x images, 500 for 63x images
-        img = remove_small_holes(img, area_threshold=1000, connectivity=2)
+        img = remove_small_holes(img, area_threshold=500, connectivity=2)
 
         # invert image so that holes can be properly filled
         img = invert(img)
@@ -86,7 +88,7 @@ class ATPImageConverter:
 
         # Fill holes within the cell membranes in the binary image
         # param area_threshold = 200000 for 100x images, 100000 for 63x images
-        img = area_closing(img, area_threshold=200000, connectivity=2)
+        img = area_closing(img, area_threshold=100000, connectivity=2)
 
         # erode again after dilation (same number of iterations)
         img = self.binary_erode_n_times(img, number_of_iterations)
@@ -132,16 +134,31 @@ class ATPImageConverter:
         channel1 = channel_1_image.copy()
         channel2 = channel_2_image.copy()
 
-        gaussian = filters.gaussian(channel_1_image, 1.5)
-        binary_image = gaussian < filters.threshold_li(gaussian)
+        for frame in range(len(channel1)):
+            gaussian = filters.gaussian(channel_1_image[frame], 1.5)
+            binary_image = gaussian < filters.threshold_li(gaussian)
 
-        # remove small holes; practically removing small objects from the inside of the cell membrane
-        # inverted logic
-        # param area_threshold = 1000 for 100x images, 500 for 63x images
-        small_objects_removed = remove_small_holes(binary_image, area_threshold=1000, connectivity=2)
-        membrane_mask = small_objects_removed == True
-
-        channel1 = self.apply_mask_on_image(channel1, membrane_mask, 0)
-        channel2 = self.apply_mask_on_image(channel2, membrane_mask, 0)
+            # remove small holes; practically removing small objects from the inside of the cell membrane
+            # inverted logic
+            # param area_threshold = 1000 for 100x images, 500 for 63x images
+            small_objects_removed = remove_small_holes(binary_image, area_threshold=500, connectivity=2)
+            membrane_mask = small_objects_removed == True
+            channel1[frame] = self.apply_mask_on_image(channel1[frame], membrane_mask, 0)
+            channel2[frame] = self.apply_mask_on_image(channel2[frame], membrane_mask, 0)
 
         return channel1, channel2
+
+    def apply_mask_on_image(self, img, mask, n):
+        """
+        Applies a boolean mask on an image-array. Every value in the image that the mask is "True" for will be changed
+        to the parameter n.
+
+        :param img: the image-array to be modified
+        :param n: target value of the elements in the img that are "True" in the mask
+        :param mask: boolean mask which will be applied. Needs to have the same size as img
+        :return: returns the modified image
+        """
+        original_image = img
+
+        original_image[mask] = n
+        return original_image
