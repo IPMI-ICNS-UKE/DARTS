@@ -1,3 +1,5 @@
+import os
+
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
@@ -179,15 +181,20 @@ class ImageProcessor:
             self.ratio_list.append(cell.calculate_ratio())
         return self.ratio_list
 
-    def save_image_files(self, save_path):
+    def save_image_files(self):
         """
         Saves the image files within the cells of the celllist in the given path.
         :param save_path: The target path.
         """
+        save_path = self.parameters["inputoutput"]["path_to_output"]
+        os.makedirs(save_path, exist_ok=True)
+
+        fig = self.plot_rois()
+        fig.savefig(save_path + "rois.jpg")
         i = 1
         for cell in self.cell_list:
-            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(save_path + 'test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(save_path + 'test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
 
