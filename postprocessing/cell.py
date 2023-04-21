@@ -1,6 +1,7 @@
 from skimage.transform import SimilarityTransform
 from skimage.transform import warp
 
+
 class CellImage:
     def __init__(self, roi1, roi2):
         self.channel1 = roi1
@@ -11,8 +12,9 @@ class CellImage:
 
     def channel_registration(self):
         print("Here comes the channel registration")
-        x_offset, y_offset = self.cell_image_registrator.measure_mean_offset_optical_flow(self.channel1.return_image()[0],
-                                                                                          self.channel2.return_image()[0])
+        x_offset, y_offset = self.cell_image_registrator.measure_mean_offset_optical_flow(
+            self.channel1.return_image()[0],
+            self.channel2.return_image()[0])
         print("xoffset: " + str(x_offset))
         print("yoffset: " + str(y_offset))
 
@@ -20,7 +22,7 @@ class CellImage:
         self.channel2.image = warp(self.channel2.return_image(), tform)
 
     def calculate_ratio(self):
-        ratio = self.channel1.return_image()/self.channel2.return_image()
+        ratio = self.channel1.return_image() / self.channel2.return_image()
         return ratio
 
     def give_image_channel1(self):
@@ -35,10 +37,8 @@ class CellImage:
         self.steps_executed.append(step.give_name())
 
 
-
 class ChannelImage:
     def __init__(self, roi, wl):
-
         # ((y1, y2), (x1, x2)) = roi_coord
         # self.image = image[:, y1:y2, x1:x2]
         self.image = roi
@@ -47,10 +47,10 @@ class ChannelImage:
     def return_image(self):
         return self.image
 
-    def return_membrane (self):
+    def return_membrane(self):
         return self.membrane
 
-    def getWavelength (self):
+    def getWavelength(self):
         return self.wavelength
 
 
@@ -65,7 +65,7 @@ class CellImageRegistrator:
     def __init__(self):
         pass
 
-    def measure_mean_offset_optical_flow (self, channel_1_image, channel_2_image):
+    def measure_mean_offset_optical_flow(self, channel_1_image, channel_2_image):
         """
         Performs optical flow measurement with a reference image and a corresponding offset image.
 
@@ -107,5 +107,3 @@ class CellImageRegistrator:
         """
 
         return xoff, yoff
-
-

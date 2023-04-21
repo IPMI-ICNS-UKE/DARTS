@@ -1,13 +1,7 @@
-
-
-#from postprocessing.processing import ImageProcessor
-#from postprocessing.postprocessing import ATPImageProcessor, plot_cells
-#from stardist.models import StarDist2D
-import time
-import matplotlib.pyplot as plt
 from pathlib import Path
 import tomli
 from postprocessing.processing import ImageProcessor
+
 
 def main():
 
@@ -17,6 +11,7 @@ def main():
     Processor.select_rois()
     Processor.start_postprocessing()
     Processor.save_image_files()  # save processed cropped images
+
 
 if __name__ == '__main__':
     main()
