@@ -186,15 +186,15 @@ class ImageProcessor:
         Saves the image files within the cells of the celllist in the given path.
         :param save_path: The target path.
         """
-        save_path = self.parameters["inputoutput"]["path-to-output"]
+        save_path = self.parameters["inputoutput"]["path_to_output"]
         os.makedirs(save_path, exist_ok=True)
 
         fig = self.plot_rois()
         fig.savefig(save_path + "rois.jpg")
         i = 1
         for cell in self.cell_list:
-            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(save_path + 'test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(save_path + 'test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
 

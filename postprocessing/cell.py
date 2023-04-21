@@ -1,5 +1,7 @@
 from skimage.transform import SimilarityTransform
 from skimage.transform import warp
+from skimage import registration
+import numpy as np
 
 
 class CellImage:
@@ -54,11 +56,6 @@ class ChannelImage:
         return self.wavelength
 
 
-from skimage import io
-from skimage import registration
-import numpy as np
-from scipy.ndimage import shift
-from matplotlib import pyplot as plt
 
 
 class CellImageRegistrator:
