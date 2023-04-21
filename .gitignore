@@ -1,5 +1,7 @@
 
 config.toml
+*.tif
+*.jpg
 
 # Byte-compiled / optimized / DLL files
 /Data/
