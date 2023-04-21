@@ -29,3 +29,6 @@ def main():
     Processor.save_image_files(save_path_Ca_cAMP)  # save processed cropped images
     fig = Processor.plot_rois()
     fig.savefig(save_path_processed_ATP_images + "rois.jpg")
+
+if __name__ == '__main__':
+    main()
