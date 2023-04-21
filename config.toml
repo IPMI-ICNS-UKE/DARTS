@@ -11,8 +11,8 @@ path_to_output = ""
 # can either be "two-in-one" or "single"
 # (where in the latter, the two input channels are in separate files)
 
-channel_format = "single"
+channel_format = "two-in-one"
 wavelength_1 = 488
 wavelength_2 = 561
-ATP = true
+ATP = false
 
