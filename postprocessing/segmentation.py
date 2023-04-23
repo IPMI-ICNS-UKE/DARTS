@@ -1,3 +1,6 @@
+import math
+
+import matplotlib.pyplot as plt
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 from skimage import filters as filters, measure
@@ -5,23 +8,33 @@ from skimage.morphology import area_closing
 from skimage.morphology import binary_erosion, binary_dilation, remove_small_holes
 from skimage.segmentation import clear_border
 from skimage.util import invert
+import skimage.io as io
+import statistics
 
 class SegmentationSD:
     def __init__(self, model='2D_versatile_fluo'):
         self.model = StarDist2D.from_pretrained(model)
         pass
 
-    def give_coord(self, input_image):
+    def give_coord(self, input_image, estimated_cell_area):
         # gives list of all coordinates of ROIS in channel1
         seg_img, output_specs = self.model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2)
         regions = measure.regionprops(seg_img)
         cell_images_bounding_boxes = []
-
+                                                           # TO DO threshold needs to be optimised/generalised for resolution/cell type/ATP vs. Calcium images
+                                                           # TO DO for example 63x images of ATP-sensor loaded cells vs. 100x
+                                                           # TO DO cells diameter should be specified in pixels (=> user input: expected diameter in microns and scale)
         for region in regions:
-            miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
-            cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
+            if (0.5 * estimated_cell_area < region.area): #  < 1.5 * estimated_cell_area):
+                miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
+                cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
 
         return cell_images_bounding_boxes
+
+    def find_median_image_size(self, regions):
+        regions_areas = [r.area for r in regions]
+        return statistics.median(regions_areas)
+
 
 
 class ATPImageConverter:
@@ -29,40 +42,48 @@ class ATPImageConverter:
     Converts ATP-sensor images so that they the cell images can be segmented by Stardist properly.
     """
 
-    def prepare_ATP_image_for_segmentation(self, img):
+    def prepare_ATP_image_for_segmentation(self, img, estimated_cell_area):
         """
         Prepares fluorescence microscopy images of the membrane (loaded with an ATP-sensor) so that they can get
         segmented by the Stardist algorithm.
         :param img: the fluorescence microscopy image
+        :param estimated_cell_area: the estimated average area of the cells represented by the image in square-pixels
+
         :return: converted copy of the image (holes filled etc.)
         """
         original_image = img.copy()
         # smoothing and thresholding
-        img = filters.gaussian(img, 2)
-        # triangle for 100x images, li for 63x images
-        # img = img < filters.threshold_triangle(img)
-        img = img < filters.threshold_li(img)
+        img = filters.gaussian(img, 2)  # TO DO needs to be optimised
+        # triangle for 100x images, li for 63x images; test with mean algorithm
+        img = img < filters.threshold_mean(img)
+        # img = img < filters.threshold_li(img) # TO DO needs to be optimised
+        # img = img < filters.threshold_li(img)
 
-        # remove small holes; practically removing small objects from the inside of the cell membrane
+        # remove small holes; removes small particles
         # param area_threshold = 1000 for 100x images, 500 for 63x images
-        img = remove_small_holes(img, area_threshold=500, connectivity=2)
+        img = remove_small_holes(img, area_threshold=estimated_cell_area*0.2, connectivity=2)
+        # TO DO needs to be optimised
 
         # invert image so that holes can be properly filled
         img = invert(img)
 
         # dilate image to close holes in the membrane
-        number_of_iterations = 4
+        number_of_iterations = 4 # TO DO needs to be optimised
         img = self.binary_dilate_n_times(img, number_of_iterations)
 
-        # Fill holes within the cell membranes in the binary image
+        # Fill holes
         # param area_threshold = 200000 for 100x images, 100000 for 63x images
-        img = area_closing(img, area_threshold=100000, connectivity=2)
+        img = area_closing(img, area_threshold=estimated_cell_area*3, connectivity=2) # TO DO needs to be optimised dependent on cell membrane area in given resolution/magnification
+                                                                     # TO DO cell diameter in pixels?
 
         # erode again after dilation (same number of iterations)
         img = self.binary_erode_n_times(img, number_of_iterations)
 
+
         # remove objects on the edge
         img = clear_border(img)
+        io.imshow(img)
+        plt.show()
 
         # assign the value 255 to all black spots in the image and the value 0 to all white areas
         mask_positive = img == True
@@ -98,18 +119,18 @@ class ATPImageConverter:
             img_dilated = binary_dilation(img_dilated)
         return img_dilated
 
-    def segment_membrane_in_ATP_image_pair(self, channel_1_image, channel_2_image):
+    def segment_membrane_in_ATP_image_pair(self, channel_1_image, channel_2_image, estimated_cell_area):
         channel1 = channel_1_image.copy()
         channel2 = channel_2_image.copy()
 
         for frame in range(len(channel1)):
             gaussian = filters.gaussian(channel_1_image[frame], 1.5)
-            binary_image = gaussian < filters.threshold_li(gaussian)
+            binary_image = gaussian < filters.threshold_li(gaussian)  # TO DO needs to be optimised
 
             # remove small holes; practically removing small objects from the inside of the cell membrane
             # inverted logic
             # param area_threshold = 1000 for 100x images, 500 for 63x images
-            small_objects_removed = remove_small_holes(binary_image, area_threshold=500, connectivity=2)
+            small_objects_removed = remove_small_holes(binary_image, area_threshold=estimated_cell_area*0.1, connectivity=2)  # TO DO needs to be optimised
             membrane_mask = small_objects_removed == True
             channel1[frame] = self.apply_mask_on_image(channel1[frame], membrane_mask, 0)
             channel2[frame] = self.apply_mask_on_image(channel2[frame], membrane_mask, 0)
@@ -130,3 +151,12 @@ class ATPImageConverter:
 
         original_image[mask] = n
         return original_image
+
+"""
+# TEST AREA
+image_converter = ATPImageConverter()
+path = "/Users/dejan/Documents/GitHub/T-DARTS/Data/ATP/230221_ATPOS_Optimierung_1_w1Dual-CF-488-561-camera2-1-duplicate-10frames.tif"
+atp_image = io.imread(path)
+atp_image = atp_image[0]
+image_converter.prepare_ATP_image_for_segmentation(atp_image)
+"""

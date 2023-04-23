@@ -1,3 +1,5 @@
+import math
+
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
@@ -30,6 +32,9 @@ class ImageProcessor:
             elif self.channel1.ndim == 2:
                 self.image = np.concatenate((self.channel1, self.channel2), axis=1)
                 self.y_max, self.x_max = self.image.shape
+        self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
+        self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
+        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels)**2 * math.pi)
 
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
@@ -57,9 +62,9 @@ class ImageProcessor:
         seg_image = self.channel1[0].copy()
 
         if (self.ATP_flag):
-            seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image)
+            seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
 
-        self.roi_bounding_boxes = self.segmentation.give_coord(seg_image)
+        self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area)
 
         self.nb_rois = len(self.roi_bounding_boxes)
 
@@ -81,7 +86,7 @@ class ImageProcessor:
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
             if self.ATP_flag:
-                roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2)
+                roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2, self.estimated_cell_area)
             self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
                                             ChannelImage(roi2, self.wl2)))
 

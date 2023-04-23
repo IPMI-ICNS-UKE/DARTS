@@ -46,9 +46,6 @@ class CellImage:
 
 class ChannelImage:
     def __init__(self, roi, wl):
-
-        # ((y1, y2), (x1, x2)) = roi_coord
-        # self.image = image[:, y1:y2, x1:x2]
         self.image = roi
         self.wavelength = wl
 
@@ -84,12 +81,14 @@ class CellImageRegistrator:
         # find mean shift in x and y direction
         xoff = np.mean(flow_x)
         yoff = np.mean(flow_y)
-        print("x offset" + str(xoff))
-        print("y offset" + str(yoff))
+
 
         # round offsets
         xoff = round(xoff)
         yoff = round(yoff)
+
+        print("rounded x offset" + str(xoff))
+        print("rounded y offset" + str(yoff))
 
         """
         corrected_image = shift(offset_channel, shift=(-xoff, -yoff), mode='constant')
