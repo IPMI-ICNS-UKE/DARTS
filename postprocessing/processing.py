@@ -73,10 +73,10 @@ class ImageProcessor:
         xoffset = .01 * self.x_max
 
         for i in range(self.nb_rois):
-            ymin = self.roi_bounding_boxes[i][0]  # - yoffset
-            ymax = self.roi_bounding_boxes[i][1]  # + yoffset
-            xmin = self.roi_bounding_boxes[i][2]  # - xoffset
-            xmax = self.roi_bounding_boxes[i][3]  # + xoffset
+            ymin = self.roi_bounding_boxes[i][0]  - yoffset
+            ymax = self.roi_bounding_boxes[i][1]  + yoffset
+            xmin = self.roi_bounding_boxes[i][2]  - xoffset
+            xmax = self.roi_bounding_boxes[i][3]  + xoffset
 
             slice_roi = np.s_[:, int(ymin):int(ymax), int(xmin):int(xmax)]
             roi_m = [[xmin, ymin], [xmax, ymax]]
