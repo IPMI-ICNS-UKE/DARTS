@@ -1,5 +1,4 @@
 import math
-
 import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
@@ -61,34 +60,53 @@ class ImageProcessor:
 
         seg_image = self.channel1[0].copy()
 
-        if (self.ATP_flag):
+        if self.ATP_flag:
             seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
-
-        self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area)
-
+        self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
         self.nb_rois = len(self.roi_bounding_boxes)
 
-        # TODO: how to specify offset
-        yoffset = .01 * self.y_max
-        xoffset = .01 * self.x_max
+        # TO DO: how to specify offset
+        yoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
+        xoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
 
         for i in range(self.nb_rois):
-            ymin = self.roi_bounding_boxes[i][0]  - yoffset
-            ymax = self.roi_bounding_boxes[i][1]  + yoffset
-            xmin = self.roi_bounding_boxes[i][2]  - xoffset
-            xmax = self.roi_bounding_boxes[i][3]  + xoffset
+            ymin = self.roi_bounding_boxes[i][0] - yoffset
+            ymax = self.roi_bounding_boxes[i][1] + yoffset
+            xmin = self.roi_bounding_boxes[i][2] - xoffset
+            xmax = self.roi_bounding_boxes[i][3] + xoffset
+
+            ymin,ymax,xmin,xmax = self.correct_coordinates(ymin, ymax, xmin, xmax)
 
             slice_roi = np.s_[:, int(ymin):int(ymax), int(xmin):int(xmax)]
             roi_m = [[xmin, ymin], [xmax, ymax]]
+
             self.roi_minmax_list.append(roi_m)
             # self.roi_coord_list.append(roi_coord[i])
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
             if self.ATP_flag:
-                roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2, self.estimated_cell_area)
+                roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
+                                                                                         self.estimated_cell_area)
             self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
-                                            ChannelImage(roi2, self.wl2)))
+                                            ChannelImage(roi2, self.wl2),
+                                            self.segmentation))
+
+    def correct_coordinates(self,ymin,ymax,xmin,xmax):
+        ymin_corrected = ymin
+        ymax_corrected = ymax
+        xmin_corrected = xmin
+        xmax_corrected = xmax
+
+        if(ymin<0):
+            ymin_corrected = 0
+        if(ymax < 0):
+            ymax_corrected = 0
+        if(xmin < 0):
+            xmin_corrected = 0
+        if(xmax < 0):
+            xmax_corrected = 0
+        return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
     def plot_rois(self, plotall=False):
 
@@ -166,7 +184,7 @@ class ImageProcessor:
     def start_postprocessing(self):
         self.select_rois()
         for cell in self.cell_list:
-            # cell.channel_registration()
+            cell.channel_registration()
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
@@ -175,6 +193,11 @@ class ImageProcessor:
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
         return self.ratio_list
+
+    def add_scale_bars(self):
+        """
+        Adds scale bars to the cell image time series before saving them.
+        """
 
     def save_image_files(self, save_path):
         """
@@ -187,4 +210,8 @@ class ImageProcessor:
             io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
-
+    def save_ratio_image_files(self, save_path):
+        i = 1
+        for cell in self.cell_list:
+            io.imsave(save_path + '/ratio_image' + str(i) + '.tif', cell.return_ratio_image())
+            i += 1

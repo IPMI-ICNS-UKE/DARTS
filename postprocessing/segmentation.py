@@ -10,13 +10,15 @@ from skimage.segmentation import clear_border
 from skimage.util import invert
 import skimage.io as io
 import statistics
+from scipy import ndimage as ndi
+import pims
+
 
 class SegmentationSD:
     def __init__(self, model='2D_versatile_fluo'):
         self.model = StarDist2D.from_pretrained(model)
-        pass
 
-    def give_coord(self, input_image, estimated_cell_area):
+    def give_coord(self, input_image, estimated_cell_area, atp_flag):
         # gives list of all coordinates of ROIS in channel1
         seg_img, output_specs = self.model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2)
         regions = measure.regionprops(seg_img)
@@ -25,9 +27,10 @@ class SegmentationSD:
                                                            # TO DO for example 63x images of ATP-sensor loaded cells vs. 100x
                                                            # TO DO cells diameter should be specified in pixels (=> user input: expected diameter in microns and scale)
         for region in regions:
-            if (0.5 * estimated_cell_area < region.area): #  < 1.5 * estimated_cell_area):
+            if (not atp_flag or 0.5 * estimated_cell_area < region.area): #  < 1.5 * estimated_cell_area): # TO DO needs to be optimised
                 miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
                 cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
+        print(region)
 
         return cell_images_bounding_boxes
 
@@ -35,6 +38,9 @@ class SegmentationSD:
         regions_areas = [r.area for r in regions]
         return statistics.median(regions_areas)
 
+    def stardist_segmentation_in_frame(self, image_frame):
+        img_labels, img_details = self.model.predict_instances(normalize(image_frame))
+        return img_labels
 
 
 class ATPImageConverter:
@@ -55,7 +61,7 @@ class ATPImageConverter:
         # smoothing and thresholding
         img = filters.gaussian(img, 2)  # TO DO needs to be optimised
         # triangle for 100x images, li for 63x images; test with mean algorithm
-        img = img < filters.threshold_mean(img)
+        img = img < filters.threshold_triangle(img)
         # img = img < filters.threshold_li(img) # TO DO needs to be optimised
         # img = img < filters.threshold_li(img)
 
@@ -67,21 +73,18 @@ class ATPImageConverter:
         # invert image so that holes can be properly filled
         img = invert(img)
 
+        # remove objects on the edge
+        img = clear_border(img)
+
         # dilate image to close holes in the membrane
-        number_of_iterations = 4 # TO DO needs to be optimised
+        number_of_iterations = 3  # TO DO needs to be optimised
         img = self.binary_dilate_n_times(img, number_of_iterations)
 
         # Fill holes
-        # param area_threshold = 200000 for 100x images, 100000 for 63x images
-        img = area_closing(img, area_threshold=estimated_cell_area*3, connectivity=2) # TO DO needs to be optimised dependent on cell membrane area in given resolution/magnification
-                                                                     # TO DO cell diameter in pixels?
+        img = ndi.binary_fill_holes(img)
 
         # erode again after dilation (same number of iterations)
         img = self.binary_erode_n_times(img, number_of_iterations)
-
-
-        # remove objects on the edge
-        img = clear_border(img)
         io.imshow(img)
         plt.show()
 
