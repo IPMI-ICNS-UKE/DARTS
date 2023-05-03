@@ -27,11 +27,9 @@ class SegmentationSD:
                                                            # TO DO for example 63x images of ATP-sensor loaded cells vs. 100x
                                                            # TO DO cells diameter should be specified in pixels (=> user input: expected diameter in microns and scale)
         for region in regions:
-            if (not atp_flag or 0.5 * estimated_cell_area < region.area): #  < 1.5 * estimated_cell_area): # TO DO needs to be optimised
+            if (not atp_flag or (region.area > 1.2*estimated_cell_area)): #  < 1.5 * estimated_cell_area): # TO DO needs to be optimised
                 miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
                 cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
-        print(region)
-
         return cell_images_bounding_boxes
 
     def find_median_image_size(self, regions):
@@ -61,13 +59,13 @@ class ATPImageConverter:
         # smoothing and thresholding
         img = filters.gaussian(img, 2)  # TO DO needs to be optimised
         # triangle for 100x images, li for 63x images; test with mean algorithm
-        img = img < filters.threshold_triangle(img)
+        thresh = filters.threshold_triangle(img)
+        img = img < thresh
         # img = img < filters.threshold_li(img) # TO DO needs to be optimised
-        # img = img < filters.threshold_li(img)
 
         # remove small holes; removes small particles
         # param area_threshold = 1000 for 100x images, 500 for 63x images
-        img = remove_small_holes(img, area_threshold=estimated_cell_area*0.2, connectivity=2)
+        # img = remove_small_holes(img, area_threshold=estimated_cell_area*0.2, connectivity=2)
         # TO DO needs to be optimised
 
         # invert image so that holes can be properly filled
@@ -77,7 +75,7 @@ class ATPImageConverter:
         img = clear_border(img)
 
         # dilate image to close holes in the membrane
-        number_of_iterations = 3  # TO DO needs to be optimised
+        number_of_iterations = 4  # TO DO needs to be optimised
         img = self.binary_dilate_n_times(img, number_of_iterations)
 
         # Fill holes
@@ -85,8 +83,8 @@ class ATPImageConverter:
 
         # erode again after dilation (same number of iterations)
         img = self.binary_erode_n_times(img, number_of_iterations)
-        io.imshow(img)
-        plt.show()
+        # io.imshow(img)
+        # plt.show()
 
         # assign the value 255 to all black spots in the image and the value 0 to all white areas
         mask_positive = img == True
@@ -127,13 +125,13 @@ class ATPImageConverter:
         channel2 = channel_2_image.copy()
 
         for frame in range(len(channel1)):
-            gaussian = filters.gaussian(channel_1_image[frame], 1.5)
+            gaussian = filters.gaussian(channel_1_image[frame], 2)
             binary_image = gaussian < filters.threshold_li(gaussian)  # TO DO needs to be optimised
 
             # remove small holes; practically removing small objects from the inside of the cell membrane
             # inverted logic
             # param area_threshold = 1000 for 100x images, 500 for 63x images
-            small_objects_removed = remove_small_holes(binary_image, area_threshold=estimated_cell_area*0.1, connectivity=2)  # TO DO needs to be optimised
+            small_objects_removed = remove_small_holes(binary_image, area_threshold=estimated_cell_area*0.2, connectivity=2)  # TO DO needs to be optimised
             membrane_mask = small_objects_removed == True
             channel1[frame] = self.apply_mask_on_image(channel1[frame], membrane_mask, 0)
             channel2[frame] = self.apply_mask_on_image(channel2[frame], membrane_mask, 0)

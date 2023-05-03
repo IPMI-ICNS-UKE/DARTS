@@ -3,25 +3,46 @@ import pandas as pd
 import trackpy as tp
 import skimage
 from scipy.ndimage import shift
-
+import skimage.io as io
+import matplotlib.pyplot as plt
 
 class CellImage:
-    def __init__(self, roi1, roi2, segmentation):
+    def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
         self.ratio = None
         self.cell_image_registrator = CellImageRegistrator(segmentation)
+        self.atp_image_converter = atp_image_converter
+        self.atp_flag = atp_flag
+        self.estimated_cell_area = estimated_cell_area
+        self.more_than_one_trajectory = False
+        self.processing_flag = None
 
     def channel_registration(self):
-        print("Here comes the channel registration")
-        trajectory_channel_1 = self.cell_image_registrator.generate_trajectory(self.channel1.return_image())
-        trajectory_channel_2 = self.cell_image_registrator.generate_trajectory(self.channel2.return_image())
-        x_offset, y_offset = self.cell_image_registrator.calculate_channel_offset(trajectory_channel_1,
-                                                                                  trajectory_channel_2)
-        x_offset, y_offset = round(x_offset), round(y_offset)
+        if not self.atp_flag:
+            print("Here comes the channel registration")
+            channel_1_image = self.channel1.return_image().copy()
+            channel_2_image = self.channel2.return_image().copy()
 
-        self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
+            """
+            # if the cell image represents a cell loaded with the ATP-sensor, then each frame of each cell image needs to be
+            # modified so that frame-by-frame-segmentation works
+            if self.atp_flag:
+                for frame in range(len(channel_1_image)):
+                    channel_1_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_1_image[frame],
+                                                                                                     self.estimated_cell_area)
+                    channel_2_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_2_image[frame],
+                                                                                                     self.estimated_cell_area)
+            """
+
+            trajectory_channel_1 = self.cell_image_registrator.generate_trajectory(channel_1_image)
+            trajectory_channel_2 = self.cell_image_registrator.generate_trajectory(channel_2_image)
+            x_offset, y_offset = self.cell_image_registrator.calculate_channel_offset(trajectory_channel_1,
+                                                                                      trajectory_channel_2)
+            x_offset, y_offset = round(x_offset), round(y_offset)
+
+            self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
 
 
     def calculate_ratio(self, frame_number):
@@ -93,7 +114,7 @@ class CellImageRegistrator:
 
     def generate_trajectory(self, image_series):
         """
-        Generates a chronologically ordered list of coordinates of the centroid that is detected by StarDist. Looks
+        Generates a chronologically ordered list of coordinates of a specified point that is detected by StarDist. Looks
         like this: [[87, 402], [87, 402], [86, 402], [86, 402], [86, 402], [87, 402], ...]
 
         :param image_series: image series of one channel
@@ -109,40 +130,43 @@ class CellImageRegistrator:
         features = pd.DataFrame()
         for num, img in enumerate(image_series):
             for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
-                features = features._append([{# 'y': region.centroid[0],
-                                              # 'x': region.centroid[1],
-                                              'y': region.bbox[0],
-                                              'x': region.bbox[2],
-                                              'frame': num,
-                                              'bbox': region.bbox,
-                                              'area': region.area,
-                                              }, ])
-
-        tp.annotate(features[features.frame == (0)], image_series[0])
-
-        # tracking, linking of coordinates
-        search_range = 30
-        t = tp.link_df(features, search_range, memory=0)
-        t = tp.filtering.filter_stubs(t, threshold=number_of_frames)
-        # tp.plot_traj(t, superimpose=fluo_image[0])
-
-        cell_image_information = t.loc[t['particle'] == 0]
-        trajectory_coordinates = cell_image_information[['x', 'y']]
-        trajectory_coordinates_float = trajectory_coordinates.values.tolist()
+                if True: #  or region.area > 3000:  # TO DO needs to be optimised
+                    features = features._append([{# 'y': region.centroid[0],
+                                                  # 'x': region.centroid[1],
+                                                  'y': region.bbox[0],  # y coordinate of upper left corner of bbox (ymin)
+                                                  'x': region.bbox[1],  # x coordinate of upper left corner of bbox (xmin)
+                                                  'frame': num,
+                                                  'bbox': region.bbox,
+                                                  'area': region.area,
+                                                  }, ])
+        # more than one trajectory, when image preparation by atp image converter was not enough to fill the inside of
+        # the cell image
         trajectory_coordinates_rounded = []
-        for elem in trajectory_coordinates_float:
-            current_y = elem[0]
-            current_x = elem[1]
-            rounded_y = round(current_y)
-            rounded_x = round(current_x)
-            trajectory_coordinates_rounded.append([rounded_y, rounded_x])
+        if (not features.empty):
+            tp.annotate(features[features.frame == (0)], image_series[0])
+            # tracking, linking of coordinates
+            search_range = 30  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
+            t = tp.link_df(features, search_range, memory=0)
+            t = tp.filtering.filter_stubs(t, threshold=number_of_frames)
+            # tp.plot_traj(t, superimpose=fluo_image[0])
+
+            cell_image_information = t.loc[t['particle'] == 0]
+            trajectory_coordinates = cell_image_information[['x', 'y']]
+            trajectory_coordinates_float = trajectory_coordinates.values.tolist()
+            for elem in trajectory_coordinates_float:
+                current_y = elem[0]
+                current_x = elem[1]
+                rounded_y = round(current_y)
+                rounded_x = round(current_x)
+                trajectory_coordinates_rounded.append([rounded_y, rounded_x])
+        elif(features.empty):
+            pass
         return trajectory_coordinates_rounded
 
     def calculate_channel_offset(self, coords_channel_1, coords_channel_2):
         x_deviation = 0
         y_deviation = 0
         frame_number = len(coords_channel_1)
-        print ("frame number" + str(frame_number))
         for frame in range(frame_number):
             current_x_coord_channel_1 = coords_channel_1[frame][0]
             current_x_coord_channel_2 = coords_channel_2[frame][0]

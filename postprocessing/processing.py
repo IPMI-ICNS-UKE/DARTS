@@ -6,7 +6,7 @@ from postprocessing.segmentation import SegmentationSD, ATPImageConverter
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
-
+from pystackreg import StackReg
 
 class ImageProcessor:
     def __init__(self, parameter_dict):
@@ -33,7 +33,7 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
-        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels)**2 * math.pi)
+        self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
 
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
@@ -45,7 +45,6 @@ class ImageProcessor:
 
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
-
         self.decon = None
         self.bleaching = None
 
@@ -60,8 +59,11 @@ class ImageProcessor:
 
         seg_image = self.channel1[0].copy()
 
+
         if self.ATP_flag:
             seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
+
+
         self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
         self.nb_rois = len(self.roi_bounding_boxes)
 
@@ -85,12 +87,22 @@ class ImageProcessor:
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
+
+            """ # commented out for trouble shooting
             if self.ATP_flag:
                 roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
                                                                                          self.estimated_cell_area)
+            """
+
+            # io.imshow(roi1[0])
+            # plt.show()
+
             self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
                                             ChannelImage(roi2, self.wl2),
-                                            self.segmentation))
+                                            self.segmentation,
+                                            self.ATP_image_converter,
+                                            self.ATP_flag,
+                                            self.estimated_cell_area))
 
     def correct_coordinates(self,ymin,ymax,xmin,xmax):
         ymin_corrected = ymin
@@ -181,10 +193,37 @@ class ImageProcessor:
 
         return fig
 
+    def channel_registration(self):
+        """
+        Registration of the two channels based on affine transformation. The first channel is defined as the reference
+        channel, the second one as the offset channel. A transformation matrix is calculated by comparing the first frame
+        of each channel. The matrix is applied to each frame of the offset channel.
+        Assumption: The offset remains constant from the first to the last frame.
+        """
+        print("registration of channel 1 and channel 2")
+        image = self.channel1[0]
+        offset_image = self.channel2[0]
+        sr = StackReg(StackReg.AFFINE)
+        transformation_matrix = sr.register(image, offset_image)
+
+        for frame in range(len(self.channel2)):
+            self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
+
+        fig = plt.figure(figsize=(10, 10))
+        ax1 = fig.add_subplot(2, 2, 1)
+        ax1.imshow(offset_image, cmap='gray')
+        ax1.title.set_text('Input Image')
+        ax2 = fig.add_subplot(2, 2, 4)
+        ax2.imshow(self.channel2[0], cmap='gray')
+        ax2.title.set_text('Affine')
+        plt.show()
+
     def start_postprocessing(self):
+        # TO DO ggf. hier channel_registration mit dem ganzen Bild?
+        self.channel_registration()
         self.select_rois()
         for cell in self.cell_list:
-            cell.channel_registration()
+            # cell.channel_registration()
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
