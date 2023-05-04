@@ -14,7 +14,7 @@ path_to_output = ""
 # can either be "two-in-one" or "single"
 # (where in the latter, the two input channels are in separate files)
 
-channel_format = "two-in-one"
+channel_format = "single"
 wavelength_1 = 488
 wavelength_2 = 561
 # further information regarding the imaging:
@@ -25,4 +25,4 @@ estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but 
 cell_type = "CD4 positive murine T-cells"
 
 # TO DO Fura etc.
-ATP = false
+ATP = true
