@@ -3,6 +3,7 @@ import skimage.io as io
 import numpy as np
 from postprocessing.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
+from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
@@ -42,7 +43,7 @@ class ImageProcessor:
         self.roi_minmax_list = []
         # self.roi_coord_list = []
         self.roi_bounding_boxes = []
-
+        self.cell_tracker = CellTracker()
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
@@ -53,33 +54,17 @@ class ImageProcessor:
         self.processing_steps = [self.decon, self.bleaching]
 
     def select_rois(self):
-
-        # TODO: Segmentierung über die Zeit?
-        # TODO: specify which channel to segment first
-
         seg_image = self.channel1[0].copy()
-
 
         if self.ATP_flag:
             seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
 
-
-        self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
-        self.nb_rois = len(self.roi_bounding_boxes)
-
-        # TO DO: how to specify offset
-        yoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
-        xoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
+        offset = self.estimated_cell_diameter_in_pixels * 0.5
+        roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2,offset)
+        self.nb_rois = len(roi_list_cell_pairs)
 
         for i in range(self.nb_rois):
-            ymin = self.roi_bounding_boxes[i][0] - yoffset
-            ymax = self.roi_bounding_boxes[i][1] + yoffset
-            xmin = self.roi_bounding_boxes[i][2] - xoffset
-            xmax = self.roi_bounding_boxes[i][3] + xoffset
-
-            ymin,ymax,xmin,xmax = self.correct_coordinates(ymin, ymax, xmin, xmax)
-
-            slice_roi = np.s_[:, int(ymin):int(ymax), int(xmin):int(xmax)]
+            """
             roi_m = [[xmin, ymin], [xmax, ymax]]
 
             self.roi_minmax_list.append(roi_m)
@@ -87,18 +72,16 @@ class ImageProcessor:
 
             roi1 = self.channel1[slice_roi]
             roi2 = self.channel2[slice_roi]
+            """
+
 
             """ # commented out for trouble shooting
             if self.ATP_flag:
                 roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
                                                                                          self.estimated_cell_area)
             """
-
-            # io.imshow(roi1[0])
-            # plt.show()
-
-            self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
-                                            ChannelImage(roi2, self.wl2),
+            self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
+                                            ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
                                             self.segmentation,
                                             self.ATP_image_converter,
                                             self.ATP_flag,
@@ -218,12 +201,17 @@ class ImageProcessor:
         ax2.title.set_text('Affine')
         plt.show()
 
+    def save_registered_first_frames(self):
+        save_path = "/Users/dejan/Documents/Doktorarbeit/Python_save_path/"
+        io.imsave(save_path + '/channel_1_frame_1' + '.tif', self.channel1)
+        io.imsave(save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
+
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
         self.channel_registration()
+        # self.save_registered_first_frames()
         self.select_rois()
         for cell in self.cell_list:
-            # cell.channel_registration()
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
