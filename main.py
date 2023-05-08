@@ -30,3 +30,4 @@ if __name__ == '__main__':
     Processor.save_ratio_image_files(save_path_Ca_cAMP)
     # fig = Processor.plot_rois()
     fig.savefig(save_path_processed_ATP_images + "rois.jpg")
+    # fig.savefig(save_path_Ca_cAMP + "rois.jpg")
