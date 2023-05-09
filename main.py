@@ -19,7 +19,7 @@ if __name__ == '__main__':
     ##save_path_unprocessed_ATP_images = save_path_processed_ATP_images + "/raw_cell_images"
 
     # path_Ca_cAMP = "/Users/dejan/Documents/Doktorarbeit/Beispielbilder Segmentierung/170424 2.tif"
-    save_path_Ca_cAMP = "C:/Users/hueme/Desktop/testing/C-DARTS/Output/Ca_cAMP"
+    save_path_Ca_cAMP = "results/"
 
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
 

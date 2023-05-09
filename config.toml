@@ -3,7 +3,7 @@ path_to_input_channel1 = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/ATP/230302
 path_to_input_channel2 = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/ATP/230302_ATPOS_Beladung_100x_561_stack.tif"
 #path_to_input_channel1 = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/ATP/230221_ATPOS_Optimierung_1_w1Dual-CF-488-561-camera2.tif"
 #path_to_input_channel2 = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/ATP/230221_ATPOS_Optimierung_1_w2Dual-CF-561-488-camera1.tif"
-path_to_input_combined = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2_only_first_5_frames.tif"
+path_to_input_combined = "/Users/lwoelk/PycharmProjects/T-DARTS/Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2_10.tif"
 
 path_to_output = ""
 
