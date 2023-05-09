@@ -5,10 +5,10 @@ path_to_input_channel2 = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/ATP/230302
 #path_to_input_channel2 = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/ATP/230221_ATPOS_Optimierung_1_w2Dual-CF-561-488-camera1.tif"
 path_to_input_combined = "C:/Users/hueme/Desktop/testing/C-DARTS/Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2_only_first_5_frames.tif"
 
-path_to_output = ""
+path_to_output = " "
 
 [properties]
-# test
+# test test
 # can either be "two-in-one" or "single"
 # (where in the latter, the two input channels are in separate files)
 
