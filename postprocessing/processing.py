@@ -55,8 +55,8 @@ class ImageProcessor:
 
     def select_rois(self):
         if not self.ATP_flag:
-            offset = self.estimated_cell_diameter_in_pixels * 0.5
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, offset)
+            # offset = self.estimated_cell_diameter_in_pixels * 0.6
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2)
             self.nb_rois = len(roi_list_cell_pairs)
             for i in range(self.nb_rois):
                 """
@@ -111,21 +111,6 @@ class ImageProcessor:
 
 
 
-    def correct_coordinates(self,ymin,ymax,xmin,xmax):
-        ymin_corrected = ymin
-        ymax_corrected = ymax
-        xmin_corrected = xmin
-        xmax_corrected = xmax
-
-        if(ymin<0):
-            ymin_corrected = 0
-        if(ymax < 0):
-            ymax_corrected = 0
-        if(xmin < 0):
-            xmin_corrected = 0
-        if(xmax < 0):
-            xmax_corrected = 0
-        return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
     def plot_rois(self, plotall=False):
 
@@ -232,7 +217,7 @@ class ImageProcessor:
 
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
-        self.channel_registration()
+        # self.channel_registration()
         # self.save_registered_first_frames()
         self.select_rois()
         for cell in self.cell_list:

@@ -18,6 +18,7 @@ class CellImage:
         self.estimated_cell_area = estimated_cell_area
         self.more_than_one_trajectory = False
         self.processing_flag = None
+        self.cell_image_data = None
 
     def channel_registration(self):
         if not self.atp_flag:
