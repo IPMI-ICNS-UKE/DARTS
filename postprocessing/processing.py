@@ -220,6 +220,13 @@ class ImageProcessor:
 
         for frame in range(len(self.channel2)):
             self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
+
+        # for frame in range(len(self.channel2)):
+        #     image = self.channel1[frame]
+        #     offset_image = self.channel2[frame]
+        #     sr = StackReg(StackReg.RIGID_BODY)
+        #     transformation_matrix = sr.register(image, offset_image)
+        #     self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
         # self.channel2 = sr.transform(self.channel2, transformation_matrix)
 
         fig = plt.figure(figsize=(10, 10))
