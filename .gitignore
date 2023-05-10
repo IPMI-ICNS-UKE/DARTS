@@ -1,10 +1,10 @@
+config.toml
 # Byte-compiled / optimized / DLL files
 /Data/
 __pycache__/
 *.py[cod]
 *$py.class
 .idea/*
-config.toml
 # C extensions
 *.so
 
