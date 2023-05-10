@@ -11,14 +11,6 @@ from postprocessing.processing import ImageProcessor
 # def main():
 if __name__ == '__main__':
 
-    ##path_ATP = "/Users/dejan/Documents/Doktorarbeit/Beispielbilder Segmentierung/Owncloud/230302_ATPOS_Beladung_100x_488-4-2-frame-duplicated-image.tif"
-    # path_ATP_561 = "/Users/dejan/Documents/Doktorarbeit/Beispielbilder Segmentierung/Owncloud/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image.tif"
-
-
-    ##save_path_processed_ATP_images = "C:/Users/hueme/Desktop/testing/C-DARTS/Output/ATP/processed_ATP_images/"
-    ##save_path_unprocessed_ATP_images = save_path_processed_ATP_images + "/raw_cell_images"
-
-    # path_Ca_cAMP = "/Users/dejan/Documents/Doktorarbeit/Beispielbilder Segmentierung/170424 2.tif"
     save_path_Ca_cAMP = "C:/Users/hueme/Desktop/testing/C-DARTS/Output/Ca_cAMP"
 
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
