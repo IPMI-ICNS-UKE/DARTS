@@ -55,8 +55,8 @@ class ImageProcessor:
 
     def select_rois(self):
         if not self.ATP_flag:
-            offset = self.estimated_cell_diameter_in_pixels * 0.5
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, offset)
+            # offset = self.estimated_cell_diameter_in_pixels * 0.6
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2)
             self.nb_rois = len(roi_list_cell_pairs)
             for i in range(self.nb_rois):
                 """
@@ -79,15 +79,19 @@ class ImageProcessor:
                                                 self.segmentation,
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
-                                                self.estimated_cell_area))
+                                                self.estimated_cell_area,
+                                                roi_list_cell_pairs[i][2]))
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
+
             if self.ATP_flag:
                 seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
+
             self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
+            print(self.roi_bounding_boxes)
             self.nb_rois = len(self.roi_bounding_boxes)
-            yoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
-            xoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
+            yoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
+            xoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
 
             for i in range(self.nb_rois):
                 ymin = self.roi_bounding_boxes[i][0] - yoffset
@@ -235,12 +239,13 @@ class ImageProcessor:
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
         self.channel_registration()
-        # self.save_registered_first_frames()
+        self.save_registered_first_frames()
         self.select_rois()
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
+                # cell.measure_mean(0)
 
     def return_ratios(self):
         for cell in self.cell_list:
