@@ -49,7 +49,8 @@ class CellTracker:
                                                     'bbox': region.bbox,
                                                     'area': region.area,
                                                     'mean_intensity': region.intensity_mean,
-                                                    'image_intensity': region.image_intensity
+                                                    'image_intensity': region.image_intensity,
+                                                    'image filled': region.image_filled
                     }, ])
 
         if (not features.empty):
@@ -284,8 +285,9 @@ class CellTracker:
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
         Background subtraction included.
-        [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted),
-         (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted)
+        In addition, the tuple contains the cell image data from the pandas dataframe
+        [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted, cell_1_cellimage_data),
+         (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted, cell_2_cellimage_data)
          ...]
 
         :param channel1:
@@ -308,6 +310,6 @@ class CellTracker:
 
             roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
             roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted))
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset))
         return roi_cell_list
 

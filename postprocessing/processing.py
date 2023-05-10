@@ -79,15 +79,19 @@ class ImageProcessor:
                                                 self.segmentation,
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
-                                                self.estimated_cell_area))
+                                                self.estimated_cell_area,
+                                                roi_list_cell_pairs[i][2]))
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
+
             if self.ATP_flag:
                 seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
+
             self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
+            print(self.roi_bounding_boxes)
             self.nb_rois = len(self.roi_bounding_boxes)
-            yoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
-            xoffset = round(0.2 * self.estimated_cell_diameter_in_pixels)
+            yoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
+            xoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
 
             for i in range(self.nb_rois):
                 ymin = self.roi_bounding_boxes[i][0] - yoffset
@@ -111,6 +115,21 @@ class ImageProcessor:
 
 
 
+    def correct_coordinates(self,ymin,ymax,xmin,xmax):
+        ymin_corrected = ymin
+        ymax_corrected = ymax
+        xmin_corrected = xmin
+        xmax_corrected = xmax
+
+        if(ymin<0):
+            ymin_corrected = 0
+        if(ymax < 0):
+            ymax_corrected = 0
+        if(xmin < 0):
+            xmin_corrected = 0
+        if(xmax < 0):
+            xmax_corrected = 0
+        return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
     def plot_rois(self, plotall=False):
 
@@ -217,13 +236,14 @@ class ImageProcessor:
 
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
-        # self.channel_registration()
-        # self.save_registered_first_frames()
+        self.channel_registration()
+        self.save_registered_first_frames()
         self.select_rois()
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
+                # cell.measure_mean(0)
 
     def return_ratios(self):
         for cell in self.cell_list:
