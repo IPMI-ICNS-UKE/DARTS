@@ -26,4 +26,3 @@ class MembraneDetector:
             cleaned_rois.append((cropped_cell_images_tuple[tuple_i][0],
                                  cropped_cell_images_tuple[tuple_i][1]))
         return cleaned_rois
-

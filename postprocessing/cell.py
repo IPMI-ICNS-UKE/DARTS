@@ -7,6 +7,7 @@ import skimage.io as io
 import matplotlib.pyplot as plt
 from skimage import measure
 
+
 class CellImage:
     def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None):
         self.channel1 = roi1
@@ -109,7 +110,6 @@ class CellImage:
         mean = mean / frame_number
         return mean
 
-
 class ChannelImage:
     def __init__(self, roi, wl):
         self.image = roi
@@ -201,3 +201,4 @@ class CellImageRegistrator:
         for frame in range(len(channel)):
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
+

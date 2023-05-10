@@ -219,6 +219,7 @@ class ImageProcessor:
 
         for frame in range(len(self.channel2)):
             self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
+        # self.channel2 = sr.transform(self.channel2, transformation_matrix)
 
         fig = plt.figure(figsize=(10, 10))
         ax1 = fig.add_subplot(2, 2, 1)
@@ -226,6 +227,7 @@ class ImageProcessor:
         ax1.title.set_text('Input Image')
         ax2 = fig.add_subplot(2, 2, 4)
         ax2.imshow(self.channel2[0], cmap='gray')
+        # ax2.imshow(self.channel2, cmap='gray')
         ax2.title.set_text('Affine')
         plt.show()
 

@@ -5,9 +5,12 @@ config.toml
 __pycache__/
 *.py[cod]
 *$py.class
-.idea
+.idea/*
 # C extensions
 *.so
+
+
+config.toml
 
 # Distribution / packaging
 .Python

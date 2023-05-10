@@ -14,6 +14,8 @@ from scipy import ndimage as ndi
 import pims
 
 
+from postprocessing.membrane_detection import MembraneDetector
+
 class SegmentationSD:
     def __init__(self, model='2D_versatile_fluo'):
         self.model = StarDist2D.from_pretrained(model)
@@ -42,6 +44,8 @@ class SegmentationSD:
 
 
 class ATPImageConverter:
+    def __init__(self):
+        self.MembraneDetector = MembraneDetector()
     """
     Converts ATP-sensor images so that they the cell images can be segmented by Stardist properly.
     """
@@ -161,3 +165,4 @@ atp_image = io.imread(path)
 atp_image = atp_image[0]
 image_converter.prepare_ATP_image_for_segmentation(atp_image)
 """
+
