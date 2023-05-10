@@ -5,10 +5,11 @@ import skimage
 from scipy.ndimage import shift
 import skimage.io as io
 import matplotlib.pyplot as plt
+from skimage import measure
 
 
 class CellImage:
-    def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area):
+    def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
@@ -19,7 +20,22 @@ class CellImage:
         self.estimated_cell_area = estimated_cell_area
         self.more_than_one_trajectory = False
         self.processing_flag = None
-        self.cell_image_data = None
+        self.cell_image_data = cell_image_data
+
+    def measure_mean(self, frame):
+        label = skimage.measure.label(self.cell_image_data.iloc[frame]['image filled'])
+        io.imshow(label)
+        plt.show()
+        channel_1_frame_image = self.channel1.return_image()[frame]
+        channel_2_frame_image = self.channel2.return_image()[frame]
+        regionprops_channel_1 = measure.regionprops(label, intensity_image=channel_1_frame_image)
+        regionprops_channel_2 = measure.regionprops(label, intensity_image=channel_2_frame_image)
+        mean_channel1_frame = regionprops_channel_1[0].intensity_mean
+        mean_channel2_frame = regionprops_channel_2[0].intensity_mean
+        print("mean values")
+        print(str(mean_channel1_frame))
+        print(str(mean_channel2_frame))
+        return mean_channel1_frame, mean_channel2_frame
 
     def channel_registration(self):
         if not self.atp_flag:
