@@ -13,7 +13,7 @@ path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Bead
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-ab.tif"
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 4 - short_100_frames.tif"
 
-path_to_output = ""
+path_to_output = "results"
 
 [properties]
 
@@ -33,4 +33,3 @@ cell_type = "CD4 positive murine T-cells"
 # TO DO Fura etc.
 
 ATP = false
-
