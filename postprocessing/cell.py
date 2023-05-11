@@ -220,3 +220,4 @@ class CellImageRegistrator:
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
 
+testcommit = True
