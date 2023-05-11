@@ -35,7 +35,7 @@ class ImageProcessor:
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
         self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
-
+        self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
         self.ratio_list = []
@@ -80,7 +80,8 @@ class ImageProcessor:
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
-                                                roi_list_cell_pairs[i][2]))
+                                                roi_list_cell_pairs[i][2],
+                                                roi_list_cell_pairs[i][3]))
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
 
@@ -232,9 +233,8 @@ class ImageProcessor:
         plt.show()
 
     def save_registered_first_frames(self):
-        save_path = "/Users/dejan/Documents/Doktorarbeit/Python_save_path/"
-        io.imsave(save_path + '/channel_1_frame_1' + '.tif', self.channel1)
-        io.imsave(save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
+        io.imsave(self.save_path + '/channel_1_frame_1' + '.tif', self.channel1)
+        io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
@@ -245,7 +245,7 @@ class ImageProcessor:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                # cell.measure_mean(0)
+                cell.measure_mean_in_all_frames()
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -257,19 +257,19 @@ class ImageProcessor:
         Adds scale bars to the cell image time series before saving them.
         """
 
-    def save_image_files(self, save_path):
+    def save_image_files(self):
         """
         Saves the image files within the cells of the celllist in the given path.
         :param save_path: The target path.
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(self.save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(self.save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
-    def save_ratio_image_files(self, save_path):
+    def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-            io.imsave(save_path + '/ratio_image' + str(i) + '.tif', cell.return_ratio_image())
+            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.return_ratio_image())
             i += 1

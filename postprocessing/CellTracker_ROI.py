@@ -69,6 +69,8 @@ class CellTracker:
     def get_max_bbox_shape(self, bboxlist):
         """
         Searches the maximum width and height in a list of bounding boxes
+        and then expand the maximum width and height by 10 percent to prevent the cell touching the border of
+        the cropped image
         :param bboxlist:
         :return: max_delta_x: max width; max_delta_y: max height
         """
@@ -85,6 +87,10 @@ class CellTracker:
                 max_delta_x = delta_x
             if (delta_y > max_delta_y):
                 max_delta_y = delta_y
+
+        max_delta_x += max_delta_x * 0.1
+        max_delta_y += max_delta_x * 0.1
+
         return max_delta_x, max_delta_y
 
     def generate_frame_masks(self, dataframe, particle, image_series, half_max_delta_x, half_max_delta_y):
@@ -265,8 +271,14 @@ class CellTracker:
         cropped_image = image[slice_roi].copy()
 
         for frame in range(frame_number):
-            cropped_image[frame] = image[frame][roi_list[frame][2]:roi_list[frame][3],
-                                                roi_list[frame][0]:roi_list[frame][1]]
+            # print("ymin " + str(int(roi_list[frame][2])))
+            # print("ymax " + str(int(roi_list[frame][3])))
+            # print("xmin " + str(int(roi_list[frame][1])))
+            # print("xmax " + str(int(roi_list[frame][0])))
+
+            # ggf. statt int() die Methode round() verwenden?
+            cropped_image[frame] = image[frame][int(roi_list[frame][2]):int(roi_list[frame][3]),
+                                                int(roi_list[frame][0]):int(roi_list[frame][1])]
         return cropped_image
 
     def apply_masks_on_image_series(self, image_series, masks):
@@ -310,6 +322,6 @@ class CellTracker:
 
             roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
             roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset))
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
         return roi_cell_list
 
