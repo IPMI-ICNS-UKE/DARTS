@@ -81,7 +81,8 @@ class ImageProcessor:
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
-                                                roi_list_cell_pairs[i][2]))
+                                                roi_list_cell_pairs[i][2],
+                                                roi_list_cell_pairs[i][3]))
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
 
@@ -233,7 +234,6 @@ class ImageProcessor:
         plt.show()
 
     def save_registered_first_frames(self):
-        # save_path = "/Users/dejan/Documents/Doktorarbeit/Python_save_path/"
         io.imsave(self.save_path + '/channel_1_frame_1' + '.tif', self.channel1)
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
@@ -246,7 +246,7 @@ class ImageProcessor:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                # cell.measure_mean(0)
+                cell.measure_mean_in_all_frames()
 
     def return_ratios(self):
         for cell in self.cell_list:

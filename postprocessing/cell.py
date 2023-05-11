@@ -9,7 +9,7 @@ from skimage import measure
 
 
 class CellImage:
-    def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None):
+    def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None, frame_masks=None):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
@@ -21,21 +21,39 @@ class CellImage:
         self.more_than_one_trajectory = False
         self.processing_flag = None
         self.cell_image_data = cell_image_data
+        self.frame_masks = frame_masks
+        self.frame_number = len(self.channel1.return_image())
 
     def measure_mean(self, frame):
-        label = skimage.measure.label(self.cell_image_data.iloc[frame]['image filled'])
-        io.imshow(label)
-        plt.show()
+        """
+        Measures the mean value in both channels of the cell image in one given frame. Uses
+        the cell mask from the earlier segmentation.
+
+        :param frame:
+        :return: Mean value of cell image in cell 1 and 2 in specific frame
+        """
+        boolean_mask = np.invert(self.frame_masks[frame])
+        label = skimage.measure.label(boolean_mask)
+
         channel_1_frame_image = self.channel1.return_image()[frame]
         channel_2_frame_image = self.channel2.return_image()[frame]
+
         regionprops_channel_1 = measure.regionprops(label, intensity_image=channel_1_frame_image)
         regionprops_channel_2 = measure.regionprops(label, intensity_image=channel_2_frame_image)
         mean_channel1_frame = regionprops_channel_1[0].intensity_mean
         mean_channel2_frame = regionprops_channel_2[0].intensity_mean
-        print("mean values")
-        print(str(mean_channel1_frame))
-        print(str(mean_channel2_frame))
+        # print("mean values")
+        # print(str(mean_channel1_frame))
+        # print(str(mean_channel2_frame))
         return mean_channel1_frame, mean_channel2_frame
+
+    def measure_mean_in_all_frames(self):
+        """
+        Measures the mean value in each channel and in every frame.
+        :return:
+        """
+        for frame in range(self.frame_number):
+            self.measure_mean(frame)
 
     def channel_registration(self):
         if not self.atp_flag:
@@ -202,3 +220,4 @@ class CellImageRegistrator:
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
 
+testcommit = True
