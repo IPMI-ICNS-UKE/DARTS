@@ -10,6 +10,12 @@ from matplotlib.patches import Rectangle
 from pystackreg import StackReg
 from postprocessing.registration import Registration_SITK, Registration_SR
 
+try:
+    import SimpleITK as sitk
+except ImportError:
+    print("SimpleITK cannot be loaded")
+    sitk = None
+
 class ImageProcessor:
     def __init__(self, parameter_dict):
         self.parameters = parameter_dict
@@ -52,7 +58,7 @@ class ImageProcessor:
         self.bleaching = None
         #self.registration = None
 
-        if self.parameters["properties"]["registration_method"] == "SITK":
+        if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
         else:
             self.registration = Registration_SR()

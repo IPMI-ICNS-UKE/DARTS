@@ -4,8 +4,15 @@ from pathlib import Path
 import numpy as np
 import tomli
 from pystackreg import StackReg
-import SimpleITK as sitk
 from pystackreg import StackReg
+
+
+try:
+    import SimpleITK as sitk
+except ImportError:
+    print("SimpleITK cannot be loaded")
+    sitk = None
+
 
 
 
