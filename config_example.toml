@@ -32,6 +32,8 @@ cell_type = "CD4 positive murine T-cells"
 
 # TO DO Fura etc.
 
+registration_method = "SITK"
+registration_framebyframe = true
 
 ATP = false
 

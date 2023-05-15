@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 from pystackreg import StackReg
+from postprocessing.registration import Registration_SITK, Registration_SR
 
 class ImageProcessor:
     def __init__(self, parameter_dict):
@@ -49,6 +50,12 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
+        #self.registration = None
+
+        if self.parameters["properties"]["registration_method"] == "SITK":
+            self.registration = Registration_SITK()
+        else:
+            self.registration = Registration_SR()
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -239,7 +246,8 @@ class ImageProcessor:
 
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
-        self.channel_registration()
+        self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
+                                                               self.parameters["properties"]["registration_framebyframe"])
         self.save_registered_first_frames()
         self.select_rois()
         for cell in self.cell_list:
