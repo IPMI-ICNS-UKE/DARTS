@@ -9,6 +9,14 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 from pystackreg import StackReg
 from microaligner import FeatureRegistrator, transform_img_with_tmat
+from postprocessing.registration import Registration_SITK, Registration_SR
+
+try:
+    import SimpleITK as sitk
+except ImportError:
+    print("SimpleITK cannot be loaded")
+    sitk = None
+
 
 class ImageProcessor:
     def __init__(self, parameter_dict):
@@ -50,6 +58,12 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
+        #self.registration = None
+
+        if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
+            self.registration = Registration_SITK()
+        else:
+            self.registration = Registration_SR()
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -82,7 +96,8 @@ class ImageProcessor:
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
-                                                roi_list_cell_pairs[i][2]))
+                                                roi_list_cell_pairs[i][2],
+                                                roi_list_cell_pairs[i][3]))
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
 
@@ -216,33 +231,24 @@ class ImageProcessor:
         print("registration of channel 1 and channel 2")
         image = self.channel1[0]
         offset_image = self.channel2[0]
-        # sr = StackReg(StackReg.AFFINE)
-        # transformation_matrix = sr.register(image, offset_image)
+        sr = StackReg(StackReg.AFFINE)
+        transformation_matrix = sr.register(image, offset_image)
 
         # TODO: try to register/transform each image of the stack separately to its respective previous image
         # TODO: and use the already transformed previous image as reference for the next image
         # TODO: alternatively use a measure to check how the registration performs
         # TODO: check when if cell images are of different size which could lead to bad registration results
-        # for frame in range(len(self.channel2)):
-        #     self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
-
-        freg = FeatureRegistrator()
-        freg.ref_img = image
-        freg.mov_img = offset_image
-        transformation_matrix = freg.register()
-        img2_feature_reg_aligned = transform_img_with_tmat(offset_image, offset_image.shape, transformation_matrix)
         for frame in range(len(self.channel2)):
-            self.channel2[frame] = transform_img_with_tmat(self.channel2[frame], self.channel2[frame].shape,
-                                                           transformation_matrix)
+            self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
 
-
+        # freg = FeatureRegistrator()
+        # freg.ref_img = image
+        # freg.mov_img = offset_image
+        # transformation_matrix = freg.register()
+        # img2_feature_reg_aligned = transform_img_with_tmat(offset_image, offset_image.shape, transformation_matrix)
         # for frame in range(len(self.channel2)):
-        #     image = self.channel1[frame]
-        #     offset_image = self.channel2[frame]
-        #     sr = StackReg(StackReg.RIGID_BODY)
-        #     transformation_matrix = sr.register(image, offset_image)
-        #     self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
-        # self.channel2 = sr.transform(self.channel2, transformation_matrix)
+        #     self.channel2[frame] = transform_img_with_tmat(self.channel2[frame], self.channel2[frame].shape,
+        #                                                    transformation_matrix)
 
         fig = plt.figure(figsize=(10, 10))
         ax1 = fig.add_subplot(2, 2, 1)
@@ -255,20 +261,21 @@ class ImageProcessor:
         plt.show()
 
     def save_registered_first_frames(self):
-        # save_path = "/Users/dejan/Documents/Doktorarbeit/Python_save_path/"
         io.imsave(self.save_path + '/channel_1_frame_1' + '.tif', self.channel1)
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-        #TODO: ggf. hier channel_registration mit dem ganzen Bild?
-        self.channel_registration()
+        # self.channel_registration()
+        # TODO: ggf. hier channel_registration mit dem ganzen Bild?
+        self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
+                                                               self.parameters["properties"]["registration_framebyframe"])
         self.save_registered_first_frames()
         self.select_rois()
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                # cell.measure_mean(0)
+                cell.measure_mean_in_all_frames()
 
     def return_ratios(self):
         for cell in self.cell_list:
