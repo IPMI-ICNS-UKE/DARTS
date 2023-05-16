@@ -31,7 +31,7 @@ class CellTracker:
         :return: dataframe and set of particles for later
         """
         number_of_frames = len(image_series)
-        labels_for_each_frame = []
+        labels_for_each_frame = []  # segmented image respectively
 
         for frame in range(len(image_series)):
             label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
@@ -48,12 +48,14 @@ class CellTracker:
                                                     'frame': num,
                                                     'bbox': region.bbox,
                                                     'area': region.area,
+                                                    # Q: diameter could be relevant to check cell size
+                                                    'equivalent_diameter_area': region.equivalent_diameter_area,
                                                     'mean_intensity': region.intensity_mean,
                                                     'image_intensity': region.image_intensity,
                                                     'image filled': region.image_filled
                     }, ])
 
-        if (not features.empty):
+        if not features.empty:
             tp.annotate(features[features.frame == (0)], image_series[0])
             # tracking, linking of coordinates
             search_range = 30  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area

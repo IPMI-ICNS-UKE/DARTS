@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 from pystackreg import StackReg
+from microaligner import FeatureRegistrator, transform_img_with_tmat
 
 class ImageProcessor:
     def __init__(self, parameter_dict):
@@ -215,11 +216,25 @@ class ImageProcessor:
         print("registration of channel 1 and channel 2")
         image = self.channel1[0]
         offset_image = self.channel2[0]
-        sr = StackReg(StackReg.AFFINE)
-        transformation_matrix = sr.register(image, offset_image)
+        # sr = StackReg(StackReg.AFFINE)
+        # transformation_matrix = sr.register(image, offset_image)
 
+        # TODO: try to register/transform each image of the stack separately to its respective previous image
+        # TODO: and use the already transformed previous image as reference for the next image
+        # TODO: alternatively use a measure to check how the registration performs
+        # TODO: check when if cell images are of different size which could lead to bad registration results
+        # for frame in range(len(self.channel2)):
+        #     self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
+
+        freg = FeatureRegistrator()
+        freg.ref_img = image
+        freg.mov_img = offset_image
+        transformation_matrix = freg.register()
+        img2_feature_reg_aligned = transform_img_with_tmat(offset_image, offset_image.shape, transformation_matrix)
         for frame in range(len(self.channel2)):
-            self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
+            self.channel2[frame] = transform_img_with_tmat(self.channel2[frame], self.channel2[frame].shape,
+                                                           transformation_matrix)
+
 
         # for frame in range(len(self.channel2)):
         #     image = self.channel1[frame]
@@ -245,7 +260,7 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-        # TO DO ggf. hier channel_registration mit dem ganzen Bild?
+        #TODO: ggf. hier channel_registration mit dem ganzen Bild?
         self.channel_registration()
         self.save_registered_first_frames()
         self.select_rois()
