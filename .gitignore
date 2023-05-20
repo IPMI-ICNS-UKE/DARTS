@@ -1,5 +1,5 @@
-
 config.toml
+
 # Byte-compiled / optimized / DLL files
 /Data/
 __pycache__/
@@ -9,8 +9,6 @@ __pycache__/
 # C extensions
 *.so
 
-
-config.toml
 
 # Distribution / packaging
 .Python
