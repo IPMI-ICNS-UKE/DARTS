@@ -26,9 +26,10 @@ wavelength_2 = 561
 # further information regarding the imaging:
 laserpower_wavelength_1 = 0.6 # e.g. 60%, important for bleaching correction
 laserpower_wavelength_2 = 0.4 # 40%
-scale_microns_per_pixel = 0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
+scale_pixels_per_micron_left_microscope = 6.5359 # 6.5359 pixels per micrometer
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
 cell_type = "CD4 positive murine T-cells"
+
 
 # TO DO Fura etc.
 

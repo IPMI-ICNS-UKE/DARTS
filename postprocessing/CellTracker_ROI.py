@@ -307,6 +307,7 @@ class CellTracker:
         :return:
         """
         dataframe, particle_set = self.generate_trajectory(channel1)
+        # hier ggf. auch generate trajectory für channel2
 
         roi_cell_list = []
         for particle in particle_set:

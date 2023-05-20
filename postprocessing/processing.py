@@ -238,10 +238,15 @@ class ImageProcessor:
 
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
-        self.channel_registration()
-        self.save_registered_first_frames()
+        if self.ATP_flag:
+            self.channel_registration()
+            self.save_registered_first_frames()
         self.select_rois()
+        # self.plot_rois(plotall=False) # funktioniert noch nicht wieder
+
         for cell in self.cell_list:
+            if not self.ATP_flag:
+                cell.channel_registration()
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
