@@ -14,6 +14,7 @@ path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Bead
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 4 - short_100_frames.tif"
 
 path_to_output = "results"
+excel_filename = "output.xlsx"
 
 [properties]
 

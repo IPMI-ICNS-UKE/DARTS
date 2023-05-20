@@ -14,7 +14,7 @@ class CellImage:
         self.channel2 = roi2
         self.steps_executed = []
         self.ratio = None
-        self.cell_image_registrator = CellImageRegistrator(segmentation)
+        self.cell_image_registrator = None # CellImageRegistrator(segmentation)
         self.atp_image_converter = atp_image_converter
         self.atp_flag = atp_flag
         self.estimated_cell_area = estimated_cell_area
@@ -24,36 +24,78 @@ class CellImage:
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
 
-    def measure_mean(self, frame):
+    def measure_mean_ratio_in_all_frames(self):
         """
-        Measures the mean value in both channels of the cell image in one given frame. Uses
+        Measures the mean ratio of this cell image series in every frame.
+        :return:
+        """
+        for frame in range(self.frame_number):
+            self.measure_mean_ratio_single_frame(frame)
+
+    def measure_mean_ratio_single_frame(self, frame):
+        """
+        Measures the mean ratio in the ratio image series of this cell image in one given frame. Uses
         the cell mask from the earlier segmentation.
 
         :param frame:
-        :return: Mean value of cell image in cell 1 and 2 in specific frame
+        :return: Mean ratio of cell image in specific frame
         """
         boolean_mask = np.invert(self.frame_masks[frame])
         label = skimage.measure.label(boolean_mask)
 
-        channel_1_frame_image = self.channel1.return_image()[frame]
-        channel_2_frame_image = self.channel2.return_image()[frame]
+        # channel_1_frame_image = self.channel1.return_image()[frame]
+        # channel_2_frame_image = self.channel2.return_image()[frame]
 
-        regionprops_channel_1 = measure.regionprops(label, intensity_image=channel_1_frame_image)
-        regionprops_channel_2 = measure.regionprops(label, intensity_image=channel_2_frame_image)
-        mean_channel1_frame = regionprops_channel_1[0].intensity_mean
-        mean_channel2_frame = regionprops_channel_2[0].intensity_mean
+        regionprops_ratio = measure.regionprops(label, intensity_image=self.ratio[frame])
+        mean_ratio_frame = regionprops_ratio[0].intensity_mean
+
         # print("mean values")
         # print(str(mean_channel1_frame))
         # print(str(mean_channel2_frame))
-        return mean_channel1_frame, mean_channel2_frame
+        return mean_ratio_frame
 
-    def measure_mean_in_all_frames(self):
+
+    def generate_ratio_image_series(self):
+        ratio_image = self.channel1.return_image().astype(float)
+        frame_number = len(self.channel1.return_image())
+
+        for frame in range(frame_number):
+            ratio_image[frame] = self.calculate_ratio(frame)
+        self.ratio = ratio_image
+
+    def calculate_ratio(self, frame_number):
         """
-        Measures the mean value in each channel and in every frame.
+        Calculates the ratio of two corresponding cell images (same frame) and returns the ratio image
+        :param frame_number:
         :return:
         """
-        for frame in range(self.frame_number):
-            self.measure_mean(frame)
+        frame_channel_1 = (self.channel1.return_image())[frame_number] * 1.0
+        frame_channel_2 = (self.channel2.return_image())[frame_number] * 1.0
+
+        # ratio = np.divide(frame_channel_1, frame_channel_2)
+
+        # division of the two image arrays, but sets pixels to zero if divisor is zero
+        ratio = np.divide(frame_channel_1, frame_channel_2, out=np.zeros_like(frame_channel_1), where=frame_channel_2!=0)
+        # TO DO user needs to specify which channel is the dividend and which is the divisor
+        return ratio
+
+    def give_ratio_image(self):
+        """
+        Returns the ratio_image
+        """
+        return self.ratio
+
+    def give_image_channel1(self):
+        return self.channel1.return_image()
+
+    def give_image_channel2(self):
+        return self.channel2.return_image()
+
+    def execute_processing_step(self, step, parameters):
+        self.channel1 = step.execute(self.channel1, parameters)
+        self.channel2 = step.execute(self.channel2, parameters)
+        self.steps_executed.append(step.give_name())
+
 
     def channel_registration(self):
         if not self.atp_flag:
@@ -80,53 +122,16 @@ class CellImage:
 
             self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
 
+    def give_thresholded_image(self, frame, threshold):
+        thresholded_frame = frame > threshold
+        return thresholded_frame
 
-    def calculate_ratio(self, frame_number):
-        """
-        Calculates the ratio of two corresponding cell images (same frame) and returns the ratio image
-        :param frame_number:
-        :return:
-        """
-        frame_channel_1 = (self.channel1.return_image())[frame_number] * 1.0
-        frame_channel_2 = (self.channel2.return_image())[frame_number] * 1.0
 
-        # ratio = np.divide(frame_channel_1, frame_channel_2)
 
-        # division of the two image arrays, but sets pixels to zero if divisor is zero
-        ratio = np.divide(frame_channel_1, frame_channel_2, out=np.zeros_like(frame_channel_1), where=frame_channel_2!=0)
-        # TO DO user needs to specify which channel is the dividend and which is the divisor
-        return ratio
 
-    def return_ratio_image(self):
-        """
-        Calculates the ratio image for each cell image pair (each frame) and returns the ratio image
-        :return:
-        """
-        ratio_image = self.channel1.return_image().astype(float)
-        frame_number = len(self.channel1.return_image())
 
-        for frame in range(frame_number):
-            ratio_image[frame] = self.calculate_ratio(frame)
-        return ratio_image
 
-    def give_image_channel1(self):
-        return self.channel1.return_image()
 
-    def give_image_channel2(self):
-        return self.channel2.return_image()
-
-    def execute_processing_step(self, step, parameters):
-        self.channel1 = step.execute(self.channel1, parameters)
-        self.channel2 = step.execute(self.channel2, parameters)
-        self.steps_executed.append(step.give_name())
-
-    def measure_mean_ratio(self, ratio_image):
-        mean = 0
-        frame_number = len(ratio_image)
-        for frame in range(frame_number):
-            mean += np.mean(ratio_image[frame])
-        mean = mean / frame_number
-        return mean
 
 class ChannelImage:
     def __init__(self, roi, wl):

@@ -7,8 +7,8 @@ from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
-from pystackreg import StackReg
 from postprocessing.registration import Registration_SITK, Registration_SR
+from postprocessing import HotSpotDetection
 
 try:
     import SimpleITK as sitk
@@ -56,7 +56,8 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
-        #self.registration = None
+        self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
+                                                                self.parameters["inputoutput"]["excel_filename"])
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -229,11 +230,17 @@ class ImageProcessor:
                                                                self.parameters["properties"]["registration_framebyframe"])
         self.save_registered_first_frames()
         self.select_rois()
+
+        cell_number = 0  # TO DO needs to be optimsied
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                cell.measure_mean_in_all_frames()
+                cell.generate_ratio_image_series()
+                cell.measure_mean_ratio_in_all_frames()
+                dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 1.0, 6, 20)
+                self.hotspotdetector.save_dataframe_in_excel_file(dataframe, cell_number+1)
+                cell_number += 1
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -259,5 +266,5 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.return_ratio_image())
+            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
             i += 1
