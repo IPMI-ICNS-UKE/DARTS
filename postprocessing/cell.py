@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from skimage import measure
 
 
-
 class CellImage:
     def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None, frame_masks=None):
         self.channel1 = roi1
@@ -57,31 +56,29 @@ class CellImage:
             self.measure_mean(frame)
 
     def channel_registration(self):
-        print("Here comes the channel registration")
-        # channel_1_image = self.channel1.return_image().copy()
-        # channel_2_image = self.channel2.return_image().copy()
+        if not self.atp_flag:
+            print("Here comes the channel registration")
+            channel_1_image = self.channel1.return_image().copy()
+            channel_2_image = self.channel2.return_image().copy()
 
-        """
-        # if the cell image represents a cell loaded with the ATP-sensor, then each frame of each cell image needs to be
-        # modified so that frame-by-frame-segmentation works
-        if self.atp_flag:
-            for frame in range(len(channel_1_image)):
-                channel_1_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_1_image[frame],
-                                                                                                 self.estimated_cell_area)
-                channel_2_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_2_image[frame],
-                                                                                                 self.estimated_cell_area)
-        """
+            """
+            # if the cell image represents a cell loaded with the ATP-sensor, then each frame of each cell image needs to be
+            # modified so that frame-by-frame-segmentation works
+            if self.atp_flag:
+                for frame in range(len(channel_1_image)):
+                    channel_1_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_1_image[frame],
+                                                                                                     self.estimated_cell_area)
+                    channel_2_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_2_image[frame],
+                                                                                                     self.estimated_cell_area)
+            """
 
-        trajectory_channel_1 = self.cell_image_registrator.generate_trajectory(self.channel1.return_image().copy())
-        trajectory_channel_2 = self.cell_image_registrator.generate_trajectory(self.channel2.return_image().copy())
-        x_offset, y_offset = self.cell_image_registrator.calculate_channel_offset(trajectory_channel_1,
-                                                                                  trajectory_channel_2)
-        x_offset, y_offset = round(x_offset), round(y_offset)
-        print("offset x and y")
-        print(str(x_offset))
-        print(str(y_offset))
+            trajectory_channel_1 = self.cell_image_registrator.generate_trajectory(channel_1_image)
+            trajectory_channel_2 = self.cell_image_registrator.generate_trajectory(channel_2_image)
+            x_offset, y_offset = self.cell_image_registrator.calculate_channel_offset(trajectory_channel_1,
+                                                                                      trajectory_channel_2)
+            x_offset, y_offset = round(x_offset), round(y_offset)
 
-        self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
+            self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
 
 
     def calculate_ratio(self, frame_number):
@@ -169,10 +166,10 @@ class CellImageRegistrator:
         for num, img in enumerate(image_series):
             for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
                 if True: #  or region.area > 3000:  # TO DO needs to be optimised
-                    features = features._append([{'y': region.centroid[0],
-                                                  'x': region.centroid[1],
-                                                  # 'y': region.bbox[0],  # y coordinate of upper left corner of bbox (ymin)
-                                                  # 'x': region.bbox[1],  # x coordinate of upper left corner of bbox (xmin)
+                    features = features._append([{# 'y': region.centroid[0],
+                                                  # 'x': region.centroid[1],
+                                                  'y': region.bbox[0],  # y coordinate of upper left corner of bbox (ymin)
+                                                  'x': region.bbox[1],  # x coordinate of upper left corner of bbox (xmin)
                                                   'frame': num,
                                                   'bbox': region.bbox,
                                                   'area': region.area,
@@ -222,5 +219,3 @@ class CellImageRegistrator:
         for frame in range(len(channel)):
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
-
-testcommit = True

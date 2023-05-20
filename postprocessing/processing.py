@@ -8,6 +8,13 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 from pystackreg import StackReg
+from postprocessing.registration import Registration_SITK, Registration_SR
+
+try:
+    import SimpleITK as sitk
+except ImportError:
+    print("SimpleITK cannot be loaded")
+    sitk = None
 
 class ImageProcessor:
     def __init__(self, parameter_dict):
@@ -49,6 +56,12 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
+        #self.registration = None
+
+        if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
+            self.registration = Registration_SITK()
+        else:
+            self.registration = Registration_SR()
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -206,48 +219,17 @@ class ImageProcessor:
 
         return fig
 
-    def channel_registration(self):
-        """
-        Registration of the two channels based on affine transformation. The first channel is defined as the reference
-        channel, the second one as the offset channel. A transformation matrix is calculated by comparing the first frame
-        of each channel. The matrix is applied to each frame of the offset channel.
-        Assumption: The offset remains constant from the first to the last frame.
-        """
-        print("registration of channel 1 and channel 2")
-        image = self.channel1[0]
-        offset_image = self.channel2[0]
-        sr = StackReg(StackReg.AFFINE)
-        transformation_matrix = sr.register(image, offset_image)
-
-        for frame in range(len(self.channel2)):
-            self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
-        # self.channel2 = sr.transform(self.channel2, transformation_matrix)
-
-        fig = plt.figure(figsize=(10, 10))
-        ax1 = fig.add_subplot(2, 2, 1)
-        ax1.imshow(offset_image, cmap='gray')
-        ax1.title.set_text('Input Image')
-        ax2 = fig.add_subplot(2, 2, 4)
-        ax2.imshow(self.channel2[0], cmap='gray')
-        # ax2.imshow(self.channel2, cmap='gray')
-        ax2.title.set_text('Affine')
-        plt.show()
-
     def save_registered_first_frames(self):
         io.imsave(self.save_path + '/channel_1_frame_1' + '.tif', self.channel1)
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
         # TO DO ggf. hier channel_registration mit dem ganzen Bild?
-        if self.ATP_flag:
-            self.channel_registration()
-            self.save_registered_first_frames()
+        self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
+                                                               self.parameters["properties"]["registration_framebyframe"])
+        self.save_registered_first_frames()
         self.select_rois()
-        # self.plot_rois(plotall=False) # funktioniert noch nicht wieder
-
         for cell in self.cell_list:
-            if not self.ATP_flag:
-                cell.channel_registration()
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
