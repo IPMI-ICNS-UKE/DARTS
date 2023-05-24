@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 from pystackreg import StackReg
-from microaligner import FeatureRegistrator, transform_img_with_tmat
 from postprocessing.registration import Registration_SITK, Registration_SR
+from postprocessing import HotSpotDetection
 
 try:
     import SimpleITK as sitk
@@ -43,7 +43,7 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
-        self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
+        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
@@ -58,7 +58,8 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
-        #self.registration = None
+        self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
+                                                                self.parameters["inputoutput"]["excel_filename"])
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -102,7 +103,8 @@ class ImageProcessor:
             seg_image = self.channel1[0].copy()
 
             if self.ATP_flag:
-                seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
+                seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image,
+                                                                                        self.estimated_cell_area)
 
             self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
             print(self.roi_bounding_boxes)
@@ -130,21 +132,19 @@ class ImageProcessor:
                                                 self.ATP_flag,
                                                 self.estimated_cell_area))
 
-
-
-    def correct_coordinates(self,ymin,ymax,xmin,xmax):
+    def correct_coordinates(self, ymin, ymax, xmin, xmax):
         ymin_corrected = ymin
         ymax_corrected = ymax
         xmin_corrected = xmin
         xmax_corrected = xmax
 
-        if(ymin<0):
+        if (ymin < 0):
             ymin_corrected = 0
-        if(ymax < 0):
+        if (ymax < 0):
             ymax_corrected = 0
-        if(xmin < 0):
+        if (xmin < 0):
             xmin_corrected = 0
-        if(xmax < 0):
+        if (xmax < 0):
             xmax_corrected = 0
         return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
@@ -221,61 +221,28 @@ class ImageProcessor:
 
         return fig
 
-    def channel_registration(self):
-        """
-        Registration of the two channels based on affine transformation. The first channel is defined as the reference
-        channel, the second one as the offset channel. A transformation matrix is calculated by comparing the first frame
-        of each channel. The matrix is applied to each frame of the offset channel.
-        Assumption: The offset remains constant from the first to the last frame.
-        """
-        print("registration of channel 1 and channel 2")
-        image = self.channel1[0]
-        offset_image = self.channel2[0]
-        sr = StackReg(StackReg.AFFINE)
-        transformation_matrix = sr.register(image, offset_image)
-
-        # TODO: try to register/transform each image of the stack separately to its respective previous image
-        # TODO: and use the already transformed previous image as reference for the next image
-        # TODO: alternatively use a measure to check how the registration performs
-        # TODO: check when if cell images are of different size which could lead to bad registration results
-        for frame in range(len(self.channel2)):
-            self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
-
-        # freg = FeatureRegistrator()
-        # freg.ref_img = image
-        # freg.mov_img = offset_image
-        # transformation_matrix = freg.register()
-        # img2_feature_reg_aligned = transform_img_with_tmat(offset_image, offset_image.shape, transformation_matrix)
-        # for frame in range(len(self.channel2)):
-        #     self.channel2[frame] = transform_img_with_tmat(self.channel2[frame], self.channel2[frame].shape,
-        #                                                    transformation_matrix)
-
-        fig = plt.figure(figsize=(10, 10))
-        ax1 = fig.add_subplot(2, 2, 1)
-        ax1.imshow(offset_image, cmap='gray')
-        ax1.title.set_text('Input Image')
-        ax2 = fig.add_subplot(2, 2, 4)
-        ax2.imshow(self.channel2[0], cmap='gray')
-        # ax2.imshow(self.channel2, cmap='gray')
-        ax2.title.set_text('Affine')
-        plt.show()
-
     def save_registered_first_frames(self):
         io.imsave(self.save_path + '/channel_1_frame_1' + '.tif', self.channel1)
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-        # self.channel_registration()
-        # TODO: ggf. hier channel_registration mit dem ganzen Bild?
+        # TO DO ggf. hier channel_registration mit dem ganzen Bild?
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
-                                                               self.parameters["properties"]["registration_framebyframe"])
+                                                               self.parameters["properties"][
+                                                                   "registration_framebyframe"])
         self.save_registered_first_frames()
         self.select_rois()
+
+        cell_number = 0  # TO DO needs to be optimsied
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                cell.measure_mean_in_all_frames()
+                cell.generate_ratio_image_series()
+                cell.measure_mean_ratio_in_all_frames()
+                dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 1.0, 6, 20)
+                self.hotspotdetector.save_dataframe_in_excel_file(dataframe, cell_number + 1)
+                cell_number += 1
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -301,5 +268,5 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.return_ratio_image())
+            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
             i += 1
