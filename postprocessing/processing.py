@@ -238,11 +238,11 @@ class ImageProcessor:
                     step.run(cell, self.parameters)
             cell.generate_ratio_image_series()
             cell.measure_mean_ratio_in_all_frames()
-            dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 0.7, 6, 20)
-            dataframes_list.append(dataframe)
-
-        self.hotspotdetector.save_dataframes(dataframes_list, self.save_path + "/" +
-                                                              self.parameters["inputoutput"]["excel_filename"])
+            # dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 0.7, 6, 20)
+            measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(), 0.7, 6, 20)
+            # dataframes_list.append(dataframe)
+            dataframes_list.append(measurement_microdomains)
+        self.hotspotdetector.save_dataframes(dataframes_list)
 
     def return_ratios(self):
         for cell in self.cell_list:

@@ -30,6 +30,7 @@ laserpower_wavelength_2 = 0.4 # 40%
 scale_microns_per_pixel = 0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
 cell_type = "CD4 positive murine T-cells"
+frames_per_second = 1 # how many frames are being measured per second?
 
 # TO DO Fura etc.
 

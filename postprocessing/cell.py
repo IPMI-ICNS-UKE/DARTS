@@ -23,6 +23,12 @@ class CellImage:
         self.cell_image_data = cell_image_data
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
+        self.cell_is_preactivated = False
+
+    def is_cell_preactivated(self, ratio_activation_threshold):
+        cell_preactivated = self.measure_mean_ratio_single_frame(0) > ratio_activation_threshold
+        self.cell_is_preactivated = cell_preactivated
+        return cell_preactivated
 
     def measure_mean_ratio_in_all_frames(self):
         """
