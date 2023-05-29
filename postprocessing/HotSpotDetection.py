@@ -1,11 +1,15 @@
-import numpy as np
+
 import pandas as pd
 import trackpy as tp
 import skimage
+import skimage.io as io
+import numpy as np
+import matplotlib.pyplot as plt
 
 class HotSpotDetector():
     def __init__(self, save_path, filename):
         self.excelwriter = pd.ExcelWriter(path=save_path + "/" + filename)
+        self.filename = filename
 
     def threshold_image_frame(self, threshold, image_series, frame):
         thresholded_frame = image_series[frame] > threshold
@@ -30,11 +34,11 @@ class HotSpotDetector():
             labeled_image_series_list.append(self.label_thresholded_image_frame(thresholded_image_series[frame]))
         return labeled_image_series_list
 
-    def give_regions_in_labeled_image_frame(self, labeled_frame):
-        regions = skimage.measure.regionprops(labeled_frame)
+    def give_regions_in_labeled_image_frame(self, labeled_frame, image_series_frame):
+        regions = skimage.measure.regionprops(labeled_frame, intensity_image=image_series_frame)
         return regions
 
-    def exclude_small_and_large_areas(self,raw_regions_in_frame, lower_limit_area, upper_limit_area):
+    def exclude_small_and_large_areas(self, raw_regions_in_frame, lower_limit_area, upper_limit_area):
         regions = [region for region in raw_regions_in_frame if lower_limit_area < region.area < upper_limit_area]
         return regions
 
@@ -69,8 +73,8 @@ class HotSpotDetector():
             particle_set = set(dataframe['particle'].tolist())
             if len(dataframe) > 0:
                 tp.plot_traj(dataframe, superimpose=image_series[0])
-        print("features")
-        print(features)
+        # print("features")
+        # print(features)
         return dataframe, particle_set
 
 
@@ -78,18 +82,28 @@ class HotSpotDetector():
         subset = dataframe.loc[dataframe['frame'] == frame]
         return len(subset)
 
-    def save_dataframe_in_excel_file(self,dataframe,sheet_number):
+    def save_dataframe_in_excel_file(self, dataframe, sheet_number):
         if dataframe is not None:
-            dataframe.to_excel(self.excelwriter,sheet_name="Cell_image_" + str(sheet_number))
+            pass
 
+    def save_dataframes(self, dataframes_list, file_path_and_name):
+        # Write to Multiple Sheets
+        with pd.ExcelWriter(file_path_and_name) as writer:
+            index = 0
+            for dataframe in dataframes_list:
+                dataframe.to_excel(writer, sheet_name="Sheet_" + str(index))
+                index += 1
 
 
 """
 image_series = io.imread ("/Users/dejan/Documents/GitHub/T-DARTS/results/ratio_image1.tif")
 
-hotspotdecector = HotSpotDetector()
-dataframe, particle_set = hotspotdecector.track_hotspots(image_series, 1.0, 6,20)
-print("hotspot information")
-print("number of detected hotspots ",str(len(particle_set)))
+hotspotdecector = HotSpotDetector(save_path="/Users/dejan/Documents/GitHub/T-DARTS/results/", filename="output.xlsx")
+thresholded_image = hotspotdecector.threshold_image_frame(0.9,image_series,0)
+labeled_frame = hotspotdecector.label_thresholded_image_frame(thresholded_image)
+
+dataframe, particle_set = hotspotdecector.track_hotspots(image_series,0.9,6,20)
+
+# dataframe, particle_set = hotspotdecector.track_hotspots(image_series, 1.0, 6,20)
 """
 
