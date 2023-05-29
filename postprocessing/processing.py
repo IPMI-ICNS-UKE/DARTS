@@ -88,8 +88,8 @@ class ImageProcessor:
                     roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
                                                                                              self.estimated_cell_area)
                 """
-                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
-                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
+                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1, roi_list_cell_pairs[i][4]),
+                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2, roi_list_cell_pairs[i][5]),
                                                 self.segmentation,
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,

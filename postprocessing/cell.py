@@ -129,9 +129,10 @@ class CellImage:
         return mean
 
 class ChannelImage:
-    def __init__(self, roi, wl):
+    def __init__(self, roi, wl, original_image=None):
         self.image = roi
         self.wavelength = wl
+        self.original_image = original_image
 
     def return_image(self):
         return self.image

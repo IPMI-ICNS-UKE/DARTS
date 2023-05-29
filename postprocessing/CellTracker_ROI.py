@@ -322,6 +322,7 @@ class CellTracker:
 
             roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
             roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,
+                                  frame_masks, roi1, roi2))
         return roi_cell_list
 
