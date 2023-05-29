@@ -121,11 +121,15 @@ class HotSpotDetector():
         # Write to Multiple Sheets
         with pd.ExcelWriter(self.save_path + "/" + self.filename) as writer:
             index = 0
+
             for dataframe in dataframes_list:
-                dataframe.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index), index=False)
-                number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                number_of_microdomains.to_excel(writer, sheet_name="Cell_Ratio_No_of_Microdomains_" + str(index), index=False)
-                index += 1
+                if (not dataframe.empty):
+                    dataframe.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index), index=False)
+                    print("dataframe")
+                    print(dataframe)
+                    number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
+                    number_of_microdomains.to_excel(writer, sheet_name="Cell_RatioImage" + str(index) + "_Microdomains", index=False)
+                    index += 1
 
 
 """

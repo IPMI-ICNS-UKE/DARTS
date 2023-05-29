@@ -71,7 +71,7 @@ class ImageProcessor:
     def select_rois(self):
         if not self.ATP_flag:
             # offset = self.estimated_cell_diameter_in_pixels * 0.6
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2)
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max)
             self.nb_rois = len(roi_list_cell_pairs)
             for i in range(self.nb_rois):
                 """
