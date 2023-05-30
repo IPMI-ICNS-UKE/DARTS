@@ -53,6 +53,7 @@ class ImageProcessor:
         self.roi_minmax_list = []
         # self.roi_coord_list = []
         self.roi_bounding_boxes = []
+        # self.resize_box_factor = self.parameters["properties"]["resize_box_factor"]
         self.cell_tracker = CellTracker()
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
@@ -241,7 +242,7 @@ class ImageProcessor:
                 cell.generate_ratio_image_series()
                 cell.measure_mean_ratio_in_all_frames()
                 dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 1.0, 6, 20)
-                self.hotspotdetector.save_dataframe_in_excel_file(dataframe, cell_number + 1)
+                self.hotspotdetector.save_dataframe_in_excel_file(dataframe, cell_number + 1, self.save_path)
                 cell_number += 1
 
     def return_ratios(self):

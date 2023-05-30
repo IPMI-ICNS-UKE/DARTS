@@ -7,6 +7,7 @@ import skimage.io as io
 import numpy as np
 from scipy.ndimage import shift
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 class CellTracker:
@@ -33,9 +34,12 @@ class CellTracker:
         number_of_frames = len(image_series)
         labels_for_each_frame = []  # segmented image respectively
 
+        counter = 1
         for frame in range(len(image_series)):
+            print("Segmentation of frame: ", counter)
             label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
             labels_for_each_frame.append(label_in_frame)
+            counter = counter + 1
 
         features = pd.DataFrame()
         for num, img in enumerate(image_series):
@@ -90,8 +94,10 @@ class CellTracker:
             if (delta_y > max_delta_y):
                 max_delta_y = delta_y
 
-        max_delta_x += max_delta_x * 0.1
-        max_delta_y += max_delta_x * 0.1
+        # if resize_box_factor is not None:
+        #     max_delta_x += max_delta_x * resize_box_factor
+        #     max_delta_y += max_delta_x * resize_box_factor
+        # print(max_delta_x, max_delta_y)
 
         return max_delta_x, max_delta_y
 
@@ -237,6 +243,15 @@ class CellTracker:
                 difference = max_delta_y - (y_max - y_min)
                 y_max = y_max + difference
 
+            # print(x_min, x_max, y_min, y_max)
+            # x_min -= 0.15 * (x_max - x_min)
+            # x_max += 0.15 * (x_max - x_min)
+            # y_min -= 0.15 * (y_max - y_min)
+            # y_max += 0.15 * (y_max - y_min)
+            #
+            # max_delta_x = x_max - x_min
+            # max_delta_y = y_max - y_min
+
             roi_list.append((x_min, x_max, y_min, y_max))
 
         return roi_list
@@ -278,6 +293,7 @@ class CellTracker:
             # print("xmin " + str(int(roi_list[frame][1])))
             # print("xmax " + str(int(roi_list[frame][0])))
 
+            print(int(roi_list[frame][2]), int(roi_list[frame][3]), int(roi_list[frame][0]), int(roi_list[frame][1]))
             # ggf. statt int() die Methode round() verwenden?
             cropped_image[frame] = image[frame][int(roi_list[frame][2]):int(roi_list[frame][3]),
                                                 int(roi_list[frame][0]):int(roi_list[frame][1])]
@@ -308,11 +324,12 @@ class CellTracker:
         :param channel2:
         :return:
         """
+        print("Get rois")
         dataframe, particle_set = self.generate_trajectory(channel1)
         # hier ggf. auch generate trajectory für channel2
 
         roi_cell_list = []
-        for particle in particle_set:
+        for particle in tqdm(particle_set):
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
             coords_list = self.get_coords_list_for_particle(particle, dataframe)
             bbox_list = self.get_bboxes_list(particle, dataframe)

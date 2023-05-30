@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+from tqdm import tqdm
 import numpy as np
 import tomli
 from pystackreg import StackReg
@@ -26,13 +26,14 @@ class Registration_SITK(RegistrationBase):
         super().__init__()
     def channel_registration(self, channel1, channel2, framebyframe=True):
 
+        print("Start registration of channel 1 and channel 2")
         channel2_registered = np.zeros_like(channel2)
 
         elastixImageFilter = sitk.ElastixImageFilter()
         elastixImageFilter.LogToConsoleOff()
 
         if framebyframe:
-            for f in range(len(channel1)):
+            for f in tqdm(range(len(channel1))):
                 image_sitk = sitk.GetImageFromArray(channel1[f])
                 offset_image_sitk = sitk.GetImageFromArray(channel2[f])
 
@@ -57,7 +58,7 @@ class Registration_SITK(RegistrationBase):
 
             transformParameterMap = elastixImageFilter.GetTransformParameterMap()
 
-            for f in range(1, len(channel1)):
+            for f in tqdm(range(1, len(channel1))):
                 offset_image_sitk = sitk.GetImageFromArray(channel2[f])
                 transformixImageFilter = sitk.TransformixImageFilter()
                 transformixImageFilter.SetTransformParameterMap(transformParameterMap)

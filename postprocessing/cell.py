@@ -6,6 +6,7 @@ from scipy.ndimage import shift
 import skimage.io as io
 import matplotlib.pyplot as plt
 from skimage import measure
+from tqdm import tqdm
 
 
 class CellImage:
@@ -59,7 +60,8 @@ class CellImage:
         ratio_image = self.channel1.return_image().astype(float)
         frame_number = len(self.channel1.return_image())
 
-        for frame in range(frame_number):
+        print("Calculate ratio")
+        for frame in tqdm(range(frame_number)):
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = ratio_image
 
