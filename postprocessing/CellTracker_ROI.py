@@ -3,10 +3,8 @@ import trackpy as tp
 import skimage
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
-import skimage.io as io
 import numpy as np
 from scipy.ndimage import shift
-import matplotlib.pyplot as plt
 
 
 class CellTracker:
@@ -277,11 +275,11 @@ class CellTracker:
             # print("xmax " + str(int(roi_list[frame][0])))
 
             # ggf. statt int() die Methode round() verwenden?
-            print("coordinates")
-            print(str(int(roi_list[frame][0])))
-            print(str(int(roi_list[frame][1])))
-            print(str(int(roi_list[frame][2])))
-            print(str(int(roi_list[frame][3])))
+            # print("coordinates")
+            # print(str(int(roi_list[frame][0])))
+            # print(str(int(roi_list[frame][1])))
+            # print(str(int(roi_list[frame][2])))
+            # print(str(int(roi_list[frame][3])))
 
             cropped_image[frame] = image[frame][int(roi_list[frame][2]):int(roi_list[frame][3]),
                                                 int(roi_list[frame][0]):int(roi_list[frame][1])]
@@ -335,8 +333,8 @@ class CellTracker:
 
             roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
 
-            print("condition")
-            print(self.cell_completely_in_image(roi_list_particle, ymax, xmax))
+            # print("condition")
+            # print(self.cell_completely_in_image(roi_list_particle, ymax, xmax))
             if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
                 roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
                 frame_masks = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)

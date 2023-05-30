@@ -57,7 +57,8 @@ class ImageProcessor:
         self.decon = None
         self.bleaching = None
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-                                                                self.parameters["inputoutput"]["excel_filename"])
+                                                                self.parameters["inputoutput"]["excel_filename"],
+                                                                self.parameters["properties"]["frames_per_second"])
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
