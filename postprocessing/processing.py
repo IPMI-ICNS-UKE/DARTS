@@ -74,7 +74,7 @@ class ImageProcessor:
     def select_rois(self):
         if not self.ATP_flag:
             # offset = self.estimated_cell_diameter_in_pixels * 0.6
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2)
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max)
             self.nb_rois = len(roi_list_cell_pairs)
             for i in range(self.nb_rois):
                 """
@@ -227,23 +227,25 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-        # TO DO ggf. hier channel_registration mit dem ganzen Bild?
+        # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
-                                                               self.parameters["properties"][
-                                                                   "registration_framebyframe"])
-        self.save_registered_first_frames()
+                                                               self.parameters["properties"]["registration_framebyframe"])
+        # self.save_registered_first_frames()
         self.select_rois()
 
-        cell_number = 0  # TO DO needs to be optimsied
+        dataframes_list = []
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                cell.generate_ratio_image_series()
-                cell.measure_mean_ratio_in_all_frames()
-                dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 1.0, 6, 20)
-                self.hotspotdetector.save_dataframe_in_excel_file(dataframe, cell_number + 1, self.save_path)
-                cell_number += 1
+            cell.generate_ratio_image_series()
+            cell.measure_mean_ratio_in_all_frames()
+            # dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 0.7, 6, 20)
+            measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(), 0.7, 6, 20)
+            # dataframes_list.append(dataframe)
+            dataframes_list.append(measurement_microdomains)
+        self.hotspotdetector.save_dataframes(dataframes_list)
+
 
     def return_ratios(self):
         for cell in self.cell_list:
