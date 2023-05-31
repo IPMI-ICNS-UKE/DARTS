@@ -6,15 +6,16 @@ from scipy.ndimage import shift
 import skimage.io as io
 import matplotlib.pyplot as plt
 from skimage import measure
+from statistics import mean
 
 
 class CellImage:
-    def __init__(self, roi1, roi2, segmentation, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None, frame_masks=None):
+    def __init__(self, roi1, roi2, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None, frame_masks=None):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
         self.ratio = None
-        self.cell_image_registrator = None # CellImageRegistrator(segmentation)
+        self.cell_image_registrator = None
         self.atp_image_converter = atp_image_converter
         self.atp_flag = atp_flag
         self.estimated_cell_area = estimated_cell_area
@@ -24,9 +25,16 @@ class CellImage:
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
         self.cell_is_preactivated = False
+        self.number_of_frames_before_cell_activation = 0
 
-    def is_cell_preactivated(self, ratio_activation_threshold):
-        cell_preactivated = self.measure_mean_ratio_single_frame(0) > ratio_activation_threshold
+
+    def is_preactivated(self, ratio_preactivation_threshold):
+        """
+        Checks if a cell image shows a preactivated cell. (A cell activated before addition of beads or compound.)
+        :param ratio_activation_threshold:
+        :return:
+        """
+        cell_preactivated = self.measure_mean_ratio_single_frame(0) > ratio_preactivation_threshold
         self.cell_is_preactivated = cell_preactivated
         return cell_preactivated
 
@@ -37,6 +45,23 @@ class CellImage:
         """
         for frame in range(self.frame_number):
             self.measure_mean_ratio_single_frame(frame)
+
+    def measure_mean_values_in_first_n_frames(self, number_of_frames):
+        mean_values = []
+        for n in range(number_of_frames):
+            current_mean = self.measure_mean_ratio_single_frame(n)
+            mean_values.append(current_mean)
+        return mean_values
+
+    def standard_deviation_of_mean_values(self,mean_values):
+        return np.std(mean_values)
+
+    def calculate_signal_threshold(self, first_n_frames):
+        mean_values_in_first_n_frames = self.measure_mean_values_in_first_n_frames(first_n_frames)
+        mean_value_of_mean_values = mean(mean_values_in_first_n_frames)
+        standard_deviation = self.standard_deviation_of_mean_values(mean_values_in_first_n_frames)
+        signal_threshold = mean_value_of_mean_values + 1.96*standard_deviation  # just an example
+        return signal_threshold
 
     def measure_mean_ratio_single_frame(self, frame):
         """
