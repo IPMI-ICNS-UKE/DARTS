@@ -3,10 +3,12 @@ from tkinter import (Tk, ttk, Label, Frame, Button,
     Checkbutton, Radiobutton, IntVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
+import tomlkit
 
-class  SimpleGUI():
+class  TDarts_GUI():
 
     def __init__(self):
+
         self.window = Tk()
         self.window.geometry("1000x500")
         self.window.title("Welcome to T-DARTS")
@@ -19,8 +21,11 @@ class  SimpleGUI():
         self.image_config_radiobutton_1.grid(column=1, row=0, sticky="W")
         self.image_config_radiobutton_2.grid(column=2, row=0, sticky="W")
 
-        self.selection_button = Button(self.window, text="Choose file(s)", command=self.choose_file_clicked)
+        self.selection_button = Button(self.window, text="Choose file(s)", command=self.select_files)
         self.selection_button.grid(column=3, row=0, sticky="W")
+
+        self.settings_from_last_run = Button(self.window, text="Use settings from last run", command=self.get_settings_from_last_run)
+        self.settings_from_last_run.grid(column=4, row=0, sticky="W")
 
         self.label_single_path_to_input_channel1 = Label(self.window, text="path to input channel 1")
         self.label_single_path_to_input_channel1.grid(column=1, row=1, sticky="W")
@@ -48,9 +53,9 @@ class  SimpleGUI():
 
         self.label_image_configuration = Label(self.window, text="Choose a processing mode:  ")
         self.label_image_configuration.grid(column=0, row=5, sticky="W")
-        self.selected_image_configuration = IntVar()
-        self.processing_mode_radiobutton_1 = Radiobutton(self.window, text='single measurement', value=1, variable=self.selected_image_configuration)
-        self.processing_mode_radiobutton_2 = Radiobutton(self.window, text='batch processing', value=2, variable=self.selected_image_configuration)
+        self.processing_mode = IntVar()
+        self.processing_mode_radiobutton_1 = Radiobutton(self.window, text='single measurement', value=1, variable=self.processing_mode)
+        self.processing_mode_radiobutton_2 = Radiobutton(self.window, text='batch processing', value=2, variable=self.processing_mode)
         self.processing_mode_radiobutton_1.grid(column=1, row=5, sticky="W")
         self.processing_mode_radiobutton_2.grid(column=2, row=5, sticky="W")
 
@@ -81,11 +86,19 @@ class  SimpleGUI():
 
         self.label_processing_pipeline = Label(self.window, text="Processing pipeline:  ")
         self.label_processing_pipeline.grid(column=0, row=12, sticky="W")
-        self.label_channel_alignment = Label(self.window, text="Channel alignment:  ")
+
+        self.label_channel_alignment = Label(self.window, text="Channel alignment (SITK):  ")
         self.label_channel_alignment.grid(column=1, row=12, sticky="W")
         self.channel_alignment_in_pipeline = IntVar()
-        self.check_button_channel_alignment = Checkbutton(self.window, variable=self.channel_alignment_in_pipeline, onvalue=1, offvalue=0,)
-        self.check_button_channel_alignment.grid(column=2, row=12, sticky="W")
+        self.check_box_channel_alignment = Checkbutton(self.window, variable=self.channel_alignment_in_pipeline, onvalue=1, offvalue=0,)
+        self.check_box_channel_alignment.grid(column=2, row=12, sticky="W")
+
+        self.label_frame_by_frame_registration = Label(self.window, text="Frame-by-Frame registration:  ")
+        self.label_frame_by_frame_registration.grid(column=3, row=12, sticky="W")
+        self.frame_by_frame_registration = IntVar()
+        self.check_box_frame_by_frame_registration = Checkbutton(self.window, variable=self.frame_by_frame_registration,
+                                                          onvalue=1, offvalue=0, )
+        self.check_box_frame_by_frame_registration.grid(column=4, row=12, sticky="W")
 
         self.label_deconvolution = Label(self.window, text="Deconvolution:  ")
         self.label_deconvolution.grid(column=1, row=13, sticky="W")
@@ -108,8 +121,44 @@ class  SimpleGUI():
                                                           onvalue=1, offvalue=0, )
         self.check_box_dartboard_projection.grid(column=2, row=15, sticky="W")
 
-        self.start_button = Button(self.window, text='Start', command=None)
+
+        self.start_button = Button(self.window, text='Start', command=self.start_analysis)
         self.start_button.place(x=200,y=450)
+
+    def get_settings_from_last_run(self):
+        with open("config.toml", mode="rt", encoding="utf-8") as fp:
+            config = tomlkit.load(fp)
+            image_config = self.convert_image_config_to_number(config["properties"]["channel_format"])
+            self.selected_image_configuration.set(image_config)
+
+            if self.get_image_configuration() == "single":
+                channel1_path = config["inputoutput"]["path_to_input_channel1"]
+                self.text_single_path_to_input_channel1.delete(1.0, END)
+                self.text_single_path_to_input_channel1.insert(1.0, channel1_path)
+                channel2_path = config["inputoutput"]["path_to_input_channel2"]
+                self.text_single_path_to_input_channel2.delete(1.0, END)
+                self.text_single_path_to_input_channel2.insert(1.0, channel2_path)
+            elif self.get_image_configuration() == "two-in-one":
+                combined_path = config["inputoutput"]["path_to_input_combined"]
+                self.text_path_to_input_combined.delete(1.0, END)
+                self.text_path_to_input_combined.insert(1.0, combined_path)
+
+            self.text_results_directory.delete(1.0, END)
+            self.text_results_directory.insert(1.0,config["inputoutput"]["path_to_output"])
+
+            self.text_scale.delete(1.0, END)
+            self.text_scale.insert(1.0,config["properties"]["scale_microns_per_pixel"])
+
+            self.text_fps.delete(1.0, END)
+            self.text_fps.insert(1.0,config["properties"]["frames_per_second"])
+
+            self.text_resolution.delete(1.0, END)
+            self.text_resolution.insert(1.0,config["properties"]["spatial_resolution"])
+
+            self.check_box_channel_alignment.select()
+            frame_by_frame_registration = config["properties"]["registration_framebyframe"] == "true"
+            if frame_by_frame_registration:
+                self.check_box_frame_by_frame_registration.select()
 
     def pick_date(self, event):
         global calendar, date_window
@@ -134,8 +183,9 @@ class  SimpleGUI():
         self.entry_time.insert(0, calendar.get_date())
         date_window.destroy()
 
-    def choose_file_clicked(self):
-        self.select_files()
+    def start_analysis(self):
+        self.write_input_to_config_file()
+        self.close_window()
 
     def get_image_configuration(self):
         if self.selected_image_configuration.get() == 1:
@@ -144,6 +194,14 @@ class  SimpleGUI():
             return "two-in-one"
         else:
             return "no configuration chosen"
+
+    def convert_image_config_to_number(self, image_config):
+        if image_config == "single":
+            return 1
+        elif image_config == "two-in-one":
+            return 2
+        else:
+            return None
 
     def select_files(self):
         chosen_image_configuration = self.get_image_configuration()
@@ -180,6 +238,29 @@ class  SimpleGUI():
         self.text_results_directory.delete('1.0', END)
         self.text_results_directory.insert(1.0, results_directory)
 
+    def write_input_to_config_file(self):
+        with open("config.toml", mode="rt", encoding="utf-8") as fp:
+            config = tomlkit.load(fp)
+
+            config["properties"]["channel_format"] = self.get_image_configuration()
+
+            if self.get_image_configuration() == "single":
+                config["inputoutput"]["path_to_input_channel1"] = self.text_single_path_to_input_channel1.get("1.0", "end-1c")
+                config["inputoutput"]["path_to_input_channel2"] = self.text_single_path_to_input_channel2.get("1.0", "end-1c")
+            elif self.get_image_configuration() == "two-in-one":
+                config["inputoutput"]["path_to_input_combined"] = self.text_path_to_input_combined.get("1.0", "end-1c")
+
+            config["inputoutput"]["path_to_output"] = self.text_results_directory.get("1.0", "end-1c")
+            
+            config["properties"]["scale_microns_per_pixel"] = float(self.text_scale.get("1.0", END))
+            config["properties"]["frames_per_second"] = float(self.text_fps.get("1.0", END))
+            config["properties"]["spatial_resolution"] = int(self.text_resolution.get("1.0", END))
+            config["properties"]["registration_framebyframe"] = str(self.frame_by_frame_registration.get() == 1).lower()
+
+            # write back
+        with open("config.toml", mode="wt", encoding="utf-8") as fp:
+            tomlkit.dump(config, fp)
+
 
     def run_main_loop(self):
         self.window.mainloop()
@@ -187,5 +268,4 @@ class  SimpleGUI():
     def close_window(self):
         self.window.destroy()
 
-simple_gui = SimpleGUI()
-simple_gui.run_main_loop()
+
