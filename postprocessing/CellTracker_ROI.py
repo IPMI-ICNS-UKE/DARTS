@@ -54,7 +54,7 @@ class CellTracker:
         if (not features.empty):
             tp.annotate(features[features.frame == (0)], image_series[0])
             # tracking, linking of coordinates
-            search_range = 20  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
+            search_range = 10  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
             t = tp.link_df(features, search_range, memory=0)
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
             # print (t)

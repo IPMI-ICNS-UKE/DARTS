@@ -98,7 +98,6 @@ class HotSpotDetector():
         # print(features)
         return dataframe, particle_set
 
-
     def calculate_number_of_connected_components(self, dataframe, time_in_seconds):
         subset = dataframe.loc[dataframe['time_in_seconds'] == time_in_seconds]
         return len(subset)

@@ -274,8 +274,8 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(self.save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):
