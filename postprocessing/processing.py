@@ -48,6 +48,7 @@ class ImageProcessor:
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
+        self.excluded_cells_list = []
         self.ratio_list = []
         self.nb_rois = None
         self.roi_minmax_list = []
@@ -59,8 +60,12 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
+        self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
+        self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
+        self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-                                                                self.parameters["inputoutput"]["excel_filename"])
+                                                                self.parameters["inputoutput"]["excel_filename"],
+                                                                self.frames_per_second)
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -94,7 +99,6 @@ class ImageProcessor:
                 """
                 self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
                                                 ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
-                                                self.segmentation,
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
@@ -230,20 +234,29 @@ class ImageProcessor:
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"]["registration_framebyframe"])
-        # self.save_registered_first_frames()
-        self.select_rois()
 
+        self.select_rois()  # find the cells
         dataframes_list = []
+
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
+
             cell.generate_ratio_image_series()
-            cell.measure_mean_ratio_in_all_frames()
-            # dataframe, hotspot_set = self.hotspotdetector.track_hotspots(cell.give_ratio_image(), 0.7, 6, 20)
-            measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(), 0.7, 6, 20)
-            # dataframes_list.append(dataframe)
-            dataframes_list.append(measurement_microdomains)
+
+            if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
+                signal_threshold = cell.calculate_signal_threshold(int(self.time_of_addition_in_seconds *
+                                                                       self.frames_per_second))
+                measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(),
+                                                                                     signal_threshold,
+                                                                                     6,   # lower area limit
+                                                                                     20)  # upper area limit
+                dataframes_list.append(measurement_microdomains)
+            else:
+                print("this cell is preactivated")  # only temporarily
+                self.excluded_cells_list.append(cell)
+
         self.hotspotdetector.save_dataframes(dataframes_list)
 
 
@@ -264,8 +277,8 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(self.save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):

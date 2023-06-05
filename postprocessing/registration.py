@@ -14,9 +14,6 @@ except ImportError:
     sitk = None
 
 
-
-
-
 class RegistrationBase:
     def __init__(self):
         pass

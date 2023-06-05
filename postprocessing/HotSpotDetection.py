@@ -5,13 +5,13 @@ import skimage
 from tqdm import tqdm
 import skimage.io as io
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class HotSpotDetector():
-    def __init__(self, save_path, filename):
+    def __init__(self, save_path, filename, fps):
         self.save_path = save_path
         self.filename = filename
+        self.frames_per_second = fps
 
     def threshold_image_frame(self, threshold, image_series, frame):
         thresholded_frame = image_series[frame] > threshold
@@ -44,7 +44,6 @@ class HotSpotDetector():
         regions = [region for region in raw_regions_in_frame if lower_limit_area < region.area < upper_limit_area]
         return regions
 
-
     def measure_microdomains(self, image_series, threshold, lower_limit_area, upper_limit_area):
         """
         Measures the number and the intensites of microdomains in each frame of the ratio image and returns a dataframe
@@ -59,7 +58,7 @@ class HotSpotDetector():
                 if lower_limit_area < region.area < upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
-                                                  'frame': num,
+                                                  'time_in_seconds': float(num)/self.frames_per_second,
                                                   'area': region.area,
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
@@ -68,7 +67,7 @@ class HotSpotDetector():
                                                   }, ])
         return features
 
-    def track_hotspots(self, image_series, threshold,lower_limit_area, upper_limit_area):
+    def track_hotspots(self, image_series, threshold, lower_limit_area, upper_limit_area):
 
         thresholded_image_series = self.threshold_image_series(threshold, image_series)
 
@@ -81,7 +80,7 @@ class HotSpotDetector():
                 if lower_limit_area < region.area < upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
-                                                  'frame': num,
+                                                  'time_in_seconds': float(num)/self.frames_per_second,
                                                   'area': region.area,
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
@@ -91,7 +90,7 @@ class HotSpotDetector():
         dataframe = None
         particle_set = None
         if (not features.empty):
-            tp.annotate(features[features.frame == (0)], image_series[0])
+            tp.annotate(features[features.time_in_seconds == (0)], image_series[0])
             # tracking, linking of coordinates
             search_range = 5  # TO DO: needs to be optimised!
             dataframe = tp.link_df(features, search_range, memory=0)
@@ -103,9 +102,8 @@ class HotSpotDetector():
         # print(features)
         return dataframe, particle_set
 
-
-    def calculate_number_of_connected_components(self, dataframe, frame):
-        subset = dataframe.loc[dataframe['frame'] == frame]
+    def calculate_number_of_connected_components(self, dataframe, time_in_seconds):
+        subset = dataframe.loc[dataframe['time_in_seconds'] == time_in_seconds]
         return len(subset)
 
     # def save_dataframe_in_excel_file(self,dataframe,sheet_number, save_path):
@@ -114,15 +112,17 @@ class HotSpotDetector():
     #         dataframe.to_csv(save_path + "/Cell_image" + str(sheet_number))
 
     def count_microdomains_in_each_frame(self, dataframe):
-        number_of_frames = len(set(dataframe['frame'].tolist()))
-        dataframe_copy = dataframe[['frame']].copy()
+        number_of_frames = len(set(dataframe['time_in_seconds'].tolist()))
+        dataframe_copy = dataframe[['time_in_seconds']].copy()
         microdomains_in_each_frame = pd.DataFrame()
 
         for frame in range(number_of_frames):
-            number_of_microdomains = len(dataframe_copy[dataframe_copy["frame"]==frame])
-            microdomains_in_each_frame = microdomains_in_each_frame._append([{'frame': frame,
-                                                    'number_of_microdomains': number_of_microdomains,
-                                                  }, ])
+            current_time_in_seconds = float(frame)/self.frames_per_second
+            number_of_microdomains = len(dataframe_copy[dataframe_copy["time_in_seconds"]==current_time_in_seconds])
+            microdomains_in_each_frame = microdomains_in_each_frame._append([{'time_in_seconds':
+                                                                                  current_time_in_seconds,
+                                                                              'number_of_microdomains': number_of_microdomains,
+                                                                            }, ])
         return microdomains_in_each_frame
 
 
@@ -134,22 +134,8 @@ class HotSpotDetector():
             for dataframe in dataframes_list:
                 if (not dataframe.empty):
                     dataframe.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index), index=False)
-                    print("dataframe")
-                    print(dataframe)
+                    # print("dataframe")
+                    # print(dataframe)
                     number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                    number_of_microdomains.to_excel(writer, sheet_name="Cell_RatioImage" + str(index) + "_Microdomains", index=False)
+                    number_of_microdomains.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index) + "_Microdomains", index=False)
                     index += 1
-
-
-"""
-image_series = io.imread ("/Users/dejan/Documents/GitHub/T-DARTS/results/ratio_image1.tif")
-
-hotspotdecector = HotSpotDetector(save_path="/Users/dejan/Documents/GitHub/T-DARTS/results/", filename="output.xlsx")
-thresholded_image = hotspotdecector.threshold_image_frame(0.9,image_series,0)
-labeled_frame = hotspotdecector.label_thresholded_image_frame(thresholded_image)
-
-dataframe, particle_set = hotspotdecector.track_hotspots(image_series,0.9,6,20)
-
-# dataframe, particle_set = hotspotdecector.track_hotspots(image_series, 1.0, 6,20)
-"""
-
