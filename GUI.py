@@ -1,5 +1,5 @@
 import tkinter
-from tkinter import (Tk, ttk, Label, Frame, Button, LabelFrame,
+from tkinter import (Tk, ttk, Label, Frame, Button, LabelFrame,INSERT,
                      Checkbutton, Radiobutton, IntVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
@@ -86,16 +86,19 @@ class TDarts_GUI():
         self.label_scale = Label(self.properties_of_measurement_frame, text="Scale (microns per pixel):  ")
         self.label_scale.grid(row=1, column=0, sticky="W")
         self.text_scale = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_scale.insert(INSERT, "0")
         self.text_scale.grid(row=1, column=1, sticky="W")
         # fps
         self.label_fps = Label(self.properties_of_measurement_frame, text="frame rate (fps):  ")
         self.label_fps.grid(row=2, column=0, sticky="W")
         self.text_fps = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_fps.insert(INSERT, "3.0")
         self.text_fps.grid(row=2, column=1, sticky="W")
         # resolution
         self.label_resolution = Label(self.properties_of_measurement_frame, text="Spatial resolution in pixels:  ")
         self.label_resolution.grid(row=3, column=0, sticky="W")
         self.text_resolution = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_resolution.insert(INSERT, "3")
         self.text_resolution.grid(row=3, column=1, sticky="W")
         # time
         self.label_time = Label(self.properties_of_measurement_frame, text="day of measurement :  ")
@@ -113,7 +116,7 @@ class TDarts_GUI():
 
         self.label_channel_alignment = Label(self.label_processing_pipeline, text="Channel alignment (SITK):  ")
         self.label_channel_alignment.grid(column=1, row=12, sticky="W")
-        self.channel_alignment_in_pipeline = IntVar()
+        self.channel_alignment_in_pipeline = IntVar(value=1)
         self.check_box_channel_alignment = Checkbutton(self.label_processing_pipeline,
                                                        variable=self.channel_alignment_in_pipeline,
                                                        onvalue=1, offvalue=0, )
