@@ -1,6 +1,6 @@
 import tkinter
 from tkinter import (Tk, ttk, Label, Frame, Button,
-    Checkbutton, Radiobutton, IntVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton)
+    Checkbutton, Radiobutton, IntVar, StringVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton, OptionMenu)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
 import tomlkit
@@ -10,7 +10,10 @@ class  TDarts_GUI():
     def __init__(self):
 
         self.window = Tk()
-        self.window.geometry("1000x500")
+        width = 1000
+        height = 600
+        self.window.geometry(str(width)+"x"+str(height))
+        # self.window.geometry("1000x500")
         self.window.title("Welcome to T-DARTS")
 
         self.label_image_configuration = Label(self.window, text="Choose an image configuration:  ")
@@ -77,53 +80,89 @@ class  TDarts_GUI():
         self.label_resolution.grid(column=1, row=10, sticky="W")
         self.text_resolution = Text(self.window, height=1, width=30)
         self.text_resolution.grid(column=2, row=10, sticky="W")
+        self.label_cell_type = Label(self.window, text="Cell type:  ")
+        self.label_cell_type.grid(column=1, row=11, sticky="W")
+
+        cell_types = [
+            "CD4+ primary murine cells",
+            "Jurkat cells",
+            "more cell types will follow..."
+        ]
+        cell_type = StringVar(self.window)
+        cell_type.set(cell_types[0])
+        self.option_menu_cell_types = OptionMenu(self.window, cell_type, *cell_types)
+        self.option_menu_cell_types.grid(column=2, row=11, sticky="W")
+        """
+        self.button_add_cell_type = Button(self.window, text="Add a cell type",
+                                                      command=None)# self.add_cell_type_clicked)
+        self.button_add_cell_type.grid(column=3, row=11, sticky="W")
+        """
+
         self.label_time = Label(self.window, text="day of measurement :  ")
-        self.label_time.grid(column=1, row=11, sticky="W")
+        self.label_time.grid(column=1, row=12, sticky="W")
         self.entry_time = Entry(self.window)
-        self.entry_time.grid(column=2, row=11, sticky="W")
+        self.entry_time.grid(column=2, row=12, sticky="W")
         self.entry_time.insert(0, "dd/mm/yyyy")
         self.entry_time.bind("<1>", self.pick_date)
 
         self.label_processing_pipeline = Label(self.window, text="Processing pipeline:  ")
-        self.label_processing_pipeline.grid(column=0, row=12, sticky="W")
+        self.label_processing_pipeline.grid(column=0, row=13, sticky="W")
 
         self.label_channel_alignment = Label(self.window, text="Channel alignment (SITK):  ")
-        self.label_channel_alignment.grid(column=1, row=12, sticky="W")
+        self.label_channel_alignment.grid(column=1, row=13, sticky="W")
         self.channel_alignment_in_pipeline = IntVar()
         self.check_box_channel_alignment = Checkbutton(self.window, variable=self.channel_alignment_in_pipeline, onvalue=1, offvalue=0,)
-        self.check_box_channel_alignment.grid(column=2, row=12, sticky="W")
+        self.check_box_channel_alignment.grid(column=2, row=13, sticky="W")
 
         self.label_frame_by_frame_registration = Label(self.window, text="Frame-by-Frame registration:  ")
-        self.label_frame_by_frame_registration.grid(column=3, row=12, sticky="W")
+        self.label_frame_by_frame_registration.grid(column=3, row=13, sticky="W")
         self.frame_by_frame_registration = IntVar()
         self.check_box_frame_by_frame_registration = Checkbutton(self.window, variable=self.frame_by_frame_registration,
                                                           onvalue=1, offvalue=0, )
-        self.check_box_frame_by_frame_registration.grid(column=4, row=12, sticky="W")
+        self.check_box_frame_by_frame_registration.grid(column=4, row=13, sticky="W")
 
-        self.label_deconvolution = Label(self.window, text="Deconvolution:  ")
-        self.label_deconvolution.grid(column=1, row=13, sticky="W")
+        self.label_deconvolution = Label(self.window, text="TDEntropy Deconvolution:  ")
+        self.label_deconvolution.grid(column=1, row=14, sticky="W")
         self.deconvolution_in_pipeline = IntVar()
         self.check_box_deconvolution_in_pipeline = Checkbutton(self.window, variable=self.deconvolution_in_pipeline,
                                                           onvalue=1, offvalue=0, )
-        self.check_box_deconvolution_in_pipeline.grid(column=2, row=13, sticky="W")
+        self.check_box_deconvolution_in_pipeline.grid(column=2, row=14, sticky="W")
+
+
+
 
         self.label_bleaching_correction = Label(self.window, text="Bleaching correction:  ")
-        self.label_bleaching_correction.grid(column=1, row=14, sticky="W")
+        self.label_bleaching_correction.grid(column=1, row=15, sticky="W")
         self.bleaching_correction_in_pipeline = IntVar()
         self.check_box_bleaching_correction = Checkbutton(self.window, variable=self.bleaching_correction_in_pipeline,
                                                           onvalue=1, offvalue=0, )
-        self.check_box_bleaching_correction.grid(column=2, row=14, sticky="W")
+        self.check_box_bleaching_correction.grid(column=2, row=15, sticky="W")
 
         self.label_dartboard_projection = Label(self.window, text="Dartboard projection:  ")
-        self.label_dartboard_projection.grid(column=1, row=15, sticky="W")
+        self.label_dartboard_projection.grid(column=1, row=16, sticky="W")
         self.dartboard_projection_in_pipeline = IntVar()
         self.check_box_dartboard_projection = Checkbutton(self.window, variable=self.dartboard_projection_in_pipeline,
                                                           onvalue=1, offvalue=0, )
-        self.check_box_dartboard_projection.grid(column=2, row=15, sticky="W")
+        self.check_box_dartboard_projection.grid(column=2, row=16, sticky="W")
 
+        self.label_further_information = Label(self.window, text="Further information:  ")
+        self.label_further_information.grid(column=0, row=17, sticky="W")
+
+        self.label_user = Label(self.window, text="User:  ")
+        self.label_user.grid(column=1, row=17, sticky="W")
+        self.text_user = Text(self.window, height=1, width=30)
+        self.text_user.grid(column=2, row=17, sticky="W")
+
+        self.label_experiment_name = Label(self.window, text="Name of experiment:  ")
+        self.label_experiment_name.grid(column=1, row=18, sticky="W")
+        self.text_experiment_name = Text(self.window, height=1, width=30)
+        self.text_experiment_name.grid(column=2, row=18, sticky="W")
 
         self.start_button = Button(self.window, text='Start', command=self.start_analysis)
-        self.start_button.place(x=200,y=450)
+        self.start_button.place(x=0.2*width, y=0.9*height)
+
+        self.cancel_button = Button(self.window, text='Cancel', command=self.cancel)
+        self.cancel_button.place(x=0.4*width, y=0.9*height)
 
     def get_settings_from_last_run(self):
         with open("config.toml", mode="rt", encoding="utf-8") as fp:
@@ -186,6 +225,10 @@ class  TDarts_GUI():
     def start_analysis(self):
         self.write_input_to_config_file()
         self.close_window()
+
+    def cancel(self):
+        self.window.destroy()
+        quit()
 
     def get_image_configuration(self):
         if self.selected_image_configuration.get() == 1:
@@ -261,6 +304,8 @@ class  TDarts_GUI():
         with open("config.toml", mode="wt", encoding="utf-8") as fp:
             tomlkit.dump(config, fp)
 
+    def add_cell_type_clicked(self):
+        pass
 
     def run_main_loop(self):
         self.window.mainloop()
