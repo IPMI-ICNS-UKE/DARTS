@@ -1,21 +1,18 @@
-import numpy as np
-from scipy import interpolate
-from matplotlib import path
 import math
-
-from scipy.ndimage import shift
-import matplotlib.pyplot as plt
 from pathlib import Path
-import tomli
-from postprocessing.processing import ImageProcessor
-from stardist.models import StarDist2D
-from csbdeep.utils import normalize
 
-from skimage import filters as filters, measure
+import matplotlib.pyplot as plt
 import numpy as np
-
-from scipy.ndimage import shift
+import tomli
+from csbdeep.utils import normalize
 from scipy import interpolate
+from scipy.ndimage import shift
+from skimage import measure
+from stardist.models import StarDist2D
+
+from postprocessing.processing import ImageProcessor
+
+
 #%%
 
 def shapeNormalization(centeredData, x, y, radius=None):
@@ -140,6 +137,16 @@ ax.imshow(img_labels)
 plt.show()
 
 #%%
+
+ratio = cell1.channel1.image/cell1.channel2.image
+
+fig, ax = plt.subplots()
+ax.imshow(ratio[0])
+plt.show()
+
+
+
+#%%
 img_bin = img_frame
 img_bin[np.where(img_labels==0)] =0
 
@@ -175,11 +182,23 @@ res, r = shapeNormalization(img_shifted, x,y)
 #%%
 fig, ax = plt.subplots(ncols=2)
 ax[0].imshow(img_shifted)
-ax[1].imshow(res)
+ax[1].imshow(res2)
 plt.show()
 
 #%%
 
-res[0,-1]
+res[np.where(res is np.nan)] = 0
+
+#%%
+
+res2 = np.nan_to_num(res)
+
+#%%
+
+res2[0,-1]
+
+#%%
+
+res2.ndim
 
 #%%

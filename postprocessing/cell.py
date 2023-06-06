@@ -97,7 +97,7 @@ class CellImage:
         # TO DO user needs to specify which channel is the dividend and which is the divisor
         return ratio
 
-    def return_ratio_image(self):
+    def calculate_ratio_image(self):
         """
         Calculates the ratio image for each cell image pair (each frame) and returns the ratio image
         :return:
@@ -107,6 +107,7 @@ class CellImage:
 
         for frame in range(frame_number):
             ratio_image[frame] = self.calculate_ratio(frame)
+        self.ratio = ratio_image
         return ratio_image
 
     def give_image_channel1(self):

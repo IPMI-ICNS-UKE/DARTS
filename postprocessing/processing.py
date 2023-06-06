@@ -286,5 +286,5 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.return_ratio_image())
+            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.calculate_ratio_image())
             i += 1
