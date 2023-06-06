@@ -9,6 +9,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 from pystackreg import StackReg
 from postprocessing.registration import Registration_SITK, Registration_SR
+from postprocessing.shapenormalization import ShapeNormalization
 
 try:
     import SimpleITK as sitk
@@ -260,7 +261,13 @@ class ImageProcessor:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
-                cell.measure_mean_in_all_frames()
+
+            cell.measure_mean_in_all_frames()
+
+    def normalize_cell_shape(self, cell):
+        SN = ShapeNormalization(cell.ratio, cell.channel1.original_image, cell.channel2.original_image)
+        cell.normalized_ratio_image = SN.apply_shape_normalization()
+        return cell.normalized_ratio_image
 
     def return_ratios(self):
         for cell in self.cell_list:

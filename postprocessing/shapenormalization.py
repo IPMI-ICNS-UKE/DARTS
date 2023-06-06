@@ -3,25 +3,22 @@ import math
 import numpy as np
 from scipy import interpolate
 from scipy.ndimage import shift
-from postprocessing.cell import CellImage
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 from skimage import measure
 
 
 class ShapeNormalization:
-    def __init__(self, cell: CellImage):
-        if not isinstance(cell, CellImage):
-            raise TypeError(f"Expected argument of type CellImage, got {type(cell).__name__}")
-        self.ratio_image = cell.calculate_ratio_image
-        self.channel1 = cell.channel1.original_image
-        self.channel2 = cell.channel2.original_image
+    def __init__(self, ratio, channel1, channel2):
+        self.ratio_image = ratio
+        self.channel1 = channel1
+        self.channel2 = channel2
 
-    def shift_image_to_centroid(self, image):
+    def shift_image_to_centroid(self, image, centroid):
 
         image_height, image_width = image.shape
 
-        centroid_x, centroid_y = self.centroid
+        centroid_x, centroid_y = centroid
         shift_x = int(image_width / 2 - centroid_x)
         shift_y = int(image_height / 2 - centroid_y)
 
@@ -33,20 +30,20 @@ class ShapeNormalization:
         shifted_image = shift(padded_image, (shift_y, shift_x), mode='constant', cval=0)
         return shifted_image
 
-    def shift_edge_coord(self):
-        middle = np.array(self.ratio_image.shape) / 2
+    def shift_edge_coord(self, shifted_image, edgecoord, centroid):
+        middle = np.array(shifted_image.shape) / 2
 
-        image_height, image_width = self.ratio_image.shape
+        image_height, image_width = shifted_image.shape
 
 
-        centroid_x, centroid_y = self.centroid
+        centroid_x, centroid_y = centroid
 
         # Calculate the shift needed
         shift_x = int(image_width / 2 - centroid_x)
         shift_y = int(image_height / 2 - centroid_y)
 
-        shifted_edge_x = self.edgecoord[1] + shift_x
-        shifted_edge_y = self.edgecoord[0] + shift_y
+        shifted_edge_x = edgecoord[1] + shift_x
+        shifted_edge_y = edgecoord[0] + shift_y
         return shifted_edge_x, shifted_edge_y
 
     def shapeNormalization(self, centeredData, x, y, radius=None):
@@ -129,20 +126,28 @@ class ShapeNormalization:
         centroid = regions.centroid
         return edgecoord, centroid
 
+    def pad_array(self, arr, shape):
+        pad_shape = [(0, max_shape - cur_shape) for max_shape, cur_shape in zip(shape, arr.shape)]
+        return np.pad(arr, pad_shape)
 
     def apply_shape_normalization(self):
-        normalized_data = np.zeros_like(self.ratio_image)
         if self.ratio_image.ndim == 3:
-            nframes = self.ratio_image.shape[2]
+            normalized_data_list = []
+            nframes = self.ratio_image.shape[0]
             for i in range(nframes):
                 edge, centroid = self.find_edge_and_centroid(self.channel1[i])
-                img_shifted = self.shift_image_to_centroid(self.ratio_image[i])
-                x_s, y_s = self.shift_edge_coord()
-                normalized_data[i], cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
+                img_shifted = self.shift_image_to_centroid(self.ratio_image[i], centroid)
+                x_s, y_s = self.shift_edge_coord(img_shifted, edge, centroid)
+                ndata, cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
+                normalized_data_list.append(ndata)
+            max_shape = np.max([arr.shape for arr in normalized_data_list], axis=0)
+            padded_arrays = [self.pad_array(arr, max_shape) for arr in normalized_data_list]
+            normalized_data = np.stack(padded_arrays)
+
         elif self.ratio_image.ndim == 2:
             edge, centroid = self.find_edge_and_centroid(self.channel1)
-            img_shifted = self.shift_image_to_centroid(self.ratio_image)
-            x_s, y_s = self.shift_edge_coord()
+            img_shifted = self.shift_image_to_centroid(self.ratio_image, centroid)
+            x_s, y_s = self.shift_edge_coord(img_shifted, edge, centroid)
             normalized_data, cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
         else:
             normalized_data = None

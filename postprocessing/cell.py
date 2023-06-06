@@ -23,6 +23,7 @@ class CellImage:
         self.cell_image_data = cell_image_data
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
+        self.normalized_ratio_image = None
 
     def measure_mean(self, frame):
         """
@@ -107,8 +108,8 @@ class CellImage:
 
         for frame in range(frame_number):
             ratio_image[frame] = self.calculate_ratio(frame)
-        self.ratio = ratio_image
-        return ratio_image
+        self.ratio = np.nan_to_num(ratio_image)
+        return self.ratio
 
     def give_image_channel1(self):
         return self.channel1.return_image()
@@ -128,6 +129,8 @@ class CellImage:
             mean += np.mean(ratio_image[frame])
         mean = mean / frame_number
         return mean
+
+
 
 class ChannelImage:
     def __init__(self, roi, wl, original_image=None):
@@ -221,5 +224,8 @@ class CellImageRegistrator:
         for frame in range(len(channel)):
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
+
+
+
 
 testcommit = True

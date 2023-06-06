@@ -115,7 +115,7 @@ Processor.select_rois()
 
 cell_list = Processor.cell_list
 
-cell1 = cell_list[1]
+cell1 = cell_list[0]
 
 #%%
 segmodel = StarDist2D.from_pretrained('2D_versatile_fluo')
@@ -144,7 +144,12 @@ fig, ax = plt.subplots()
 ax.imshow(ratio[0])
 plt.show()
 
+#%%
 
+ratio2 = cell1.calculate_ratio_image()
+print(ratio2.shape)
+
+print(img_frame.shape)
 
 #%%
 img_bin = img_frame
