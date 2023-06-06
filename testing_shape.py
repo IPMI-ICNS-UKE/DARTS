@@ -105,7 +105,6 @@ img_labels, img_details = segmodel.predict_instances(normalize(img_frame))
 regions = measure.regionprops(img_labels)[0]
 
 coord = img_details['coord'][0]
-#%%
 centroid = regions.centroid
 #centroid = np.column_stack((cell1.cell_image_data['x_centroid_minus_bbox'][i], cell1.cell_image_data['y_centroid_minus_bbox'][i]))
 
@@ -120,68 +119,114 @@ plt.show()
 
 #%%
 
-cart_coord = coord.T - centroid
+# Edge coordinates in polar coordinates
+cart_coord = coord.T - centroid # shift so that centroid is the origin
 polar_coord = cartesian_to_polar(cart_coord)
 
-r = polar_coord[:, 0]
-theta = polar_coord[:,1]
-transformParameter = 0.962 * np.mean(r) / r
+# sort polar coordinates for interpolation
+polar_coord_s = sort_polar_coord(polar_coord)
 
-rnew = r*transformParameter
+# transformation of edge onto a circle with radius close to mean radius
+r_e = polar_coord_s[:, 0]
+theta_e = polar_coord_s[:,1]
+r_t = 0.962 * np.mean(r_e) / r_e # transformation factor
 
-c = np.expand_dims(np.array(centroid), axis=1)
-new_coord = np.column_stack((rnew, theta))
-new_coord_cart = polar_to_cartesian(new_coord).T + c
+r_circ = r_e*r_t
+
+x_circ = r_circ * np.cos(theta_e) + centroid[1]
+y_circ = r_circ * np.sin(theta_e) + centroid[0]
+
 #%%
 
-fig, ax = plt.subplots()
-ax.imshow(img_frame)
-ax.plot(coord[1], coord[0], 'o', color='red')
-ax.plot(new_coord_cart[1], new_coord_cart[0], 'o', color='yellow')
-ax.plot(centroid[1], centroid[0], color='red', marker='o')
+c = np.expand_dims(np.array(centroid), axis=1) # centroid reshaped
 
+# create cartesian coordinates in image shape that are centered around centroid
+x = np.arange(img_frame.shape[1])
+y = np.arange(img_frame.shape[0])
+
+xx, yy = np.meshgrid(x,y, indexing='ij')
+xx = xx - c[1]
+yy = yy - c[0]
+
+# transform grid to polar coordinates
+r_grid = np.sqrt(xx ** 2 + yy ** 2)
+theta_grid = np.arctan2(yy, xx)
+theta_grid = np.where(theta_grid < 0, theta_grid + 2 * np.pi, theta_grid)
+
+
+#%%
+
+# interpolate the transformation for all values of theta
+f_transform = interpolate.interp1d(theta_e, 1/r_t,fill_value="extrapolate")
+r_new = r_grid * f_transform(theta_grid)
+
+# transform result back to cartesian coordinates
+xx_new = r_new * np.cos(theta_grid) + c[1]
+yy_new = r_new * np.sin(theta_grid) + c[0]
+
+intf = interpolate.RegularGridInterpolator((xx_new[:,0], yy_new[0,:]), img_frame.T, bounds_error=False)
+
+#%%
+
+test =
+#%%
+print(img_frame.shape)
+print(xx_new.shape)
+print(yy_new.shape)
+print(xx_new[:,0].shape)
+print(yy_new[:,0].shape)
+print(xx_new[0,:].shape)
+print(yy_new[0,:].shape)
+fig, ax = plt.subplots()
+ax.plot(xx_new[:,0], c='blue')
+ax.plot(xx[:,0],':', c='blue')
+ax.plot(yy_new[0,:], c='red')
+ax.plot(yy[0,:],':', c='red')
+plt.show()
+
+#%%
+x = np.arange(img_frame.shape[1])
+y = np.arange(img_frame.shape[0])
+
+xx, yy = np.meshgrid(x,y, indexing='ij')
+
+#%%
+test = intf((xx, yy))
+print(test.shape)
+
+#%%
+fig, ax = plt.subplots(ncols=2)
+ax[0].imshow(img_frame)
+ax[0].plot(coord[1], coord[0], 'o', color='red')
+ax[1].imshow(test.T)
+ax[1].plot(x_circ, y_circ, 'o', color='yellow')
 plt.show()
 
 #%%
 
-x = np.arange(img_frame.shape[0])
-y = np.arange(img_frame.shape[1])
+# Define the grid
+x = np.linspace(-1, 1, 100)
+y = np.linspace(-1, 1, 200)
 
-xx, yy = np.meshgrid(x,y)
-xx = xx - c[0]
-yy = yy - c[1]
+# Define the function values on the grid
+xx, yy = np.meshgrid(x, y, indexing='ij')
+vals = np.sin(xx**2 + yy**2)
 
-polar_grid = cartesian_to_polar(np.column_stack((xx, yy)))
-r_grid = polar_grid[:,0]
-theta_grid = polar_grid[:,1]
+# Create the interpolation function
+interpolation_func = interpolate.RegularGridInterpolator((x, y), vals)
+
+# Use the function to interpolate at new points
+points = np.array([[0.1, 0.2], [0.5, -0.3]])
+interpolated_vals = interpolation_func(points)
+
+print(interpolated_vals)
+#%%
+np.diff(xx_new[0,:]) > 0
+
+print(xx_new[0,:])
+
 
 #%%
-f = interpolate.interp1d(r, 1/transformParameter,fill_value="extrapolate")
-#%%
-r_grid_new = r_grid * f(r_grid)
-
-polar_grid_new = np.column_stack((r_grid_new, theta_grid))
-cart_grid_new = polar_to_cartesian(polar_grid_new) + c.T
-#%%
-sorted_coord = cart_grid_new[cart_grid_new[:, 0].argsort()]
-
-#%%
-
-f2 = interpolate.RegularGridInterpolator((sorted_coord[:,0], sorted_coord[:,1]), img_frame)
-#%%
-print(sorted_coord)
-
-#%%
-polar_grid.shape
-#%%
-
-
-
-
-
-
-
-
 
 
 #%%
