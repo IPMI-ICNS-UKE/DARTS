@@ -3,10 +3,8 @@ import trackpy as tp
 import skimage
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
-import skimage.io as io
 import numpy as np
 from scipy.ndimage import shift
-import matplotlib.pyplot as plt
 
 
 class CellTracker:
@@ -40,7 +38,7 @@ class CellTracker:
         features = pd.DataFrame()
         for num, img in enumerate(image_series):
             for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
-                if True:  # or region.area > 3000:  # TO DO needs to be optimised
+                if True:
                     features = features._append([{  'y': region.centroid[0],
                                                     'x': region.centroid[1],
                                                     'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
@@ -56,9 +54,9 @@ class CellTracker:
         if (not features.empty):
             tp.annotate(features[features.frame == (0)], image_series[0])
             # tracking, linking of coordinates
-            search_range = 30  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
+            search_range = 10  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
             t = tp.link_df(features, search_range, memory=0)
-            t = tp.filtering.filter_stubs(t, threshold=number_of_frames)
+            t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
             # print (t)
             # tp.plot_traj(t, superimpose=fluo_image[0])
             # print (t)
@@ -277,6 +275,12 @@ class CellTracker:
             # print("xmax " + str(int(roi_list[frame][0])))
 
             # ggf. statt int() die Methode round() verwenden?
+            # print("coordinates")
+            # print(str(int(roi_list[frame][0])))
+            # print(str(int(roi_list[frame][1])))
+            # print(str(int(roi_list[frame][2])))
+            # print(str(int(roi_list[frame][3])))
+
             cropped_image[frame] = image[frame][int(roi_list[frame][2]):int(roi_list[frame][3]),
                                                 int(roi_list[frame][0]):int(roi_list[frame][1])]
         return cropped_image
@@ -293,7 +297,18 @@ class CellTracker:
             copy[frame][masks[frame]] = 0
         return copy
 
-    def give_rois(self, channel1, channel2):
+    def cell_completely_in_image(self, roi_list_particle, ymax, xmax):
+        """
+        Checks, if the cell is completely in the image in each frame
+        :return:
+        """
+        for roi in roi_list_particle:
+            if(roi[0] < 0 or roi[1] > xmax or roi[2] < 0 or roi[3] > ymax):
+                return False
+        return True
+
+
+    def give_rois(self, channel1, channel2, ymax, xmax):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
         Background subtraction included.
@@ -307,6 +322,7 @@ class CellTracker:
         :return:
         """
         dataframe, particle_set = self.generate_trajectory(channel1)
+        # hier ggf. auch generate trajectory für channel2
 
         roi_cell_list = []
         for particle in particle_set:
@@ -316,12 +332,16 @@ class CellTracker:
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
 
             roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
-            roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
-            frame_masks = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
-            roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
 
-            roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
-            roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
+            # print("condition")
+            # print(self.cell_completely_in_image(roi_list_particle, ymax, xmax))
+            if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
+                roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
+                frame_masks = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
+                roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
+
+                roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
+                roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
+                roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
         return roi_cell_list
 
