@@ -38,6 +38,8 @@ time_of_addition_in_seconds = 30  # beads or compound...
 # TO DO Fura etc.
 
 registration_method = "SITK"
+
 registration_framebyframe = false
+
 
 ATP = false
