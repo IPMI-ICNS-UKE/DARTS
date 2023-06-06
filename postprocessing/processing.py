@@ -7,8 +7,10 @@ from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
+
 from postprocessing.registration import Registration_SITK, Registration_SR
 from postprocessing import HotSpotDetection
+
 
 try:
     import SimpleITK as sitk
@@ -57,12 +59,14 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
+
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
+
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -229,12 +233,14 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
+
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"]["registration_framebyframe"])
 
         self.select_rois()  # find the cells
         dataframes_list = []
+
 
         for cell in self.cell_list:
             for step in self.processing_steps:
