@@ -7,9 +7,11 @@ from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
-from pystackreg import StackReg
+
 from postprocessing.registration import Registration_SITK, Registration_SR
-from postprocessing.shapenormalization import ShapeNormalization
+
+from postprocessing import HotSpotDetection
+
 
 try:
     import SimpleITK as sitk
@@ -47,6 +49,7 @@ class ImageProcessor:
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
+        self.excluded_cells_list = []
         self.ratio_list = []
         self.nb_rois = None
         self.roi_minmax_list = []
@@ -57,7 +60,14 @@ class ImageProcessor:
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
-        #self.registration = None
+
+        self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
+        self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
+        self.frames_per_second = self.parameters["properties"]["frames_per_second"]
+        self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
+                                                                self.parameters["inputoutput"]["excel_filename"],
+                                                                self.frames_per_second)
+
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -71,7 +81,7 @@ class ImageProcessor:
     def select_rois(self):
         if not self.ATP_flag:
             # offset = self.estimated_cell_diameter_in_pixels * 0.6
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2)
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max)
             self.nb_rois = len(roi_list_cell_pairs)
             for i in range(self.nb_rois):
                 """
@@ -89,9 +99,10 @@ class ImageProcessor:
                     roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
                                                                                              self.estimated_cell_area)
                 """
-                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1, roi_list_cell_pairs[i][4]),
-                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2, roi_list_cell_pairs[i][5]),
-                                                self.segmentation,
+
+                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
+                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
+
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
@@ -220,49 +231,43 @@ class ImageProcessor:
 
         return fig
 
-    def channel_registration(self):
-        """
-        Registration of the two channels based on affine transformation. The first channel is defined as the reference
-        channel, the second one as the offset channel. A transformation matrix is calculated by comparing the first frame
-        of each channel. The matrix is applied to each frame of the offset channel.
-        Assumption: The offset remains constant from the first to the last frame.
-        """
-        print("registration of channel 1 and channel 2")
-        image = self.channel1[0]
-        offset_image = self.channel2[0]
-        sr = StackReg(StackReg.AFFINE)
-        transformation_matrix = sr.register(image, offset_image)
-
-        for frame in range(len(self.channel2)):
-            self.channel2[frame] = sr.transform(self.channel2[frame], transformation_matrix)
-        # self.channel2 = sr.transform(self.channel2, transformation_matrix)
-
-        fig = plt.figure(figsize=(10, 10))
-        ax1 = fig.add_subplot(2, 2, 1)
-        ax1.imshow(offset_image, cmap='gray')
-        ax1.title.set_text('Input Image')
-        ax2 = fig.add_subplot(2, 2, 4)
-        ax2.imshow(self.channel2[0], cmap='gray')
-        # ax2.imshow(self.channel2, cmap='gray')
-        ax2.title.set_text('Affine')
-        plt.show()
-
     def save_registered_first_frames(self):
         io.imsave(self.save_path + '/channel_1_frame_1' + '.tif', self.channel1)
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-        # TO DO ggf. hier channel_registration mit dem ganzen Bild?
+
+        # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"]["registration_framebyframe"])
-        self.save_registered_first_frames()
-        self.select_rois()
+
+        self.select_rois()  # find the cells
+        dataframes_list = []
+
+
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
 
             cell.measure_mean_in_all_frames()
+
+
+            cell.generate_ratio_image_series()
+
+            if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
+                signal_threshold = cell.calculate_signal_threshold(int(self.time_of_addition_in_seconds *
+                                                                       self.frames_per_second))
+                measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(),
+                                                                                     signal_threshold,
+                                                                                     6,   # lower area limit
+                                                                                     20)  # upper area limit
+                dataframes_list.append(measurement_microdomains)
+            else:
+                print("this cell is preactivated")  # only temporarily
+                self.excluded_cells_list.append(cell)
+
+        self.hotspotdetector.save_dataframes(dataframes_list)
 
     def normalize_cell_shape(self, cell):
         SN = ShapeNormalization(cell.ratio, cell.channel1.original_image, cell.channel2.original_image)
@@ -286,12 +291,14 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/test_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(self.save_path + '/test_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
+            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.calculate_ratio_image())
+
+            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
             i += 1
+

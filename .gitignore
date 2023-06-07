@@ -1,4 +1,7 @@
 config.toml
+
+*.tif
+*.jpg
 *.txt
 
 # Byte-compiled / optimized / DLL files
