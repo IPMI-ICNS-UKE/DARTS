@@ -7,9 +7,12 @@ from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
-from pystackreg import StackReg
+
 from postprocessing.registration import Registration_SITK, Registration_SR
+
 from postprocessing import HotSpotDetection
+from postprocessing.shapenormalization import ShapeNormalization
+
 
 try:
     import SimpleITK as sitk
@@ -54,12 +57,12 @@ class ImageProcessor:
         self.roi_minmax_list = []
         # self.roi_coord_list = []
         self.roi_bounding_boxes = []
-        # self.resize_box_factor = self.parameters["properties"]["resize_box_factor"]
         self.cell_tracker = CellTracker()
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
         self.bleaching = None
+
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
@@ -97,8 +100,10 @@ class ImageProcessor:
                     roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
                                                                                              self.estimated_cell_area)
                 """
+
                 self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
                                                 ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
+
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
@@ -231,6 +236,7 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
+
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"]["registration_framebyframe"])
@@ -243,11 +249,14 @@ class ImageProcessor:
                 if step is not None:
                     step.run(cell, self.parameters)
 
+            #cell.measure_mean_in_all_frames()
             cell.generate_ratio_image_series()
 
             if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-                signal_threshold = cell.calculate_signal_threshold(int(self.time_of_addition_in_seconds *
-                                                                       self.frames_per_second))
+                first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
+                if first_n_frames > self.t_max:
+                    first_n_frames = self.t_max
+                signal_threshold = cell.calculate_signal_threshold(first_n_frames)
                 measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(),
                                                                                      signal_threshold,
                                                                                      6,   # lower area limit
@@ -259,6 +268,11 @@ class ImageProcessor:
 
         self.hotspotdetector.save_dataframes(dataframes_list)
 
+
+    def normalize_cell_shape(self, cell):
+        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
+        cell.normalized_ratio_image = SN.apply_shape_normalization()
+        return cell.normalized_ratio_image
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -284,5 +298,7 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
+
             io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
             i += 1
+

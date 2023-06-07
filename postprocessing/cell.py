@@ -26,8 +26,12 @@ class CellImage:
         self.cell_image_data = cell_image_data
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
+
+        self.normalized_ratio_image = None
+
         self.cell_is_preactivated = False
         self.number_of_frames_before_cell_activation = 0
+
 
 
     def is_preactivated(self, ratio_preactivation_threshold):
@@ -162,15 +166,31 @@ class CellImage:
 
 
 
+    def calculate_ratio_image(self):
+        """
+        Calculates the ratio image for each cell image pair (each frame) and returns the ratio image
+        :return:
+        """
+        ratio_image = self.channel1.return_image().astype(float)
+        frame_number = len(self.channel1.return_image())
+
+        for frame in range(frame_number):
+            ratio_image[frame] = self.calculate_ratio(frame)
+        self.ratio = np.nan_to_num(ratio_image)
+        return self.ratio
+
+
+
 
 
 
 
 
 class ChannelImage:
-    def __init__(self, roi, wl):
+    def __init__(self, roi, wl, original_image=None):
         self.image = roi
         self.wavelength = wl
+        self.original_image = original_image
 
     def return_image(self):
         return self.image
@@ -258,3 +278,4 @@ class CellImageRegistrator:
         for frame in range(len(channel)):
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
+
