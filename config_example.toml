@@ -43,3 +43,34 @@ registration_framebyframe = false
 
 
 ATP = false
+
+
+[deconvolution]
+
+lambda = 0.5
+lambda_t = 0.5
+
+[psf]
+
+# accepted types: "confocal" and "widefield"
+type = "confocal"
+
+# wavelengths channel1
+lambdaEx_ch1 = 488
+lambdaEm_ch1 = 520
+
+# wavelengths channel2
+lambdaEx_ch2 = 488
+lambdaEm_ch2 = 600
+
+numAper = 1.4
+magObj = 100
+rindexObj = 1.518
+ccdSize =  6450
+dz = 0
+nslices = 1
+depth = 0
+rindexSp = 1.518
+nor = 0
+xysize = 150
+

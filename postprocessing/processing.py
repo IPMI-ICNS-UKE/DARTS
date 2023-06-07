@@ -12,6 +12,7 @@ from postprocessing.registration import Registration_SITK, Registration_SR
 
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
+from postprocessing.deconvolution import TDEDecon
 
 
 try:
@@ -59,7 +60,7 @@ class ImageProcessor:
         self.cell_tracker = CellTracker()
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
-        self.decon = None
+        self.decon = TDEDecon(self.parameters)
         self.bleaching = None
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
@@ -249,7 +250,7 @@ class ImageProcessor:
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
-                    step.run(cell, self.parameters)
+                    cell.channel1.processed_image, cell.channel2.processed_image = step.run(cell, self.parameters)
 
             #cell.measure_mean_in_all_frames()
             cell.generate_ratio_image_series()

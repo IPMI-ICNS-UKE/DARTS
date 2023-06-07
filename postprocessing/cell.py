@@ -91,8 +91,8 @@ class CellImage:
 
 
     def generate_ratio_image_series(self):
-        ratio_image = self.channel1.return_image().astype(float)
-        frame_number = len(self.channel1.return_image())
+        ratio_image = self.channel1.processed_image.astype(float)
+        frame_number = len(self.channel1.processed_image)
 
         for frame in range(frame_number):
             ratio_image[frame] = self.calculate_ratio(frame)
@@ -104,8 +104,8 @@ class CellImage:
         :param frame_number:
         :return:
         """
-        frame_channel_1 = (self.channel1.return_image())[frame_number] * 1.0
-        frame_channel_2 = (self.channel2.return_image())[frame_number] * 1.0
+        frame_channel_1 = (self.channel1.processed_image)[frame_number] * 1.0
+        frame_channel_2 = (self.channel2.processed_image)[frame_number] * 1.0
 
         # ratio = np.divide(frame_channel_1, frame_channel_2)
 
@@ -135,8 +135,8 @@ class CellImage:
     def channel_registration(self):
         if not self.atp_flag:
             print("Here comes the channel registration")
-            channel_1_image = self.channel1.return_image().copy()
-            channel_2_image = self.channel2.return_image().copy()
+            channel_1_image = self.channel1.image.copy()
+            channel_2_image = self.channel2.image.copy()
 
             """
             # if the cell image represents a cell loaded with the ATP-sensor, then each frame of each cell image needs to be
@@ -155,7 +155,7 @@ class CellImage:
                                                                                       trajectory_channel_2)
             x_offset, y_offset = round(x_offset), round(y_offset)
 
-            self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
+            self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.image, x_offset, y_offset))
 
     def give_thresholded_image(self, frame, threshold):
         thresholded_frame = frame > threshold
@@ -168,8 +168,8 @@ class CellImage:
         Calculates the ratio image for each cell image pair (each frame) and returns the ratio image
         :return:
         """
-        ratio_image = self.channel1.return_image().astype(float)
-        frame_number = len(self.channel1.return_image())
+        ratio_image = self.channel1.processed_image.astype(float)
+        frame_number = len(self.channel1.processed_image)
 
         for frame in range(frame_number):
             ratio_image[frame] = self.calculate_ratio(frame)
@@ -186,6 +186,7 @@ class CellImage:
 class ChannelImage:
     def __init__(self, roi, wl, original_image=None):
         self.image = roi
+        self.processed_image = self.image
         self.wavelength = wl
         self.original_image = original_image
 
