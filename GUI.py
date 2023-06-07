@@ -1,11 +1,10 @@
 import tkinter
-from tkinter import (Tk, ttk, Label, Frame, Button, LabelFrame,INSERT,
-                     Checkbutton, Radiobutton, IntVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton)
+from tkinter import (Tk, ttk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
+                     Checkbutton, Radiobutton, IntVar,StringVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
 import tomlkit
 
-from tkinter import ttk
 
 
 class TDarts_GUI():
@@ -13,7 +12,10 @@ class TDarts_GUI():
     def __init__(self):
 
         self.window = Tk()
-        self.window.geometry("500x900")
+        width = 800
+        height = 900
+        # self.window.geometry("500x900")
+        self.window.geometry(str(width)+"x"+str(height))
         self.window.title("Welcome to T-DARTS")
 
         self.frame = Frame(self.window)
@@ -100,11 +102,25 @@ class TDarts_GUI():
         self.text_resolution = Text(self.properties_of_measurement_frame, height=1, width=30)
         self.text_resolution.insert(INSERT, "3")
         self.text_resolution.grid(row=3, column=1, sticky="W")
+
+        # cell types
+        self.label_cell_type = Label(self.properties_of_measurement_frame, text="Cell type:  ")
+        self.label_cell_type.grid(row=4, column=0, sticky="W")
+        cell_types = [
+            "CD4+ primary murine cells",
+            "Jurkat cells",
+            "more cell types will follow..."
+        ]
+        cell_type = StringVar(self.properties_of_measurement_frame)
+        cell_type.set(cell_types[0])
+        self.option_menu_cell_types = OptionMenu(self.properties_of_measurement_frame, cell_type, *cell_types)
+        self.option_menu_cell_types.grid(row=4, column=1, sticky="W")
+
         # time
         self.label_time = Label(self.properties_of_measurement_frame, text="day of measurement :  ")
-        self.label_time.grid(row=4, column=0, sticky="W")
+        self.label_time.grid(row=5, column=0, sticky="W")
         self.entry_time = Entry(self.properties_of_measurement_frame)
-        self.entry_time.grid(row=4, column=1, sticky="W")
+        self.entry_time.grid(row=5, column=1, sticky="W")
         self.entry_time.insert(0, "dd/mm/yyyy")
         self.entry_time.bind("<1>", self.pick_date)
 
@@ -131,7 +147,7 @@ class TDarts_GUI():
                                                                  onvalue=1, offvalue=0, )
         self.check_box_frame_by_frame_registration.grid(column=4, row=12, sticky="W")
 
-        self.label_deconvolution = Label(self.label_processing_pipeline, text="Deconvolution:  ")
+        self.label_deconvolution = Label(self.label_processing_pipeline, text="TDEntropy Deconvolution:  ")
         self.label_deconvolution.grid(column=1, row=13, sticky="W")
         self.deconvolution_in_pipeline = IntVar()
         self.check_box_deconvolution_in_pipeline = Checkbutton(self.label_processing_pipeline,
@@ -155,6 +171,19 @@ class TDarts_GUI():
                                                           onvalue=1, offvalue=0, )
         self.check_box_dartboard_projection.grid(column=2, row=15, sticky="W")
 
+        self.label_further_information = Label(self.label_processing_pipeline, text="Further information:  ")
+        self.label_further_information.grid(column=1, row=16, sticky="W")
+
+        self.label_user = Label(self.label_processing_pipeline, text="User:  ")
+        self.label_user.grid(column=2, row=16, sticky="W")
+        self.text_user = Text(self.label_processing_pipeline, height=1, width=30)
+        self.text_user.grid(column=3, row=16, sticky="W")
+
+        self.label_experiment_name = Label(self.label_processing_pipeline, text="Name of experiment:  ")
+        self.label_experiment_name.grid(column=1, row=17, sticky="W")
+        self.text_experiment_name = Text(self.label_processing_pipeline, height=1, width=30)
+        self.text_experiment_name.grid(column=2, row=17, sticky="W")
+
         ##################################################################################
 
         # create Properties of measurement frame to place our grid
@@ -173,14 +202,17 @@ class TDarts_GUI():
         # settings from last run
         self.settings_from_last_run = Button(self.window, text="Use settings from last run",
                                              command=self.get_settings_from_last_run)
-        self.settings_from_last_run.place(x=50, y=760)
+        self.settings_from_last_run.place(x=0.09 * width, y=0.9 * height)
         # self.settings_from_last_run.grid(row=5, column=0, sticky="W")
 
         ################################################################################
 
         # start button
         self.start_button = Button(self.window, text='Start', command=self.start_analysis)
-        self.start_button.place(x=410, y=760)
+        self.start_button.place(x=0.5 * width, y=0.9 * height)
+
+        self.cancel_button = Button(self.window, text='Cancel', command=self.cancel)
+        self.cancel_button.place(x=0.8 * width, y=0.9 * height)
 
     def pick_date(self, event):
         global calendar, date_window
@@ -262,6 +294,10 @@ class TDarts_GUI():
         self.write_input_to_config_file()
         self.close_window()
 
+    def cancel(self):
+        self.window.destroy()
+        quit()
+
     def get_image_configuration(self):
         if self.selected_image_configuration.get() == 1:
             return "single"
@@ -337,13 +373,11 @@ class TDarts_GUI():
         with open("config.toml", mode="wt", encoding="utf-8") as fp:
             tomlkit.dump(config, fp)
 
+    def add_cell_type_clicked(self):
+        pass
+
     def run_main_loop(self):
         self.window.mainloop()
 
     def close_window(self):
         self.window.destroy()
-
-
-if __name__ == "__main__":
-    gui = TDarts_GUI()
-    gui.run_main_loop()
