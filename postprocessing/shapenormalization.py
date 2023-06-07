@@ -67,7 +67,7 @@ class ShapeNormalization:
             centeredEdgeCoords[:, 0], centeredEdgeCoords[:, 1])
         transformParameter = polCoords
 
-        # has to start from 0 to 2pi
+        # has to start from 0 to 2pi for the interpolation
         transformParameter = np.vstack(
             [transformParameter[-1, :] - [2 * np.pi, 0], transformParameter, transformParameter[0, :] + [2 * np.pi, 0]])
 
