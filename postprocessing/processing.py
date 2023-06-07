@@ -11,6 +11,7 @@ from matplotlib.patches import Rectangle
 from postprocessing.registration import Registration_SITK, Registration_SR
 
 from postprocessing import HotSpotDetection
+from postprocessing.shapenormalization import ShapeNormalization
 
 
 try:
@@ -250,14 +251,14 @@ class ImageProcessor:
                 if step is not None:
                     step.run(cell, self.parameters)
 
-            cell.measure_mean_in_all_frames()
-
-
+            #cell.measure_mean_in_all_frames()
             cell.generate_ratio_image_series()
 
             if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-                signal_threshold = cell.calculate_signal_threshold(int(self.time_of_addition_in_seconds *
-                                                                       self.frames_per_second))
+                first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
+                if first_n_frames > self.t_max:
+                    first_n_frames = self.t_max
+                signal_threshold = cell.calculate_signal_threshold(first_n_frames)
                 measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(),
                                                                                      signal_threshold,
                                                                                      6,   # lower area limit
@@ -270,7 +271,7 @@ class ImageProcessor:
         self.hotspotdetector.save_dataframes(dataframes_list)
 
     def normalize_cell_shape(self, cell):
-        SN = ShapeNormalization(cell.ratio, cell.channel1.original_image, cell.channel2.original_image)
+        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         return cell.normalized_ratio_image
 

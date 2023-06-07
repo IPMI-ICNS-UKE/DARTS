@@ -6,14 +6,15 @@ import os
 import skimage.io as io
 
 from GUI import TDarts_GUI
+import argparse
 
 
-# def main():
-if __name__ == '__main__':
+def main(gui_enabled):
+    if gui_enabled:
+        gui = TDarts_GUI()
+        gui.run_main_loop()
 
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
-    gui = TDarts_GUI()
-    gui.run_main_loop()
 
     Processor = ImageProcessor(parameters)
     Processor.start_postprocessing()
@@ -31,3 +32,14 @@ if __name__ == '__main__':
     Processor.save_ratio_image_files()
     # fig = Processor.plot_rois()
     # fig.savefig(save_path_Ca_cAMP + "rois.jpg")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run program.')
+    parser.add_argument('--no-gui', dest='gui', action='store_false',
+                        help='run without graphical interface')
+    parser.set_defaults(gui=True)
+
+    args = parser.parse_args()
+
+    main(args.gui)
