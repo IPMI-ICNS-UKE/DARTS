@@ -9,6 +9,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
 from postprocessing.registration import Registration_SITK, Registration_SR
+
 from postprocessing import HotSpotDetection
 
 
@@ -98,8 +99,10 @@ class ImageProcessor:
                     roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
                                                                                              self.estimated_cell_area)
                 """
+
                 self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
                                                 ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
+
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
@@ -247,6 +250,9 @@ class ImageProcessor:
                 if step is not None:
                     step.run(cell, self.parameters)
 
+            cell.measure_mean_in_all_frames()
+
+
             cell.generate_ratio_image_series()
 
             if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
@@ -262,6 +268,11 @@ class ImageProcessor:
                 self.excluded_cells_list.append(cell)
 
         self.hotspotdetector.save_dataframes(dataframes_list)
+
+    def normalize_cell_shape(self, cell):
+        SN = ShapeNormalization(cell.ratio, cell.channel1.original_image, cell.channel2.original_image)
+        cell.normalized_ratio_image = SN.apply_shape_normalization()
+        return cell.normalized_ratio_image
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -287,5 +298,7 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
+
             io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
             i += 1
+
