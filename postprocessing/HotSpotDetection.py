@@ -2,7 +2,10 @@
 import pandas as pd
 import trackpy as tp
 import skimage
+from tqdm import tqdm
+import skimage.io as io
 import numpy as np
+
 
 class HotSpotDetector():
     def __init__(self, save_path, filename, fps):
@@ -71,7 +74,8 @@ class HotSpotDetector():
         labels_for_each_frame = self.label_thresholded_image_series(thresholded_image_series)
 
         features = pd.DataFrame()
-        for num, img in enumerate(image_series):
+        print("Track Hotspots")
+        for num, img in tqdm(enumerate(image_series)):
             for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
                 if lower_limit_area < region.area < upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
@@ -102,6 +106,11 @@ class HotSpotDetector():
         subset = dataframe.loc[dataframe['time_in_seconds'] == time_in_seconds]
         return len(subset)
 
+    # def save_dataframe_in_excel_file(self,dataframe,sheet_number, save_path):
+    #     if dataframe is not None:
+    #         dataframe.to_excel(self.excelwriter,sheet_name="Cell_image_" + str(sheet_number))
+    #         dataframe.to_csv(save_path + "/Cell_image" + str(sheet_number))
+
     def count_microdomains_in_each_frame(self, dataframe):
         number_of_frames = len(set(dataframe['time_in_seconds'].tolist()))
         dataframe_copy = dataframe[['time_in_seconds']].copy()
@@ -115,6 +124,7 @@ class HotSpotDetector():
                                                                               'number_of_microdomains': number_of_microdomains,
                                                                             }, ])
         return microdomains_in_each_frame
+
 
     def save_dataframes(self, dataframes_list):
         # Write to Multiple Sheets
