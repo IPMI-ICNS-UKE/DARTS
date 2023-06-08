@@ -55,6 +55,7 @@ class HotSpotDetector():
                 if lower_limit_area < region.area < upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
+                                                  'frame': num,
                                                   'time_in_seconds': float(num)/self.frames_per_second,
                                                   'area': region.area,
                                                   'max_intensity': region.intensity_max,
@@ -129,3 +130,4 @@ class HotSpotDetector():
                     number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
                     number_of_microdomains.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index) + "_Microdomains", index=False)
                     index += 1
+

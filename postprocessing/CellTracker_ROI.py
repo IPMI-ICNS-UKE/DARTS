@@ -152,7 +152,7 @@ class CellTracker:
         label_images = subset["image_intensity"].values.tolist()
         return label_images
 
-    def get_dataframe_subset(self,dataframe,particle):
+    def get_dataframe_subset(self, dataframe, particle):
         subset = dataframe.loc[dataframe['particle'] == particle]
         return subset
 
