@@ -345,4 +345,3 @@ class CellTracker:
                 roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
                 roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
         return roi_cell_list
-

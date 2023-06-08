@@ -104,7 +104,6 @@ class ImageProcessor:
 
                 self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
                                                 ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
-
                                                 self.ATP_image_converter,
                                                 self.ATP_flag,
                                                 self.estimated_cell_area,
