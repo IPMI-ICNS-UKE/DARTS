@@ -1,5 +1,7 @@
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class DartboardGenerator:
     def execute(self, channel, parameters):
@@ -22,37 +24,60 @@ class DartboardGenerator:
         x0 = centroid_coords[1]
         x = signal_coords[0]
         y = signal_coords[1]
-        angle = math.degrees(math.atan2(y0 - y, x0 - x)) % 360
+        angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180)% 360
         return angle
 
-    def assign_signal_to_dartboard_area(self, signal_coords, centroid_coords, number_of_areas, radius_inner_circle, radius_outer_circle):
-        if radius_outer_circle < self.distance_from_pixel_to_center(signal_coords, centroid_coords) < radius_inner_circle:
+    def assign_angle_to_dartboard_section(self, angle, number_of_areas):
+        angle_one_section = 360.0/number_of_areas
+        for i in range(number_of_areas):
+            lower_angle = (i-0.5)*angle_one_section
+            if lower_angle < 0:
+                lower_angle = 360.0 + lower_angle
+
+            upper_angle = (i+0.5)*angle_one_section % 360.0
+            if lower_angle < angle < upper_angle:
+                return i+1
+
+    def assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, number_of_areas_in_one_section):
+        interval = radius_cell_image / (number_of_areas_in_one_section - 1.0)
+        dartboard_area = int(distance_from_center/interval)
+        if(radius_cell_image < distance_from_center < 0):
             return -1
         else:
-            angle_one_dartboard_area = 360.0/number_of_areas
+            return dartboard_area
+
+    def assign_signal_to_dartboard_area(self, signal_coords, centroid_coords, number_of_sections, number_of_areas_in_one_section, radius_cell_image):
+        if radius_cell_image < self.distance_from_pixel_to_center(signal_coords, centroid_coords): #< radius_inner_circle:
+            return None,None
+        else:
+            angle_one_dartboard_area = 360.0/number_of_sections
             angle = self.calculate_signal_angle_relative_to_center(centroid_coords, signal_coords)
-            number_of_dartboard_area = int(angle/angle_one_dartboard_area)
-            return number_of_dartboard_area
+            dartboard_section = self.assign_angle_to_dartboard_section(angle,number_of_sections)
+            distance_to_center = self.distance_from_pixel_to_center(signal_coords, centroid_coords)
+            dartboard_area_number_within_section = self.assign_signal_to_nth_area(distance_to_center,
+                                                                                  radius_cell_image,
+                                                                                  number_of_areas_in_one_section)
 
+            return dartboard_section, dartboard_area_number_within_section
 
-    def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_dartboard_areas, radius_inner_circle):
-        dartboard_area_frequency = {}
-        for i in range(number_of_dartboard_areas):
-            dartboard_area_frequency[i] = 0
+    def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_sections, number_of_areas_within_section, radius_cell_image):
+        dartboard_area_frequency = np.zeros(shape=(number_of_sections+1, number_of_areas_within_section))
+
         dataframe_one_frame = self.reduce_dataframe_to_one_frame(dataframe, frame)
         signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(dataframe_one_frame)
-
 
         for signal in signal_in_frame_coords_list:
             x = signal[0]
             y = signal[1]
             signal_coords = (x, y)
-            number_of_dartboard_area = self.assign_signal_to_dartboard_area(signal_coords,
-                                                                            centroid_coords,
-                                                                            number_of_dartboard_areas,
-                                                                            radius_inner_circle)
-            if number_of_dartboard_area is not None:
-                dartboard_area_frequency[number_of_dartboard_area] +=1
+            dartboard_section, dartboard_area_number_within_section = self.assign_signal_to_dartboard_area(signal_coords,
+                                                                                                           centroid_coords,
+                                                                                                           number_of_sections,
+                                                                                                           number_of_areas_within_section,
+                                                                                                           radius_cell_image)
+            if(dartboard_section is not None and dartboard_area_number_within_section is not None):
+                dartboard_area_frequency[dartboard_section][dartboard_area_number_within_section] += 1
+
         return dartboard_area_frequency
 
     def reduce_dataframe_to_one_frame(self, signal_dataframe, frame):
@@ -65,61 +90,41 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def calculate_signals_in_dartboard_each_frame(self, number_of_frames, signal_dataframe, number_of_dartboard_areas, list_of_centroid_coords, radius_inner_circle):
-        dartboard_area_frequency = []
+    def calculate_signals_in_dartboard_each_frame(self, number_of_frames, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radius_cell_image, cell_index):
+        dartboard_area_frequencies = []
         for frame in range(number_of_frames):
             centroid_coords = list_of_centroid_coords[frame]
-            frame_dartboard_area_frequency = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
-                                                                                                    signal_dataframe,
-                                                                                                    centroid_coords,
-                                                                                                    number_of_dartboard_areas,
-                                                                                                    radius_inner_circle
-                                                                                                    )
-            print(frame_dartboard_area_frequency)
+            dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
+                                                                                                         signal_dataframe,
+                                                                                                         centroid_coords,
+                                                                                                         number_of_dartboard_sections,
+                                                                                                         number_of_dartboard_areas_per_section,
+                                                                                                         radius_cell_image)
 
-
-    def create_dartboard_image(self,frame_image, number_of_areas, centroid_coords, radius_inner_circle,radius_outer_circle,dartboard_information_dict):
-        dartboard_image = np.zeros_like(frame_image)
-
-
-        for row in range(len(frame_image)):
-            for col in range(len(frame_image[0])):
-
-                dartboard_index_of_pixel = self.assign_signal_to_dartboard_area((col, row),
-                                                                                centroid_coords,
-                                                                                number_of_areas,
-                                                                                radius_inner_circle,
-                                                                                radius_outer_circle)
-                if (dartboard_index_of_pixel > -1):
-                    dartboard_image[row][col] = self.calculate_pixel_intensity(dartboard_index_of_pixel,dartboard_information_dict)
-                else:
-                    dartboard_image[row][col] = 0
-        return dartboard_image
-
-    def calculate_pixel_intensity(self, dartboard_index, dartboard_information_dict):
-        pixel_intensity = dartboard_information_dict[dartboard_index] * 100
-        return pixel_intensity
-
-
-# {0: 1, 1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 0, 7: 0}
-# {0: 1, 1: 2, 2: 1, 3: 1, 4: 1, 5: 3, 6: 0, 7: 0}
+            self.plot_dartboard(dartboard_area_frequency_this_frame, radius_cell_image, cell_index, frame)
+            dartboard_area_frequencies.append(dartboard_area_frequency_this_frame)
 
 
 
-import matplotlib.pyplot as plt
-import numpy as np
+    def plot_dartboard(self,dartboard_area_frequencies, radius_cell_image, cell_number, frame_number):
+        fig = plt.figure()
+        ax = Axes3D(fig)
 
-fig, ax = plt.subplots()
+        n = len(dartboard_area_frequencies)
+        m = len(dartboard_area_frequencies[0])
 
-size = 0.3
-vals = np.array([[60., 10.], [60., 10.], [60., 10.]])
+        rad = np.linspace(0, radius_cell_image, m)
+        a = np.linspace(0, 2 * np.pi, n)
+        r, th = np.meshgrid(rad, a)
 
-cmap = plt.colormaps["tab20c"]
-outer_colors = cmap(np.arange(3)*4)
+        plt.subplot(projection="polar")
 
-ax.pie(vals.sum(axis=1), radius=1, colors=outer_colors,
-       wedgeprops=dict(width=size, edgecolor='w'),startangle=90)
+        plt.pcolormesh(th, r, dartboard_area_frequencies, cmap='inferno')
+        plt.title("cell_number: " + str(cell_number) + " frame_number: " + str(frame_number))
+        plt.plot(a, r, ls='none', color='k')
+        plt.grid()
+        plt.colorbar()
+        # plt.savefig('a.png')
+        plt.show()
 
 
-ax.set(aspect="equal", title='Dartboard projection')
-plt.show()

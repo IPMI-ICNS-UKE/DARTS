@@ -64,6 +64,8 @@ class ImageProcessor:
         self.decon = None
         self.bleaching = None
         self.dataframes_microdomains_list = []
+        self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
+        self.dartboard_number_of_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
@@ -275,15 +277,19 @@ class ImageProcessor:
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
 
-    def dartboard_projection(self, centroid_coords_list, cell):
+    def dartboard_projection(self, centroid_coords_list, cell,cell_image_radius, cell_index):
+
         dartboard_generator = DartboardGenerator()
         if(cell.signal_data is not None):
             dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
                                                                           cell.signal_data,
-                                                                          8,
+                                                                          self.dartboard_number_of_sections,
+                                                                          self.dartboard_number_of_areas_per_section,
                                                                           centroid_coords_list,
-                                                                          40
+                                                                          cell_image_radius,
+                                                                          cell_index
                                                                           )
+
 
     def normalize_cell_shape(self, cell):
         SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
