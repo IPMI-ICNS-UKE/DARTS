@@ -123,8 +123,6 @@ class ShapeNormalization:
         img_labels, img_details = segmodel.predict_instances(normalize(img_frame))
 
         regions = measure.regionprops(img_labels)[0]
-        regions_intensity_image = measure.regionprops(img_labels,intensity_image=img_frame)[0]
-
 
         edgecoord = img_details['coord'][0]
         centroid = regions.centroid
