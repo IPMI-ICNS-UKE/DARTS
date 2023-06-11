@@ -29,6 +29,7 @@ def main(gui_enabled):
         io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
 
         Processor.detect_hotspots(normalized_ratio, cell, i)
+
         Processor.save_measurements()
         Processor.dartboard_projection(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
 

@@ -121,7 +121,10 @@ class ShapeNormalization:
         segmodel = StarDist2D.from_pretrained('2D_versatile_fluo')
 
         img_labels, img_details = segmodel.predict_instances(normalize(img_frame))
+
         regions = measure.regionprops(img_labels)[0]
+        regions_intensity_image = measure.regionprops(img_labels,intensity_image=img_frame)[0]
+
 
         edgecoord = img_details['coord'][0]
         centroid = regions.centroid
@@ -129,6 +132,7 @@ class ShapeNormalization:
 
     def get_centroid_coords_list(self):
         return self.centroid_coords_list
+
 
     def pad_array(self, arr, shape):
         pad_shape = [(0, max_shape - cur_shape) for max_shape, cur_shape in zip(shape, arr.shape)]

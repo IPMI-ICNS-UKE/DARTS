@@ -13,6 +13,7 @@ from postprocessing.registration import Registration_SITK, Registration_SR
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
 from postprocessing.Dartboard import DartboardGenerator
+from postprocessing.Bleaching import BleachingAdditiveFit
 
 
 try:
@@ -62,7 +63,7 @@ class ImageProcessor:
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
-        self.bleaching = None
+        self.bleaching = BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
@@ -296,6 +297,7 @@ class ImageProcessor:
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
+
 
     def return_ratios(self):
         for cell in self.cell_list:
