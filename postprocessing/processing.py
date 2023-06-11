@@ -13,6 +13,10 @@ from postprocessing.registration import Registration_SITK, Registration_SR
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
 
+from postprocessing.Dartboard import DartboardGenerator
+from postprocessing.Bleaching import BleachingAdditiveFit
+
+
 
 try:
     import SimpleITK as sitk
@@ -46,7 +50,10 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
-        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
+
+        self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
+        self.frame_number = len(self.channel1)
+
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
@@ -61,7 +68,10 @@ class ImageProcessor:
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
-        self.bleaching = None
+        self.bleaching = BleachingAdditiveFit()
+        self.dataframes_microdomains_list = []
+        self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
+        self.dartboard_number_of_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
@@ -242,31 +252,58 @@ class ImageProcessor:
                                                                self.parameters["properties"]["registration_framebyframe"])
 
         self.select_rois()  # find the cells
-        dataframes_list = []
+
 
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
 
-            #cell.measure_mean_in_all_frames()
             cell.generate_ratio_image_series()
 
-            if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-                first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
-                if first_n_frames > self.t_max:
-                    first_n_frames = self.t_max
-                signal_threshold = cell.calculate_signal_threshold(first_n_frames)
-                measurement_microdomains = self.hotspotdetector.measure_microdomains(cell.give_ratio_image(),
-                                                                                     signal_threshold,
-                                                                                     6,   # lower area limit
-                                                                                     20)  # upper area limit
-                dataframes_list.append(measurement_microdomains)
-            else:
-                print("this cell is preactivated")  # only temporarily
-                self.excluded_cells_list.append(cell)
+    def detect_hotspots(self, ratio_image, cell, i):
+        if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
+            first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
+            if first_n_frames > self.t_max:
+                first_n_frames = self.t_max
+            signal_threshold = 0.8  # needs to be adjusted to the calibration data (ratio<-> concentration)
+            measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
+                                                                                 signal_threshold,
+                                                                                 6,   # lower area limit
+                                                                                 20)  # upper area limit
+            cell.signal_data = measurement_microdomains
+            # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
+            self.dataframes_microdomains_list.append(measurement_microdomains)
 
-        self.hotspotdetector.save_dataframes(dataframes_list)
+        else:
+            # print("this cell is preactivated")  # only temporarily
+            self.excluded_cells_list.append(cell)
+
+    def save_measurements(self):
+        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
+
+
+    def dartboard_projection(self, centroid_coords_list, cell,cell_image_radius, cell_index):
+
+        dartboard_generator = DartboardGenerator(self.save_path)
+        if(cell.signal_data is not None):
+            dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
+                                                                          cell.signal_data,
+                                                                          self.dartboard_number_of_sections,
+                                                                          self.dartboard_number_of_areas_per_section,
+                                                                          centroid_coords_list,
+                                                                          cell_image_radius,
+                                                                          cell_index
+                                                                          )
+
+
+    def normalize_cell_shape(self, cell):
+        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
+        cell.normalized_ratio_image = SN.apply_shape_normalization()
+        centroid_coords_list = SN.get_centroid_coords_list()
+        return cell.normalized_ratio_image, centroid_coords_list
+
+
 
 
     def normalize_cell_shape(self, cell):

@@ -6,7 +6,8 @@ path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-dupl
 # path_to_input_channel1 = "Data/ATP/230221_ATPOS_Optimierung_1_w1Dual-CF-488-561-camera2-1-duplicate-10frames.tif"
 # path_to_input_channel2 = "Data/ATP/230221_ATPOS_Optimierung_1_w2Dual-CF-561-488-camera1-1-duplicate-10frames.tif"
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-1-short.tif"
+# path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-1-short.tif"
+path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2 - 10 frames.tif"
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-150-2900.tif"
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-160-1150.tif"
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-159-2900-1.tif"
@@ -27,19 +28,19 @@ wavelength_2 = 561
 # further information regarding the imaging:
 laserpower_wavelength_1 = 0.6 # e.g. 60%, important for bleaching correction
 laserpower_wavelength_2 = 0.4 # 40%
-scale_microns_per_pixel = 0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
+scale_microns_per_pixel = 3.0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
 cell_type = "CD4 positive murine T-cells"
 frames_per_second = 3.0 # how many frames are being measured per second?
 spatial_resolution = 3 # pixels
 ratio_preactivation_threshold = 1.0
 time_of_addition_in_seconds = 30  # beads or compound...
+dartboard_number_of_sections = 16
+dartboard_number_of_areas_per_section = 8
 
 # TO DO Fura etc.
 
 registration_method = "SITK"
-
-registration_framebyframe = false
-
+registration_framebyframe = "true"
 
 ATP = false

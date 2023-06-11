@@ -31,6 +31,8 @@ class CellImage:
 
         self.cell_is_preactivated = False
         self.number_of_frames_before_cell_activation = 0
+        self.signal_data = None
+
 
 
 
@@ -128,6 +130,9 @@ class CellImage:
 
     def give_image_channel2(self):
         return self.channel2.return_image()
+
+    def set_image_channel2(self,processed_image_series):
+        self.channel2.set_image(processed_image_series)
 
     def execute_processing_step(self, step, parameters):
         self.channel1 = step.execute(self.channel1, parameters)
