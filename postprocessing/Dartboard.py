@@ -1,9 +1,12 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import os
 
 class DartboardGenerator:
+    def __init__(self, save_path):
+        self.save_path = save_path
+
     def execute(self, channel, parameters):
         print(self.give_name())
         return self.apply_dartboard_on_membrane(channel, parameters)
@@ -107,8 +110,7 @@ class DartboardGenerator:
 
 
     def plot_dartboard(self,dartboard_area_frequencies, radius_cell_image, cell_number, frame_number):
-        fig = plt.figure()
-        ax = Axes3D(fig)
+        # fig = plt.figure()
 
         n = len(dartboard_area_frequencies)
         m = len(dartboard_area_frequencies[0])
@@ -120,11 +122,18 @@ class DartboardGenerator:
         plt.subplot(projection="polar")
 
         plt.pcolormesh(th, r, dartboard_area_frequencies, cmap='inferno')
-        plt.title("cell_number: " + str(cell_number) + " frame_number: " + str(frame_number))
+        image_identifier = "cell number: " + str(cell_number) + " - frame: " + str(frame_number)
+        plt.title(image_identifier)
         plt.plot(a, r, ls='none', color='k')
         plt.grid()
         plt.colorbar()
-        # plt.savefig('a.png')
-        plt.show()
+        plt.clim(0, 10.0)
+        directory = self.save_path + '/Dartboard_plots/cell_number_' + str(cell_number) + '/'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.savefig(directory + image_identifier + '.tiff')
+        # plt.show()
+
 
 

@@ -279,7 +279,7 @@ class ImageProcessor:
 
     def dartboard_projection(self, centroid_coords_list, cell,cell_image_radius, cell_index):
 
-        dartboard_generator = DartboardGenerator()
+        dartboard_generator = DartboardGenerator(self.save_path)
         if(cell.signal_data is not None):
             dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
                                                                           cell.signal_data,
