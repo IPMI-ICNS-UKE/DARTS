@@ -33,6 +33,7 @@ def main(gui_enabled):
         Processor.save_measurements()
         Processor.dartboard_projection(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
 
+
     Processor.save_image_files()  # save processed cropped images
     Processor.save_ratio_image_files()
     # fig = Processor.plot_rois()
@@ -48,3 +49,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args.gui)
+

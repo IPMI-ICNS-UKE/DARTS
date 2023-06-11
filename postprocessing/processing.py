@@ -12,8 +12,10 @@ from postprocessing.registration import Registration_SITK, Registration_SR
 
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
+
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
+
 
 
 try:
@@ -21,6 +23,7 @@ try:
 except ImportError:
     print("SimpleITK cannot be loaded")
     sitk = None
+
 
 class ImageProcessor:
     def __init__(self, parameter_dict):
@@ -47,8 +50,10 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
+
         self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
         self.frame_number = len(self.channel1)
+
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
@@ -74,7 +79,6 @@ class ImageProcessor:
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
-
 
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -119,7 +123,8 @@ class ImageProcessor:
             seg_image = self.channel1[0].copy()
 
             if self.ATP_flag:
-                seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image, self.estimated_cell_area)
+                seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image,
+                                                                                        self.estimated_cell_area)
 
             self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
             print(self.roi_bounding_boxes)
@@ -147,21 +152,19 @@ class ImageProcessor:
                                                 self.ATP_flag,
                                                 self.estimated_cell_area))
 
-
-
-    def correct_coordinates(self,ymin,ymax,xmin,xmax):
+    def correct_coordinates(self, ymin, ymax, xmin, xmax):
         ymin_corrected = ymin
         ymax_corrected = ymax
         xmin_corrected = xmin
         xmax_corrected = xmax
 
-        if(ymin<0):
+        if (ymin < 0):
             ymin_corrected = 0
-        if(ymax < 0):
+        if (ymax < 0):
             ymax_corrected = 0
-        if(xmin < 0):
+        if (xmin < 0):
             xmin_corrected = 0
-        if(xmax < 0):
+        if (xmax < 0):
             xmax_corrected = 0
         return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
@@ -250,10 +253,12 @@ class ImageProcessor:
 
         self.select_rois()  # find the cells
 
+
         for cell in self.cell_list:
             for step in self.processing_steps:
                 if step is not None:
                     step.run(cell, self.parameters)
+
             cell.generate_ratio_image_series()
 
     def detect_hotspots(self, ratio_image, cell, i):
@@ -299,6 +304,13 @@ class ImageProcessor:
         return cell.normalized_ratio_image, centroid_coords_list
 
 
+
+
+    def normalize_cell_shape(self, cell):
+        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
+        cell.normalized_ratio_image = SN.apply_shape_normalization()
+        return cell.normalized_ratio_image
+
     def return_ratios(self):
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
@@ -326,3 +338,4 @@ class ImageProcessor:
 
             io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
             i += 1
+
