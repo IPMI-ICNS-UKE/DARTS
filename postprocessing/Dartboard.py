@@ -39,10 +39,11 @@ class DartboardGenerator:
 
             upper_angle = (i+0.5)*angle_one_section % 360.0
             if lower_angle < angle < upper_angle:
-                return i+1
+                return i
 
-    def assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, number_of_areas_in_one_section):
-        interval = radius_cell_image / (number_of_areas_in_one_section - 1.0)
+    def  assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, areas_height, number_of_areas_in_one_section):
+        # interval = radius_cell_image / (number_of_areas_in_one_section - 1.0)
+        interval = radius_cell_image / (areas_height*number_of_areas_in_one_section)
         dartboard_area = int(distance_from_center/interval)
         if(radius_cell_image < distance_from_center < 0):
             return -1
@@ -53,18 +54,19 @@ class DartboardGenerator:
         if radius_cell_image < self.distance_from_pixel_to_center(signal_coords, centroid_coords): #< radius_inner_circle:
             return None,None
         else:
-            angle_one_dartboard_area = 360.0/number_of_sections
+            # angle_one_dartboard_area = 360.0/number_of_sections
             angle = self.calculate_signal_angle_relative_to_center(centroid_coords, signal_coords)
-            dartboard_section = self.assign_angle_to_dartboard_section(angle,number_of_sections)
+            dartboard_section = self.assign_angle_to_dartboard_section(angle, number_of_sections)
             distance_to_center = self.distance_from_pixel_to_center(signal_coords, centroid_coords)
             dartboard_area_number_within_section = self.assign_signal_to_nth_area(distance_to_center,
                                                                                   radius_cell_image,
+                                                                                  1,
                                                                                   number_of_areas_in_one_section)
 
             return dartboard_section, dartboard_area_number_within_section
 
     def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_sections, number_of_areas_within_section, radius_cell_image):
-        dartboard_area_frequency = np.zeros(shape=(number_of_sections+1, number_of_areas_within_section))
+        dartboard_area_frequency = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
 
         dataframe_one_frame = self.reduce_dataframe_to_one_frame(dataframe, frame)
         signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(dataframe_one_frame)
@@ -79,7 +81,7 @@ class DartboardGenerator:
                                                                                                            number_of_areas_within_section,
                                                                                                            radius_cell_image)
             if(dartboard_section is not None and dartboard_area_number_within_section is not None):
-                dartboard_area_frequency[dartboard_section][dartboard_area_number_within_section] += 1
+                dartboard_area_frequency[dartboard_area_number_within_section][dartboard_section] += 1
 
         return dartboard_area_frequency
 
@@ -110,30 +112,46 @@ class DartboardGenerator:
 
 
     def plot_dartboard(self,dartboard_area_frequencies, radius_cell_image, cell_number, frame_number):
-        # fig = plt.figure()
 
-        n = len(dartboard_area_frequencies)
-        m = len(dartboard_area_frequencies[0])
+        red_sequential_cmap = plt.colormaps['Reds']
+        red_colors = (np.linspace(0, 2.0, 16))
 
-        rad = np.linspace(0, radius_cell_image, m)
-        a = np.linspace(0, 2 * np.pi, n)
-        r, th = np.meshgrid(rad, a)
+        fig = plt.figure()
+        ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
+        # ax.axis("off")
+        number_of_sections =len(dartboard_area_frequencies)
+        number_of_areas_in_section = 8
+        angle_per_section = 360.0 / number_of_sections
 
-        plt.subplot(projection="polar")
+        for i in range(number_of_sections):
+            center_angle = math.radians((i * angle_per_section + angle_per_section / 2) % 360.0)
 
-        plt.pcolormesh(th, r, dartboard_area_frequencies, cmap='inferno')
+            for dartboard_area in range(number_of_areas_in_section):
+                if (dartboard_area>4):
+                    number_of_signals_in_current_dartboard_area = round(dartboard_area_frequencies[dartboard_area][i])
+
+                    color = red_sequential_cmap(red_colors[number_of_signals_in_current_dartboard_area]) # nur vorübergehend
+
+                    ax.bar(x=center_angle, height=1, width=2 * np.pi / (number_of_sections), bottom=dartboard_area,
+                           color=color, edgecolor='white')
+
+        plt.ylim(0, 8)
+
+        ax.grid(False)
+
+        ax.set_yticks([])
+
         image_identifier = "cell number: " + str(cell_number) + " - frame: " + str(frame_number)
         plt.title(image_identifier)
-        plt.plot(a, r, ls='none', color='k')
-        plt.grid()
-        plt.colorbar()
-        plt.clim(0, 10.0)
+        sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap)
+        sm.set_clim(vmin=0, vmax=2.0)
+        plt.colorbar(sm)
+
+
         directory = self.save_path + '/Dartboard_plots/cell_number_' + str(cell_number) + '/'
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff')
         # plt.show()
-
-
 
