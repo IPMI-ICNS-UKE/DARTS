@@ -13,7 +13,9 @@ class ShapeNormalization:
         self.ratio_image = ratio
         self.channel1 = channel1
         self.channel2 = channel2
+
         self.centroid_coords_list = []
+
 
     def shift_image_to_centroid(self, image, centroid):
 
@@ -132,6 +134,7 @@ class ShapeNormalization:
         return self.centroid_coords_list
 
 
+
     def pad_array(self, arr, shape):
         pad_shape = [(0, max_shape - cur_shape) for max_shape, cur_shape in zip(shape, arr.shape)]
         return np.pad(arr, pad_shape)
@@ -142,7 +145,9 @@ class ShapeNormalization:
             nframes = self.ratio_image.shape[0]
             for i in range(nframes):
                 edge, centroid = self.find_edge_and_centroid(self.channel1[i])
+
                 self.centroid_coords_list.append(centroid)
+
                 img_shifted = self.shift_image_to_centroid(self.ratio_image[i], centroid)
                 x_s, y_s = self.shift_edge_coord(img_shifted, edge, centroid)
                 ndata, cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
@@ -153,7 +158,9 @@ class ShapeNormalization:
 
         elif self.ratio_image.ndim == 2:
             edge, centroid = self.find_edge_and_centroid(self.channel1)
+
             self.centroid_coords_list.append(centroid)
+
             img_shifted = self.shift_image_to_centroid(self.ratio_image, centroid)
             x_s, y_s = self.shift_edge_coord(img_shifted, edge, centroid)
             normalized_data, cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
