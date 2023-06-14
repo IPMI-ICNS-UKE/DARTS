@@ -17,6 +17,10 @@ path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/170424 JMP 
 path_to_output = "results"
 excel_filename = "output.xlsx"
 
+start_frame = 0
+end_frame = 10
+
+
 [properties]
 
 # can either be "two-in-one" or "single"

@@ -25,13 +25,31 @@ except ImportError:
     sitk = None
 
 
+def cut_image_frames(image, start, end):
+    maxt = image.shape[0]
+    if image.ndim == 3:
+        if end > maxt and start >= maxt:
+            return image
+        elif end > maxt and start < maxt:
+            return image[start:]
+        elif end <= maxt and start < maxt:
+            return image[start:end]
+        else:
+            return image
+    else:
+        return image
+
+
 class ImageProcessor:
     def __init__(self, parameter_dict):
         self.parameters = parameter_dict
+        start = parameter_dict["inputoutput"]["start_frame"]
+        end = parameter_dict["inputoutput"]["end_frame"]
 
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
+            self.image = cut_image_frames(self.image, start, end)
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -41,7 +59,9 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         elif self.parameters["properties"]["channel_format"] == "single":
             self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
+            self.channel1 = cut_image_frames(self.channel1, start, end)
             self.channel2 = io.imread(self.parameters["inputoutput"]["path_to_input_channel2"])
+            self.channel2 = cut_image_frames(self.channel2, start, end)
             if self.channel1.ndim == 3:  # for time series
                 self.image = np.concatenate((self.channel1, self.channel2), axis=2)
                 self.t_max, self.y_max, self.x_max = self.image.shape
