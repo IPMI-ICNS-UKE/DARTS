@@ -11,7 +11,6 @@ from stardist.models import StarDist2D
 from GUI import TDarts_GUI
 import argparse
 
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
@@ -30,15 +29,17 @@ def main(gui_enabled):
     os.makedirs(savepath, exist_ok=True)
     for i, cell in enumerate(Processor.cell_list):
         ratio = cell.give_ratio_image()
+
         try:
             normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
         except Exception as E:
             print(E)
             print("Error in shape normalization")
             continue
-        cell_image_radius_after_normalization = 50 # provisorisch...
-        io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
-        io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
+
+        cell_image_radius_after_normalization = 50  # provisorisch...
+        io.imsave(savepath + "cellratio" + str(i) + ".tif", ratio)
+        io.imsave(savepath + "cellratio_normalized" + str(i) + ".tif", normalized_ratio)
 
         try:
             Processor.detect_hotspots(normalized_ratio, cell, i)
@@ -55,7 +56,6 @@ def main(gui_enabled):
             print("Error in Dartboard")
             continue
 
-
     Processor.save_image_files()  # save processed cropped images
     Processor.save_ratio_image_files()
     # fig = Processor.plot_rois()
@@ -71,4 +71,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args.gui)
-

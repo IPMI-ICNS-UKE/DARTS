@@ -18,8 +18,6 @@ from postprocessing.shapenormalization import ShapeNormalization
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
 
-
-
 try:
     import SimpleITK as sitk
 except ImportError:
@@ -74,9 +72,8 @@ class ImageProcessor:
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
-        self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
+        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
         self.frame_number = len(self.channel1)
-
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
@@ -94,7 +91,8 @@ class ImageProcessor:
         self.bleaching = BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
-        self.dartboard_number_of_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
+        self.dartboard_number_of_areas_per_section = self.parameters["properties"][
+            "dartboard_number_of_areas_per_section"]
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
@@ -278,7 +276,8 @@ class ImageProcessor:
 
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
-                                                               self.parameters["properties"]["registration_framebyframe"])
+                                                               self.parameters["properties"][
+                                                                   "registration_framebyframe"])
 
         self.select_rois()  # find the cells
 
@@ -302,7 +301,7 @@ class ImageProcessor:
             signal_threshold = 0.8  # needs to be adjusted to the calibration data (ratio<-> concentration)
             measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
                                                                                  signal_threshold,
-                                                                                 6,   # lower area limit
+                                                                                 6,  # lower area limit
                                                                                  20)  # upper area limit
             cell.signal_data = measurement_microdomains
             # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
@@ -315,11 +314,10 @@ class ImageProcessor:
     def save_measurements(self):
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
-
-    def dartboard_projection(self, centroid_coords_list, cell,cell_image_radius, cell_index):
+    def dartboard_projection(self, centroid_coords_list, cell, cell_image_radius, cell_index):
 
         dartboard_generator = DartboardGenerator(self.save_path)
-        if(cell.signal_data is not None):
+        if (cell.signal_data is not None):
             dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
                                                                           cell.signal_data,
                                                                           self.dartboard_number_of_sections,
@@ -329,13 +327,11 @@ class ImageProcessor:
                                                                           cell_index
                                                                           )
 
-
     def normalize_cell_shape(self, cell):
         SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image, self.model)
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
-
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -354,14 +350,14 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(), check_contrast=False)
-            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(), check_contrast=False)
+            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
+                      check_contrast=False)
+            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
+                      check_contrast=False)
             i += 1
 
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-
             io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1
-
