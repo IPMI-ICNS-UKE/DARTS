@@ -4,9 +4,15 @@ from postprocessing.processing import ImageProcessor
 
 import os
 import skimage.io as io
+from alive_progress import alive_bar
+import time
+from stardist.models import StarDist2D
 
 from GUI import TDarts_GUI
 import argparse
+
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 def main(gui_enabled):
@@ -15,8 +21,9 @@ def main(gui_enabled):
         gui.run_main_loop()
 
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
+    model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
-    Processor = ImageProcessor(parameters)
+    Processor = ImageProcessor(parameters, model)
     Processor.start_postprocessing()
 
     savepath = parameters['inputoutput']['path_to_output'] + '/normalization/'
@@ -59,7 +66,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run program.')
     parser.add_argument('--no-gui', dest='gui', action='store_false',
                         help='run without graphical interface')
-    parser.set_defaults(gui=True)
+    parser.set_defaults(gui=False)
 
     args = parser.parse_args()
 

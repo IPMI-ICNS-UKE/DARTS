@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
-from tqdm import tqdm
+from alive_progress import alive_bar
+import time
 import numpy as np
 import tomli
-from pystackreg import StackReg
 from pystackreg import StackReg
 
 
@@ -23,24 +23,27 @@ class Registration_SITK(RegistrationBase):
         super().__init__()
     def channel_registration(self, channel1, channel2, framebyframe=True):
 
-        print("Start registration of channel 1 and channel 2")
+        print("\nRegistration of channel 1 and channel 2: ")
         channel2_registered = np.zeros_like(channel2)
 
         elastixImageFilter = sitk.ElastixImageFilter()
         elastixImageFilter.LogToConsoleOff()
 
         if framebyframe:
-            for f in tqdm(range(len(channel1))):
-                image_sitk = sitk.GetImageFromArray(channel1[f])
-                offset_image_sitk = sitk.GetImageFromArray(channel2[f])
+            with alive_bar(len(channel1), force_tty=True) as bar:
+                for f in range(len(channel1)):
+                    time.sleep(.005)
+                    image_sitk = sitk.GetImageFromArray(channel1[f])
+                    offset_image_sitk = sitk.GetImageFromArray(channel2[f])
 
-                elastixImageFilter.SetFixedImage(image_sitk)
-                elastixImageFilter.SetMovingImage(offset_image_sitk)
-                elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap("affine"))
+                    elastixImageFilter.SetFixedImage(image_sitk)
+                    elastixImageFilter.SetMovingImage(offset_image_sitk)
+                    elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap("affine"))
 
-                elastixImageFilter.Execute()
-                result_affine = elastixImageFilter.GetResultImage()
-                channel2_registered[f] = sitk.GetArrayFromImage(result_affine)
+                    elastixImageFilter.Execute()
+                    result_affine = elastixImageFilter.GetResultImage()
+                    channel2_registered[f] = sitk.GetArrayFromImage(result_affine)
+                    bar()
         else:
             image_sitk = sitk.GetImageFromArray(channel1[0])
             offset_image_sitk = sitk.GetImageFromArray(channel2[0])
@@ -55,14 +58,17 @@ class Registration_SITK(RegistrationBase):
 
             transformParameterMap = elastixImageFilter.GetTransformParameterMap()
 
-            for f in tqdm(range(1, len(channel1))):
-                offset_image_sitk = sitk.GetImageFromArray(channel2[f])
-                transformixImageFilter = sitk.TransformixImageFilter()
-                transformixImageFilter.SetTransformParameterMap(transformParameterMap)
-                transformixImageFilter.SetMovingImage(offset_image_sitk)
-                transformixImageFilter.Execute()
-                result_affine = transformixImageFilter.GetResultImage()
-                channel2_registered[f] = sitk.GetArrayFromImage(result_affine)
+            with alive_bar(len(channel1), force_tty=True) as bar:
+                for f in range(1, len(channel1)):
+                    time.sleep(.005)
+                    offset_image_sitk = sitk.GetImageFromArray(channel2[f])
+                    transformixImageFilter = sitk.TransformixImageFilter()
+                    transformixImageFilter.SetTransformParameterMap(transformParameterMap)
+                    transformixImageFilter.SetMovingImage(offset_image_sitk)
+                    transformixImageFilter.Execute()
+                    result_affine = transformixImageFilter.GetResultImage()
+                    channel2_registered[f] = sitk.GetArrayFromImage(result_affine)
+                    bar()
 
         return channel2_registered
 
@@ -78,7 +84,7 @@ class Registration_SR(RegistrationBase):
         of each channel. The matrix is applied to each frame of the offset channel.
         Assumption: The offset remains constant from the first to the last frame.
         """
-        print("registration of channel 1 and channel 2")
+        print("Registration of channel 1 and channel 2: ")
         image = channel1[0]
         offset_image = channel2[0]
         sr = StackReg(StackReg.AFFINE)

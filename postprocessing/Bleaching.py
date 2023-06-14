@@ -1,6 +1,5 @@
 import pandas as pd
 import skimage
-from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 
 class BaseBleaching:
@@ -18,11 +17,11 @@ class BleachingExponentialFit (BaseBleaching):
 
 class BleachingAdditiveFit (BaseBleaching):
     def __init__(self):
-        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
+        pass
 
-    def run(self, cell, parameters):
+    def run(self, cell, parameters, model):
         bleaching_channel_copy = cell.give_image_channel2()
-        bleaching_image_series_data = self.get_mean_value_and_area_list(bleaching_channel_copy)
+        bleaching_image_series_data = self.get_mean_value_and_area_list(bleaching_channel_copy, model)
         area_list = self.get_area_list(bleaching_image_series_data)
         mean_intensity_list = self.get_mean_intensity_list(bleaching_image_series_data)
         mean_intensity_frame_zero = mean_intensity_list[0]
@@ -38,11 +37,12 @@ class BleachingAdditiveFit (BaseBleaching):
 
         cell.set_image_channel2(bleaching_channel_copy)
 
-    def get_mean_value_and_area_list(self, bleaching_image_series):
+    def get_mean_value_and_area_list(self, bleaching_image_series, model):
         labels_for_each_frame = []
 
         for frame in range(len(bleaching_image_series)):
-            img_label, img_detail = self.model.predict_instances(normalize(bleaching_image_series[frame]))
+            img_label, img_detail = model.predict_instances(normalize(bleaching_image_series[frame]),
+                                                                 predict_kwargs=dict(verbose=False))
             labels_for_each_frame.append(img_label)
 
         features = pd.DataFrame()

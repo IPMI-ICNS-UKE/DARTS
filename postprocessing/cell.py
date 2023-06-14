@@ -6,7 +6,6 @@ from scipy.ndimage import shift
 import skimage.io as io
 import matplotlib.pyplot as plt
 from skimage import measure
-from tqdm import tqdm
 from statistics import mean
 
 
@@ -98,8 +97,8 @@ class CellImage:
         ratio_image = self.channel1.return_image().astype(float)
         frame_number = len(self.channel1.return_image())
 
-        print("Calculate ratio")
-        for frame in tqdm(range(frame_number)):
+        # print("Calculate ratio")
+        for frame in range(frame_number):
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = ratio_image
 
@@ -223,7 +222,8 @@ class CellImageRegistrator:
         labels_for_each_frame = []
 
         for frame in range(len(image_series)):
-            label_in_frame = self.segmentation.stardist_segmentation_in_frame(image_series[frame])
+            label_in_frame = self.segmentation.stardist_segmentation_in_frame(image_series[frame],
+                                                                              predict_kwargs=dict(verbose=False))
             labels_for_each_frame.append(label_in_frame)
 
         features = pd.DataFrame()

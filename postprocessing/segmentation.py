@@ -1,7 +1,7 @@
 import math
 
 import matplotlib.pyplot as plt
-from stardist.models import StarDist2D
+# from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 from skimage import filters as filters, measure
 from skimage.morphology import area_closing
@@ -13,23 +13,25 @@ import statistics
 from scipy import ndimage as ndi
 import pims
 
-
 from postprocessing.membrane_detection import MembraneDetector
 
-class SegmentationSD:
-    def __init__(self, model='2D_versatile_fluo'):
-        self.model = StarDist2D.from_pretrained(model)
 
-    def give_coord(self, input_image, estimated_cell_area, atp_flag):
+class SegmentationSD:
+    def __init__(self):
+        pass
+
+    def give_coord(self, input_image, estimated_cell_area, atp_flag, model):
         # gives list of all coordinates of ROIS in channel1
-        seg_img, output_specs = self.model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2)
+        seg_img, output_specs = model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2,
+                                                        predict_kwargs=dict(verbose=False))
         regions = measure.regionprops(seg_img)
         cell_images_bounding_boxes = []
-                                                           # TO DO threshold needs to be optimised/generalised for resolution/cell type/ATP vs. Calcium images
-                                                           # TO DO for example 63x images of ATP-sensor loaded cells vs. 100x
-                                                           # TO DO cells diameter should be specified in pixels (=> user input: expected diameter in microns and scale)
+        # TO DO threshold needs to be optimised/generalised for resolution/cell type/ATP vs. Calcium images
+        # TO DO for example 63x images of ATP-sensor loaded cells vs. 100x
+        # TO DO cells diameter should be specified in pixels (=> user input: expected diameter in microns and scale)
         for region in regions:
-            if (not atp_flag or (region.area > 1.2*estimated_cell_area)): #  < 1.5 * estimated_cell_area): # TO DO needs to be optimised
+            if (not atp_flag or (
+                    region.area > 1.2 * estimated_cell_area)):  # < 1.5 * estimated_cell_area): # TO DO needs to be optimised
                 miny_bbox, minx_bbox, maxy_bbox, maxx_bbox = region.bbox
                 cell_images_bounding_boxes.append((miny_bbox, maxy_bbox, minx_bbox, maxx_bbox))
         return cell_images_bounding_boxes
@@ -38,14 +40,15 @@ class SegmentationSD:
         regions_areas = [r.area for r in regions]
         return statistics.median(regions_areas)
 
-    def stardist_segmentation_in_frame(self, image_frame):
-        img_labels, img_details = self.model.predict_instances(normalize(image_frame))
+    def stardist_segmentation_in_frame(self, image_frame, model):
+        img_labels, img_details = model.predict_instances(normalize(image_frame), predict_kwargs=dict(verbose=False))
         return img_labels
 
 
 class ATPImageConverter:
     def __init__(self):
         self.MembraneDetector = MembraneDetector()
+
     """
     Converts ATP-sensor images so that they the cell images can be segmented by Stardist properly.
     """
@@ -135,7 +138,8 @@ class ATPImageConverter:
             # remove small holes; practically removing small objects from the inside of the cell membrane
             # inverted logic
             # param area_threshold = 1000 for 100x images, 500 for 63x images
-            small_objects_removed = remove_small_holes(binary_image, area_threshold=estimated_cell_area*0.2, connectivity=2)  # TO DO needs to be optimised
+            small_objects_removed = remove_small_holes(binary_image, area_threshold=estimated_cell_area * 0.2,
+                                                       connectivity=2)  # TO DO needs to be optimised
             membrane_mask = small_objects_removed == True
             channel1[frame] = self.apply_mask_on_image(channel1[frame], membrane_mask, 0)
             channel2[frame] = self.apply_mask_on_image(channel2[frame], membrane_mask, 0)
@@ -157,6 +161,7 @@ class ATPImageConverter:
         original_image[mask] = n
         return original_image
 
+
 """
 # TEST AREA
 image_converter = ATPImageConverter()
@@ -165,4 +170,3 @@ atp_image = io.imread(path)
 atp_image = atp_image[0]
 image_converter.prepare_ATP_image_for_segmentation(atp_image)
 """
-
