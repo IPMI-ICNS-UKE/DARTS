@@ -293,7 +293,7 @@ class CellTracker:
             # print("xmin " + str(int(roi_list[frame][1])))
             # print("xmax " + str(int(roi_list[frame][0])))
 
-            print(int(roi_list[frame][2]), int(roi_list[frame][3]), int(roi_list[frame][0]), int(roi_list[frame][1]))
+            # print(int(roi_list[frame][2]), int(roi_list[frame][3]), int(roi_list[frame][0]), int(roi_list[frame][1]))
             # ggf. statt int() die Methode round() verwenden?
             # print("coordinates")
             # print(str(int(roi_list[frame][0])))
@@ -352,18 +352,28 @@ class CellTracker:
             bbox_list = self.get_bboxes_list(particle, dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
 
-            roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
+            try:
+                roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
+            except Exception as E:
+                print(E)
+                print("Error Roi selection/ tracking")
+                continue
 
 
             # print("condition")
             # print(self.cell_completely_in_image(roi_list_particle, ymax, xmax))
             if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
-                roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
+                try:
+                    roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
+                except Exception as E:
+                    print(E)
+                    print("Error Roi selection/ tracking")
+                    continue
                 frame_masks = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
                 roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
 
                 roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
                 roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-                roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
+                roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,frame_masks))
         return roi_cell_list
 

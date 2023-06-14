@@ -25,13 +25,31 @@ except ImportError:
     sitk = None
 
 
+def cut_image_frames(image, start, end):
+    maxt = image.shape[0]
+    if image.ndim == 3:
+        if end > maxt and start >= maxt:
+            return image
+        elif end > maxt and start < maxt:
+            return image[start:]
+        elif end <= maxt and start < maxt:
+            return image[start:end]
+        else:
+            return image
+    else:
+        return image
+
+
 class ImageProcessor:
     def __init__(self, parameter_dict):
         self.parameters = parameter_dict
+        start = parameter_dict["inputoutput"]["start_frame"]
+        end = parameter_dict["inputoutput"]["end_frame"]
 
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
+            self.image = cut_image_frames(self.image, start, end)
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -41,7 +59,9 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         elif self.parameters["properties"]["channel_format"] == "single":
             self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
+            self.channel1 = cut_image_frames(self.channel1, start, end)
             self.channel2 = io.imread(self.parameters["inputoutput"]["path_to_input_channel2"])
+            self.channel2 = cut_image_frames(self.channel2, start, end)
             if self.channel1.ndim == 3:  # for time series
                 self.image = np.concatenate((self.channel1, self.channel2), axis=2)
                 self.t_max, self.y_max, self.x_max = self.image.shape
@@ -278,23 +298,38 @@ class ImageProcessor:
         else:
             # print("this cell is preactivated")  # only temporarily
             self.excluded_cells_list.append(cell)
+            cell.is_excluded = True
 
     def save_measurements(self):
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
-
-    def dartboard_projection(self, centroid_coords_list, cell,cell_image_radius, cell_index):
-
+    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):
         dartboard_generator = DartboardGenerator(self.save_path)
-        if(cell.signal_data is not None):
-            dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
-                                                                          cell.signal_data,
-                                                                          self.dartboard_number_of_sections,
-                                                                          self.dartboard_number_of_areas_per_section,
-                                                                          centroid_coords_list,
-                                                                          cell_image_radius,
-                                                                          cell_index
-                                                                          )
+
+
+        dartboard_data_all_frames = dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
+                                                                                       cell.signal_data,
+                                                                                       self.dartboard_number_of_sections,
+                                                                                       self.dartboard_number_of_areas_per_section,
+                                                                                       centroid_coords_list,
+                                                                                       cell_image_radius_after_normalization,
+                                                                                       cell_index)
+        start_frame = cell.starting_point_activation
+        end_frame = cell.frame_number - 1
+        mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames, start_frame, end_frame)
+
+        return mean_dartboard_data_single_cell
+
+    def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
+        dartboard_generator = DartboardGenerator(self.save_path)
+
+
+        average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
+                                                                              0,
+                                                                              len(dartboard_data_multiple_cells)-1)
+
+        dartboard_generator.save_dartboard_plot(average_dartboard_data,len(dartboard_data_multiple_cells))
+
 
 
     def normalize_cell_shape(self, cell):

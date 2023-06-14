@@ -106,20 +106,30 @@ class DartboardGenerator:
                                                                                                          number_of_dartboard_areas_per_section,
                                                                                                          radius_cell_image)
 
-            self.plot_dartboard(dartboard_area_frequency_this_frame, radius_cell_image, cell_index, frame)
+            # self.plot_dartboard(dartboard_area_frequency_this_frame, radius_cell_image, cell_index, frame)
             dartboard_area_frequencies.append(dartboard_area_frequency_this_frame)
+        return dartboard_area_frequencies
 
+    def calculate_mean_dartboard(self, dartboard_area_frequencies, start_frame, end_frame):
+        sub_list = dartboard_area_frequencies[start_frame:end_frame]
+        number_of_frames = float(len(sub_list))
+        average_array = np.zeros_like(dartboard_area_frequencies[0])
+        for array in sub_list:
+            for y in range(len(array)):
+                for x in range(len(array[0])):
+                    average_array[y][x] += array[y][x]
+        average_array = average_array / number_of_frames
+        return average_array
 
-
-    def plot_dartboard(self,dartboard_area_frequencies, radius_cell_image, cell_number, frame_number):
+    def save_dartboard_plot(self, dartboard_data, number_of_cells):
 
         red_sequential_cmap = plt.colormaps['Reds']
-        red_colors = (np.linspace(0, 2.0, 16))
+        # red_colors = (np.linspace(0, 2.0, 16))
 
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
         # ax.axis("off")
-        number_of_sections =len(dartboard_area_frequencies)
+        number_of_sections =len(dartboard_data)
         number_of_areas_in_section = 8
         angle_per_section = 360.0 / number_of_sections
 
@@ -128,9 +138,9 @@ class DartboardGenerator:
 
             for dartboard_area in range(number_of_areas_in_section):
                 if (dartboard_area>4):
-                    number_of_signals_in_current_dartboard_area = round(dartboard_area_frequencies[dartboard_area][i])
+                    number_of_signals_in_current_dartboard_area = dartboard_data[dartboard_area][i]
 
-                    color = red_sequential_cmap(red_colors[number_of_signals_in_current_dartboard_area]) # nur vorübergehend
+                    color = red_sequential_cmap(number_of_signals_in_current_dartboard_area) # nur vorübergehend
 
                     ax.bar(x=center_angle, height=1, width=2 * np.pi / (number_of_sections), bottom=dartboard_area,
                            color=color, edgecolor='white')
@@ -141,17 +151,16 @@ class DartboardGenerator:
 
         ax.set_yticks([])
 
-        image_identifier = "cell number: " + str(cell_number) + " - frame: " + str(frame_number)
+        image_identifier = "Activity map (" + str(number_of_cells) + " cells)" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
         plt.title(image_identifier)
         sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap)
         sm.set_clim(vmin=0, vmax=2.0)
         plt.colorbar(sm)
 
 
-        directory = self.save_path + '/Dartboard_plots/cell_number_' + str(cell_number) + '/'
+        directory = self.save_path + '/Dartboard_plots/cell_number_' + image_identifier + '/'
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff')
         # plt.show()
-

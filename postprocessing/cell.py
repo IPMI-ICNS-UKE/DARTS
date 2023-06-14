@@ -32,6 +32,8 @@ class CellImage:
         self.cell_is_preactivated = False
         self.number_of_frames_before_cell_activation = 0
         self.signal_data = None
+        self.starting_point_activation = 0
+        self.is_excluded = False
 
 
 
@@ -45,6 +47,10 @@ class CellImage:
         cell_preactivated = self.measure_mean_ratio_single_frame(0) > ratio_preactivation_threshold
         self.cell_is_preactivated = cell_preactivated
         return cell_preactivated
+
+    def calculate_starting_point_of_activation(self):
+        pass
+        self.starting_point_activation = 2  # random
 
     def measure_mean_ratio_in_all_frames(self):
         """
