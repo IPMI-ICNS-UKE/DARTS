@@ -303,14 +303,6 @@ class ImageProcessor:
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
 
-
-
-
-    def normalize_cell_shape(self, cell):
-        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
-        cell.normalized_ratio_image = SN.apply_shape_normalization()
-        return cell.normalized_ratio_image
-
     def return_ratios(self):
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())

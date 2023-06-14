@@ -23,6 +23,7 @@ def main(gui_enabled):
     os.makedirs(savepath, exist_ok=True)
     for i, cell in enumerate(Processor.cell_list):
         ratio = cell.give_ratio_image()
+
         normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
         cell_image_radius_after_normalization = 50 # provisorisch...
         io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
