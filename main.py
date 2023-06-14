@@ -23,15 +23,30 @@ def main(gui_enabled):
     os.makedirs(savepath, exist_ok=True)
     for i, cell in enumerate(Processor.cell_list):
         ratio = cell.give_ratio_image()
-        normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
+        try:
+            normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
+        except Exception as E:
+            print(E)
+            print("Error in shape normalization")
+            continue
         cell_image_radius_after_normalization = 50 # provisorisch...
         io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
         io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
 
-        Processor.detect_hotspots(normalized_ratio, cell, i)
+        try:
+            Processor.detect_hotspots(normalized_ratio, cell, i)
+        except Exception as E:
+            print(E)
+            print("Error in Hotspot Detection")
+            continue
 
         Processor.save_measurements()
-        Processor.dartboard_projection(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
+        try:
+            Processor.dartboard_projection(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
+        except Exception as E:
+            print(E)
+            print("Error in Dartboard")
+            continue
 
 
     Processor.save_image_files()  # save processed cropped images
