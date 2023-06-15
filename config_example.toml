@@ -20,7 +20,6 @@ excel_filename = "output.xlsx"
 start_frame = 0
 end_frame = 10
 
-
 [properties]
 
 # can either be "two-in-one" or "single"
