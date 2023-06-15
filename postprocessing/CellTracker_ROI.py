@@ -372,7 +372,6 @@ class CellTracker:
                 print("Error Roi selection/ tracking")
                 continue
 
-
             # print("condition")
             # print(self.cell_completely_in_image(roi_list_particle, ymax, xmax))
             if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
