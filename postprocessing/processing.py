@@ -94,8 +94,9 @@ class ImageProcessor:
         self.dartboard_number_of_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
-        self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
+        self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
+        self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
@@ -283,12 +284,8 @@ class ImageProcessor:
 
     def detect_hotspots(self, ratio_image, cell, i):
         if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-            first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
-            if first_n_frames > self.t_max:
-                first_n_frames = self.t_max
-            signal_threshold = 0.75  # needs to be adjusted to the calibration data (ratio<-> concentration)
             measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                                 signal_threshold,
+                                                                                 self.microdomain_signal_threshold,
                                                                                  6,   # lower area limit
                                                                                  20)  # upper area limit
             cell.signal_data = measurement_microdomains
