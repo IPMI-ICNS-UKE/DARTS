@@ -293,7 +293,7 @@ class CellTracker:
             # print("xmin " + str(int(roi_list[frame][1])))
             # print("xmax " + str(int(roi_list[frame][0])))
 
-            print(int(roi_list[frame][2]), int(roi_list[frame][3]), int(roi_list[frame][0]), int(roi_list[frame][1]))
+            # print(int(roi_list[frame][2]), int(roi_list[frame][3]), int(roi_list[frame][0]), int(roi_list[frame][1]))
             # ggf. statt int() die Methode round() verwenden?
             # print("coordinates")
             # print(str(int(roi_list[frame][0])))
@@ -373,6 +373,6 @@ class CellTracker:
 
                 roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
                 roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-                roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
+                roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,frame_masks))
         return roi_cell_list
 
