@@ -21,7 +21,7 @@ class CellTracker:
         :return: The labels in the frame detected by the Stardist algorithm
         """
         img_labels, img_details = self.model.predict_instances(normalize(image_frame))
-        return img_labels
+        return img_labels, img_details
 
     def generate_trajectory(self, image_series):
         """
@@ -33,17 +33,19 @@ class CellTracker:
         """
         number_of_frames = len(image_series)
         labels_for_each_frame = []  # segmented image respectively
+        details_for_each_frame = []  # segmented image respectively
 
         counter = 1
         for frame in range(len(image_series)):
             print("Segmentation of frame: ", counter)
-            label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
+            label_in_frame, details_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
             labels_for_each_frame.append(label_in_frame)
+            details_for_each_frame.append(details_in_frame)
             counter = counter + 1
 
         features = pd.DataFrame()
         for num, img in enumerate(image_series):
-            for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
+            for r, region in enumerate(skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img)):
                 if True:
                     features = features._append([{  'y': region.centroid[0],
                                                     'x': region.centroid[1],
@@ -56,8 +58,11 @@ class CellTracker:
                                                     'equivalent_diameter_area': region.equivalent_diameter_area,
                                                     'mean_intensity': region.intensity_mean,
                                                     'image_intensity': region.image_intensity,
-                                                    'image filled': region.image_filled
-                    }, ])
+                                                    'image filled': region.image_filled,
+                                                    'edge': details_for_each_frame[num]['coord'][r],
+                                                    'edge_x_minusbb': details_for_each_frame[num]['coord'][r][0,:]-region.bbox[0],
+                                                    'edge_y_minusbb': details_for_each_frame[num]['coord'][r][1,:]-region.bbox[1]
+                                                    }, ])
 
         if not features.empty:
             tp.annotate(features[features.frame == (0)], image_series[0])
