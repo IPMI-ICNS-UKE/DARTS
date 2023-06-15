@@ -21,7 +21,7 @@ def main(gui_enabled):
 
     savepath = parameters['inputoutput']['path_to_output'] + '/normalization/'
     os.makedirs(savepath, exist_ok=True)
-    dartboard_data_multiple_cells = []
+    normalized_dartboard_data_multiple_cells = []
 
     for i, cell in enumerate(Processor.cell_list):
         ratio = cell.give_ratio_image()
@@ -50,16 +50,22 @@ def main(gui_enabled):
 
         try:
             if(not cell.is_excluded):
-                dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
+                average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
+                                                                                                   cell,
+                                                                                                   cell_image_radius_after_normalization,
+                                                                                                   i)
+                normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
+                                                                                                            cell.bead_contact_site+6,
+                                                                                                            2)
 
-                dartboard_data_multiple_cells.append(dartboard_data_single_cell)
+                normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
         except Exception as E:
             print(E)
             print("Error in Dartboard (single cell)")
             continue
 
     try:
-        Processor.generate_average_and_save_dartboard_multiple_cells(dartboard_data_multiple_cells)
+        Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_multiple_cells)
     except Exception as E:
         print(E)
         print("Error in Dartboard (average dartboard for multiple cells)")

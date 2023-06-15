@@ -33,7 +33,7 @@ class CellImage:
         self.number_of_frames_before_cell_activation = 0
         self.signal_data = None
         self.time_of_bead_contact = 0
-        self.bead_contact_site = 0 # number from 1 to 12
+        self.bead_contact_site = 5  # better initialize with 0 and set to number between 1 and 12 later
         self.is_excluded = False
 
 

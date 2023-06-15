@@ -100,7 +100,7 @@ class ImageProcessor:
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
-
+        self.dartboard_generator = DartboardGenerator(self.save_path)
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
         else:
@@ -301,19 +301,19 @@ class ImageProcessor:
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):
-        dartboard_generator = DartboardGenerator(self.save_path)
+        # dartboard_generator = DartboardGenerator(self.save_path)
 
 
-        dartboard_data_all_frames = dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
+        dartboard_data_all_frames = self.dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
                                                                                        cell.signal_data,
                                                                                        self.dartboard_number_of_sections,
                                                                                        self.dartboard_number_of_areas_per_section,
                                                                                        centroid_coords_list,
                                                                                        cell_image_radius_after_normalization,
                                                                                        cell_index)
-        start_frame = cell.starting_point_activation
+        start_frame = cell.time_of_bead_contact
         end_frame = cell.frame_number - 1
-        mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
+        mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
                                                                                        start_frame,
                                                                                        end_frame,
                                                                                        self.dartboard_number_of_sections,
@@ -321,16 +321,22 @@ class ImageProcessor:
 
         return mean_dartboard_data_single_cell
 
-    def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
-        dartboard_generator = DartboardGenerator(self.save_path)
+    def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
+                                                  normalized_bead_contact_site):
+        return self.dartboard_generator.normalize_average_dartboard_data_one_cell(average_dartboard_data,
+                                                                                  real_bead_contact_site,
+                                                                                  normalized_bead_contact_site)
 
-        average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
+    def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
+        # dartboard_generator = DartboardGenerator(self.save_path)
+
+        average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
                                                                               0,
                                                                               10,
                                                                               self.dartboard_number_of_sections,
                                                                               self.dartboard_number_of_areas_per_section)
 
-        dartboard_generator.save_dartboard_plot(average_dartboard_data,
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data,
                                                 len(dartboard_data_multiple_cells),
                                                 self.dartboard_number_of_sections,
                                                 self.dartboard_number_of_areas_per_section)
