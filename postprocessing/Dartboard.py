@@ -147,7 +147,7 @@ class DartboardGenerator:
                 if (dartboard_area>4):
                     number_of_signals_in_current_dartboard_area = dartboard_data[dartboard_area][i]
 
-                    color = red_sequential_cmap(number_of_signals_in_current_dartboard_area) # nur vorübergehend
+                    color = red_sequential_cmap(number_of_signals_in_current_dartboard_area)  # nur vorübergehend
 
                     ax.bar(x=center_angle, height=1, width=2 * np.pi / (number_of_sections), bottom=dartboard_area,
                            color=color, edgecolor='white')
