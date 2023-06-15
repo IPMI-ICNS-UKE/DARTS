@@ -31,7 +31,8 @@ class CellImage:
         self.cell_is_preactivated = False
         self.number_of_frames_before_cell_activation = 0
         self.signal_data = None
-        self.starting_point_activation = 0
+        self.time_of_bead_contact = 0
+        self.bead_contact_site = 0 # number from 1 to 12
         self.is_excluded = False
 
 
@@ -47,9 +48,12 @@ class CellImage:
         self.cell_is_preactivated = cell_preactivated
         return cell_preactivated
 
-    def calculate_starting_point_of_activation(self):
-        pass
-        self.starting_point_activation = 2  # random
+    def set_bead_contact_site(self, clock_index):
+        """
+        Sets the variable bead_contact_site to clock_index. This index is a natural number from 1 to 12.
+        :param clock_index:
+        """
+        self.bead_contact_site = clock_index
 
     def measure_mean_ratio_in_all_frames(self):
         """

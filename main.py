@@ -41,7 +41,6 @@ def main(gui_enabled):
                 print(E)
                 print("Error in shape normalization")
                 continue
-
             cell_image_radius_after_normalization = 50  # provisorisch...
             io.imsave(savepath + "cellratio" + str(i) + ".tif", ratio)
             io.imsave(savepath + "cellratio_normalized" + str(i) + ".tif", normalized_ratio)
@@ -53,8 +52,13 @@ def main(gui_enabled):
                 print(E)
                 print("Error in Hotspot Detection")
                 continue
+            try:
+                Processor.save_measurements()
+            except Exception as E:
+                print(E)
+                print("Error in saving measurements")
+                continue
 
-            Processor.save_measurements()
             try:
                 if (not cell.is_excluded):
                     dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(

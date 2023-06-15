@@ -95,8 +95,9 @@ class ImageProcessor:
             "dartboard_number_of_areas_per_section"]
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
-        self.time_of_addition_in_seconds = self.parameters["properties"]["time_of_addition_in_seconds"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
+        self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
+        self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
@@ -295,13 +296,9 @@ class ImageProcessor:
 
     def detect_hotspots(self, ratio_image, cell, i):
         if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-            first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
-            if first_n_frames > self.t_max:
-                first_n_frames = self.t_max
-            signal_threshold = 0.8  # needs to be adjusted to the calibration data (ratio<-> concentration)
             measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                                 signal_threshold,
-                                                                                 6,  # lower area limit
+                                                                                 self.microdomain_signal_threshold,
+                                                                                 6,   # lower area limit
                                                                                  20)  # upper area limit
             cell.signal_data = measurement_microdomains
             # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
@@ -329,17 +326,26 @@ class ImageProcessor:
         start_frame = cell.starting_point_activation
         end_frame = cell.frame_number - 1
         mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
-                                                                                       start_frame, end_frame)
+                                                                                       start_frame,
+                                                                                       end_frame,
+                                                                                       self.dartboard_number_of_sections,
+                                                                                       self.dartboard_number_of_areas_per_section)
 
         return mean_dartboard_data_single_cell
 
     def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
         dartboard_generator = DartboardGenerator(self.save_path)
 
-        average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells, 0,
-                                                                              len(dartboard_data_multiple_cells) - 1)
+        average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
+                                                                              0,
+                                                                              10,
+                                                                              self.dartboard_number_of_sections,
+                                                                              self.dartboard_number_of_areas_per_section)
 
-        dartboard_generator.save_dartboard_plot(average_dartboard_data, len(dartboard_data_multiple_cells))
+        dartboard_generator.save_dartboard_plot(average_dartboard_data,
+                                                len(dartboard_data_multiple_cells),
+                                                self.dartboard_number_of_sections,
+                                                self.dartboard_number_of_areas_per_section)
 
 
     def normalize_cell_shape(self, cell):
