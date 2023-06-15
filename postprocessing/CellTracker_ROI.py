@@ -36,7 +36,7 @@ class CellTracker:
 
         counter = 1
         for frame in range(len(image_series)):
-            print("Segmentation of frame: ", counter)
+            # print("Segmentation of frame: ", counter)
             label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
             labels_for_each_frame.append(label_in_frame)
             counter = counter + 1
@@ -99,6 +99,9 @@ class CellTracker:
         #     max_delta_y += max_delta_x * resize_box_factor
         # print(max_delta_x, max_delta_y)
 
+        # max_delta_x += max_delta_x * 1.2
+        # max_delta_y += max_delta_x * 1.2
+
         return max_delta_x, max_delta_y
 
     def generate_frame_masks(self, dataframe, particle, image_series, half_max_delta_x, half_max_delta_y):
@@ -125,7 +128,7 @@ class CellTracker:
         for frame in range(frame_number):
             centroid_y_minus_bbox_offset = coords_bbox_offset[frame][1]
             centroid_x_minus_bbox_offset = coords_bbox_offset[frame][0]
-            # bbox_ymin, bbox_xmin, bbox_ymax, bbox_xmax = bbox_list[frame]
+
             current_label = images_inside_bboxes[frame]
             # io.imshow(current_label)
             # plt.show()
@@ -243,15 +246,6 @@ class CellTracker:
                 difference = max_delta_y - (y_max - y_min)
                 y_max = y_max + difference
 
-            # print(x_min, x_max, y_min, y_max)
-            # x_min -= 0.15 * (x_max - x_min)
-            # x_max += 0.15 * (x_max - x_min)
-            # y_min -= 0.15 * (y_max - y_min)
-            # y_max += 0.15 * (y_max - y_min)
-            #
-            # max_delta_x = x_max - x_min
-            # max_delta_y = y_max - y_min
-
             roi_list.append((x_min, x_max, y_min, y_max))
 
         return roi_list
@@ -284,6 +278,7 @@ class CellTracker:
         :return:
         """
         frame_number = len(image)
+
         slice_roi = np.s_[:, int(0):int(max_delta_y), int(0):int(max_delta_x)]
         cropped_image = image[slice_roi].copy()
 
@@ -327,6 +322,13 @@ class CellTracker:
                 return False
         return True
 
+    def equal_width_and_height(self,max_delta_x,max_delta_y):
+        if(max_delta_x>max_delta_y):
+            return max_delta_x,max_delta_x
+        elif(max_delta_y>max_delta_x):
+            return max_delta_y,max_delta_y
+        else:
+            return max_delta_x,max_delta_y
 
     def give_rois(self, channel1, channel2, ymax, xmax):
         """
@@ -341,16 +343,18 @@ class CellTracker:
         :param channel2:
         :return:
         """
-        print("Get rois")
+        # print("Get rois")
         dataframe, particle_set = self.generate_trajectory(channel1)
-        # hier ggf. auch generate trajectory für channel2
 
         roi_cell_list = []
         for particle in tqdm(particle_set):
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
             coords_list = self.get_coords_list_for_particle(particle, dataframe)
             bbox_list = self.get_bboxes_list(particle, dataframe)
+
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
+            max_delta_x, max_delta_y = self.equal_width_and_height(max_delta_x, max_delta_y)
+            max_delta_x, max_delta_y = int(max_delta_x*1.4), int(max_delta_y*1.4)
 
             try:
                 roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
@@ -359,8 +363,7 @@ class CellTracker:
                 print("Error Roi selection/ tracking")
                 continue
 
-            # print("condition")
-            # print(self.cell_completely_in_image(roi_list_particle, ymax, xmax))
+
             if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
                 try:
                     roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)

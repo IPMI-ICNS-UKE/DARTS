@@ -41,8 +41,13 @@ def main(gui_enabled):
             print(E)
             print("Error in Hotspot Detection")
             continue
+        try:
+            Processor.save_measurements()
+        except Exception as E:
+            print(E)
+            print("Error in saving measurements")
+            continue
 
-        Processor.save_measurements()
         try:
             if(not cell.is_excluded):
                 dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
@@ -56,7 +61,7 @@ def main(gui_enabled):
         Processor.generate_average_and_save_dartboard_multiple_cells(dartboard_data_multiple_cells)
     except Exception as E:
         print(E)
-        print("Error in Dartboard (average dartboard for multiple cells")
+        print("Error in Dartboard (average dartboard for multiple cells)")
 
     Processor.save_image_files()  # save processed cropped images
     Processor.save_ratio_image_files()

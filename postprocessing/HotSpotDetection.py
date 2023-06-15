@@ -129,6 +129,7 @@ class HotSpotDetector():
 
     def save_dataframes(self, dataframes_list):
         # Write to Multiple Sheets
+
         with pd.ExcelWriter(self.save_path + "/" + self.filename) as writer:
             index = 0
 

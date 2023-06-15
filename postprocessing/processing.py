@@ -286,7 +286,7 @@ class ImageProcessor:
             first_n_frames = int(self.time_of_addition_in_seconds * self.frames_per_second)
             if first_n_frames > self.t_max:
                 first_n_frames = self.t_max
-            signal_threshold = 0.8  # needs to be adjusted to the calibration data (ratio<-> concentration)
+            signal_threshold = 0.75  # needs to be adjusted to the calibration data (ratio<-> concentration)
             measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
                                                                                  signal_threshold,
                                                                                  6,   # lower area limit
@@ -323,12 +323,11 @@ class ImageProcessor:
     def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
         dartboard_generator = DartboardGenerator(self.save_path)
 
-
         average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
                                                                               0,
-                                                                              len(dartboard_data_multiple_cells)-1)
+                                                                              10)
 
-        dartboard_generator.save_dartboard_plot(average_dartboard_data,len(dartboard_data_multiple_cells))
+        dartboard_generator.save_dartboard_plot(average_dartboard_data, len(dartboard_data_multiple_cells))
 
 
     def normalize_cell_shape(self, cell):
