@@ -123,7 +123,8 @@ class DartboardGenerator:
 
     def save_dartboard_plot(self, dartboard_data, number_of_cells):
 
-        red_sequential_cmap = plt.colormaps['Reds']
+        # red_sequential_cmap = plt.colormaps['Reds']
+        red_sequential_cmap = plt.get_cmap('Reds')
         # red_colors = (np.linspace(0, 2.0, 16))
 
         fig = plt.figure()

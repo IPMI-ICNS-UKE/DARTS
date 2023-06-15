@@ -315,34 +315,31 @@ class ImageProcessor:
     def save_measurements(self):
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
-    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):
+    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell,
+                                                    cell_image_radius_after_normalization, cell_index):
         dartboard_generator = DartboardGenerator(self.save_path)
 
-
         dartboard_data_all_frames = dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
-                                                                                       cell.signal_data,
-                                                                                       self.dartboard_number_of_sections,
-                                                                                       self.dartboard_number_of_areas_per_section,
-                                                                                       centroid_coords_list,
-                                                                                       cell_image_radius_after_normalization,
-                                                                                       cell_index)
+                                                                                                  cell.signal_data,
+                                                                                                  self.dartboard_number_of_sections,
+                                                                                                  self.dartboard_number_of_areas_per_section,
+                                                                                                  centroid_coords_list,
+                                                                                                  cell_image_radius_after_normalization,
+                                                                                                  cell_index)
         start_frame = cell.starting_point_activation
         end_frame = cell.frame_number - 1
-        mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames, start_frame, end_frame)
+        mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
+                                                                                       start_frame, end_frame)
 
         return mean_dartboard_data_single_cell
 
     def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
         dartboard_generator = DartboardGenerator(self.save_path)
 
+        average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells, 0,
+                                                                              len(dartboard_data_multiple_cells) - 1)
 
-        average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-                                                                              0,
-                                                                              len(dartboard_data_multiple_cells)-1)
-
-        dartboard_generator.save_dartboard_plot(average_dartboard_data,len(dartboard_data_multiple_cells))
-
-
+        dartboard_generator.save_dartboard_plot(average_dartboard_data, len(dartboard_data_multiple_cells))
 
     def normalize_cell_shape(self, cell):
         SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image, self.model)
