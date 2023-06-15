@@ -331,12 +331,12 @@ class ImageProcessor:
         dartboard_generator.save_dartboard_plot(average_dartboard_data,len(dartboard_data_multiple_cells))
 
 
-
     def normalize_cell_shape(self, cell):
         SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
+
 
     def return_ratios(self):
         for cell in self.cell_list:
