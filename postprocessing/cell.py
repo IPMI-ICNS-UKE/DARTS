@@ -6,7 +6,6 @@ from scipy.ndimage import shift
 import skimage.io as io
 import matplotlib.pyplot as plt
 from skimage import measure
-from tqdm import tqdm
 from statistics import mean
 
 
@@ -32,7 +31,8 @@ class CellImage:
         self.cell_is_preactivated = False
         self.number_of_frames_before_cell_activation = 0
         self.signal_data = None
-        self.starting_point_activation = 0
+        self.time_of_bead_contact = 0
+        self.bead_contact_site = 0 # number from 1 to 12
         self.is_excluded = False
 
 
@@ -48,9 +48,12 @@ class CellImage:
         self.cell_is_preactivated = cell_preactivated
         return cell_preactivated
 
-    def calculate_starting_point_of_activation(self):
-        pass
-        self.starting_point_activation = 2  # random
+    def set_bead_contact_site(self, clock_index):
+        """
+        Sets the variable bead_contact_site to clock_index. This index is a natural number from 1 to 12.
+        :param clock_index:
+        """
+        self.bead_contact_site = clock_index
 
     def measure_mean_ratio_in_all_frames(self):
         """
@@ -104,8 +107,8 @@ class CellImage:
         ratio_image = self.channel1.return_image().astype(float)
         frame_number = len(self.channel1.return_image())
 
-        print("Calculate ratio")
-        for frame in tqdm(range(frame_number)):
+        # print("Calculate ratio")
+        for frame in range(frame_number):
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = ratio_image
 
@@ -229,7 +232,8 @@ class CellImageRegistrator:
         labels_for_each_frame = []
 
         for frame in range(len(image_series)):
-            label_in_frame = self.segmentation.stardist_segmentation_in_frame(image_series[frame])
+            label_in_frame = self.segmentation.stardist_segmentation_in_frame(image_series[frame],
+                                                                              predict_kwargs=dict(verbose=False))
             labels_for_each_frame.append(label_in_frame)
 
         features = pd.DataFrame()
