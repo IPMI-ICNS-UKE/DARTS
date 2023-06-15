@@ -129,16 +129,16 @@ class HotSpotDetector():
 
     def save_dataframes(self, dataframes_list):
         # Write to Multiple Sheets
+        if(len(dataframes_list)>0):
+            with pd.ExcelWriter(self.save_path + "/" + self.filename) as writer:
+                index = 0
 
-        with pd.ExcelWriter(self.save_path + "/" + self.filename) as writer:
-            index = 0
-
-            for dataframe in dataframes_list:
-                if (not dataframe.empty):
-                    dataframe.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index), index=False)
-                    # print("dataframe")
-                    # print(dataframe)
-                    number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                    number_of_microdomains.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index) + "_Microdomains", index=False)
-                    index += 1
+                for dataframe in dataframes_list:
+                    if (not dataframe.empty):
+                        dataframe.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index), index=False)
+                        # print("dataframe")
+                        # print(dataframe)
+                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
+                        number_of_microdomains.to_excel(writer, sheet_name="Cell_RatioImage_" + str(index) + "_Microdomains", index=False)
+                        index += 1
 

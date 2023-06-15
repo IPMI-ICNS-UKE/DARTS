@@ -318,7 +318,7 @@ class CellTracker:
         :return:
         """
         for roi in roi_list_particle:
-            if(roi[0] < 0 or roi[1] > xmax or roi[2] < 0 or roi[3] > ymax):
+            if(roi[0] < 0 or roi[1] > (xmax*0.5) or roi[2] < 0 or roi[3] > ymax):
                 return False
         return True
 
@@ -379,4 +379,4 @@ class CellTracker:
                 roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,frame_masks))
         return roi_cell_list
 
-# test commit
+

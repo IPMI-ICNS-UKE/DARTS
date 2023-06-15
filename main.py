@@ -51,6 +51,7 @@ def main(gui_enabled):
         try:
             if(not cell.is_excluded):
                 dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list, cell, cell_image_radius_after_normalization, i)
+
                 dartboard_data_multiple_cells.append(dartboard_data_single_cell)
         except Exception as E:
             print(E)

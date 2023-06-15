@@ -110,26 +110,30 @@ class DartboardGenerator:
             dartboard_area_frequencies.append(dartboard_area_frequency_this_frame)
         return dartboard_area_frequencies
 
-    def calculate_mean_dartboard(self, dartboard_area_frequencies, start_frame, end_frame):
-        sub_list = dartboard_area_frequencies[start_frame:end_frame]
-        number_of_frames = float(len(sub_list))
-        average_array = np.zeros_like(dartboard_area_frequencies[0])
-        for array in sub_list:
-            for y in range(len(array)):
-                for x in range(len(array[0])):
-                    average_array[y][x] += array[y][x]
-        average_array = average_array / number_of_frames
-        return average_array
+    def calculate_mean_dartboard(self, dartboard_area_frequencies, start_frame, end_frame,number_of_sections, number_of_areas_within_section):
+        if(len(dartboard_area_frequencies)>0):
+            sub_list = dartboard_area_frequencies[start_frame:end_frame]
+            number_of_frames = float(len(sub_list))
+            average_array = np.zeros_like(dartboard_area_frequencies[0])
+            for array in sub_list:
+                for y in range(len(array)):
+                    for x in range(len(array[0])):
+                        average_array[y][x] += array[y][x]
+            average_array = average_array / number_of_frames
+            return average_array
+        else:
+            average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
+            return average_array
 
-    def save_dartboard_plot(self, dartboard_data, number_of_cells):
+    def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_per_section):
 
-        red_sequential_cmap = plt.colormaps['Reds']
+        red_sequential_cmap = plt.get_cmap("Reds")
         # red_colors = (np.linspace(0, 2.0, 16))
 
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
         # ax.axis("off")
-        number_of_sections =len(dartboard_data)
+        number_of_sections = 12
         number_of_areas_in_section = 8
         angle_per_section = 360.0 / number_of_sections
 

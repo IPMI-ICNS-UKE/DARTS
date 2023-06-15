@@ -316,7 +316,11 @@ class ImageProcessor:
                                                                                        cell_index)
         start_frame = cell.starting_point_activation
         end_frame = cell.frame_number - 1
-        mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames, start_frame, end_frame)
+        mean_dartboard_data_single_cell = dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
+                                                                                       start_frame,
+                                                                                       end_frame,
+                                                                                       self.dartboard_number_of_sections,
+                                                                                       self.dartboard_number_of_areas_per_section)
 
         return mean_dartboard_data_single_cell
 
@@ -325,9 +329,14 @@ class ImageProcessor:
 
         average_dartboard_data = dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
                                                                               0,
-                                                                              10)
+                                                                              10,
+                                                                              self.dartboard_number_of_sections,
+                                                                              self.dartboard_number_of_areas_per_section)
 
-        dartboard_generator.save_dartboard_plot(average_dartboard_data, len(dartboard_data_multiple_cells))
+        dartboard_generator.save_dartboard_plot(average_dartboard_data,
+                                                len(dartboard_data_multiple_cells),
+                                                self.dartboard_number_of_sections,
+                                                self.dartboard_number_of_areas_per_section)
 
 
     def normalize_cell_shape(self, cell):
