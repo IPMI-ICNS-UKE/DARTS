@@ -1,29 +1,32 @@
 import pandas as pd
 import trackpy as tp
 import skimage
-from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 import numpy as np
 from scipy.ndimage import shift
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from alive_progress import alive_bar
+import time
 
 
+tp.quiet(suppress=True)
 
 class CellTracker:
     def __init__(self):
-        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
+        pass
+        # self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
-    def stardist_segmentation_in_frame(self, image_frame):
+    def stardist_segmentation_in_frame(self, image_frame, model):
         """
         Performs Stardist-segmentation in an image frame, not a time-series.
         :param image_frame:
         :return: The labels in the frame detected by the Stardist algorithm
         """
-        img_labels, img_details = self.model.predict_instances(normalize(image_frame))
+        img_labels, img_details = model.predict_instances(normalize(image_frame),
+                                                               predict_kwargs=dict(verbose=False))
         return img_labels
 
-    def generate_trajectory(self, image_series):
+    def generate_trajectory(self, image_series, model):
         """
         Generates a chronologically ordered list of coordinates of a specified point that is detected by StarDist. Looks
         like this: [[87, 402], [87, 402], [86, 402], [86, 402], [86, 402], [87, 402], ...]
@@ -34,30 +37,54 @@ class CellTracker:
         number_of_frames = len(image_series)
         labels_for_each_frame = []  # segmented image respectively
 
+        print("\nSegmentation of cells: ")
         counter = 1
+
         for frame in range(len(image_series)):
             # print("Segmentation of frame: ", counter)
             label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
             labels_for_each_frame.append(label_in_frame)
             counter = counter + 1
 
+
+        # for frame in range(len(image_series)):
+        #     # print("Segmentation of frame: ", counter)
+        #     label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
+        #     labels_for_each_frame.append(label_in_frame)
+        #     counter = counter + 1
+
+
+        with alive_bar(len(image_series), force_tty=True) as bar:
+            # for frame in tqdm(range(len(image_series)), position=0, leave=True):
+            for frame in range(len(image_series)):
+                time.sleep(.005)
+                # print("Segmentation of frame: ", counter)
+                label_in_frame = self.stardist_segmentation_in_frame(image_series[frame], model)
+                labels_for_each_frame.append(label_in_frame)
+                counter = counter + 1
+                bar()
+
+        print("\nCelltracking: ")
         features = pd.DataFrame()
-        for num, img in enumerate(image_series):
-            for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
-                if True:
-                    features = features._append([{  'y': region.centroid[0],
-                                                    'x': region.centroid[1],
-                                                    'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
-                                                    'x_centroid_minus_bbox': region.centroid[1]-region.bbox[1],
-                                                    'frame': num,
-                                                    'bbox': region.bbox,
-                                                    'area': region.area,
-                                                    # Q: diameter could be relevant to check cell size
-                                                    'equivalent_diameter_area': region.equivalent_diameter_area,
-                                                    'mean_intensity': region.intensity_mean,
-                                                    'image_intensity': region.image_intensity,
-                                                    'image filled': region.image_filled
-                    }, ])
+        with alive_bar(len(image_series), force_tty=True) as bar:
+            for num, img in enumerate(image_series):
+                time.sleep(.005)
+                for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
+                    if True:
+                        features = features._append([{  'y': region.centroid[0],
+                                                        'x': region.centroid[1],
+                                                        'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
+                                                        'x_centroid_minus_bbox': region.centroid[1]-region.bbox[1],
+                                                        'frame': num,
+                                                        'bbox': region.bbox,
+                                                        'area': region.area,
+                                                        # Q: diameter could be relevant to check cell size
+                                                        'equivalent_diameter_area': region.equivalent_diameter_area,
+                                                        'mean_intensity': region.intensity_mean,
+                                                        'image_intensity': region.image_intensity,
+                                                        'image filled': region.image_filled
+                        }, ])
+                bar()
 
         if not features.empty:
             tp.annotate(features[features.frame == (0)], image_series[0])
@@ -288,6 +315,7 @@ class CellTracker:
             # print("xmin " + str(int(roi_list[frame][1])))
             # print("xmax " + str(int(roi_list[frame][0])))
 
+            # print("frame:", frame)
             # print(int(roi_list[frame][2]), int(roi_list[frame][3]), int(roi_list[frame][0]), int(roi_list[frame][1]))
             # ggf. statt int() die Methode round() verwenden?
             # print("coordinates")
@@ -330,7 +358,7 @@ class CellTracker:
         else:
             return max_delta_x,max_delta_y
 
-    def give_rois(self, channel1, channel2, ymax, xmax):
+    def give_rois(self, channel1, channel2, ymax, xmax, model):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
         Background subtraction included.
@@ -343,11 +371,13 @@ class CellTracker:
         :param channel2:
         :return:
         """
+
         # print("Get rois")
         dataframe, particle_set = self.generate_trajectory(channel1)
 
+
         roi_cell_list = []
-        for particle in tqdm(particle_set):
+        for particle in particle_set:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
             coords_list = self.get_coords_list_for_particle(particle, dataframe)
             bbox_list = self.get_bboxes_list(particle, dataframe)

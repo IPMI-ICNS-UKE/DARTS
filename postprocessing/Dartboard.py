@@ -110,6 +110,7 @@ class DartboardGenerator:
             dartboard_area_frequencies.append(dartboard_area_frequency_this_frame)
         return dartboard_area_frequencies
 
+
     def calculate_mean_dartboard(self, dartboard_area_frequencies, start_frame, end_frame,number_of_sections, number_of_areas_within_section):
         if(len(dartboard_area_frequencies)>0):
             sub_list = dartboard_area_frequencies[start_frame:end_frame]
@@ -125,6 +126,7 @@ class DartboardGenerator:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
             return average_array
 
+
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site, normalized_bead_contact_site):
         difference = real_bead_contact_site - normalized_bead_contact_site
         return self.rotate_dartboard_data_counterclockwise(average_dartboard_data,difference)
@@ -134,6 +136,7 @@ class DartboardGenerator:
         for elem in range(len(dartboard_data_copy)):
             dartboard_data_copy[elem] = np.roll(dartboard_data_copy[elem],n)
         return dartboard_data_copy
+
 
     def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_per_section):
 

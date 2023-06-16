@@ -1,6 +1,8 @@
 import math
 import skimage.io as io
 import numpy as np
+from alive_progress import alive_bar
+import time
 from postprocessing.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
 from postprocessing.CellTracker_ROI import CellTracker
@@ -15,8 +17,6 @@ from postprocessing.shapenormalization import ShapeNormalization
 
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
-
-
 
 try:
     import SimpleITK as sitk
@@ -41,8 +41,9 @@ def cut_image_frames(image, start, end):
 
 
 class ImageProcessor:
-    def __init__(self, parameter_dict):
+    def __init__(self, parameter_dict, stardist_model):
         self.parameters = parameter_dict
+        self.model = stardist_model
         start = parameter_dict["inputoutput"]["start_frame"]
         end = parameter_dict["inputoutput"]["end_frame"]
 
@@ -71,9 +72,8 @@ class ImageProcessor:
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
-        self.estimated_cell_area = round((0.5*self.estimated_cell_diameter_in_pixels)**2 * math.pi)
+        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
         self.frame_number = len(self.channel1)
-
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
@@ -91,7 +91,8 @@ class ImageProcessor:
         self.bleaching = BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
-        self.dartboard_number_of_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
+        self.dartboard_number_of_areas_per_section = self.parameters["properties"][
+            "dartboard_number_of_areas_per_section"]
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
@@ -113,33 +114,38 @@ class ImageProcessor:
     def select_rois(self):
         if not self.ATP_flag:
             # offset = self.estimated_cell_diameter_in_pixels * 0.6
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max)
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max,
+                                                              self.model)
             self.nb_rois = len(roi_list_cell_pairs)
-            for i in range(self.nb_rois):
-                """
-                roi_m = [[xmin, ymin], [xmax, ymax]]
+            print("\nCalculating ratio: ")
+            with alive_bar(self.nb_rois, force_tty=True) as bar:
+                time.sleep(.005)
+                for i in range(self.nb_rois):
+                    """
+                    roi_m = [[xmin, ymin], [xmax, ymax]]
+    
+                    self.roi_minmax_list.append(roi_m)
+                    # self.roi_coord_list.append(roi_coord[i])
+    
+                    roi1 = self.channel1[slice_roi]
+                    roi2 = self.channel2[slice_roi]
+                    """
 
-                self.roi_minmax_list.append(roi_m)
-                # self.roi_coord_list.append(roi_coord[i])
+                    """ # commented out for trouble shooting
+                    if self.ATP_flag:
+                        roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
+                                                                                                 self.estimated_cell_area)
+                    """
 
-                roi1 = self.channel1[slice_roi]
-                roi2 = self.channel2[slice_roi]
-                """
+                    self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
+                                                    ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
 
-                """ # commented out for trouble shooting
-                if self.ATP_flag:
-                    roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
-                                                                                             self.estimated_cell_area)
-                """
-
-                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
-                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
-
-                                                self.ATP_image_converter,
-                                                self.ATP_flag,
-                                                self.estimated_cell_area,
-                                                roi_list_cell_pairs[i][2],
-                                                roi_list_cell_pairs[i][3]))
+                                                    self.ATP_image_converter,
+                                                    self.ATP_flag,
+                                                    self.estimated_cell_area,
+                                                    roi_list_cell_pairs[i][2],
+                                                    roi_list_cell_pairs[i][3]))
+                    bar()
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
 
@@ -147,7 +153,8 @@ class ImageProcessor:
                 seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image,
                                                                                         self.estimated_cell_area)
 
-            self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag)
+            self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag,
+                                                                   self.model)
             print(self.roi_bounding_boxes)
             self.nb_rois = len(self.roi_bounding_boxes)
             yoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
@@ -270,17 +277,22 @@ class ImageProcessor:
 
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
-                                                               self.parameters["properties"]["registration_framebyframe"])
+                                                               self.parameters["properties"][
+                                                                   "registration_framebyframe"])
 
         self.select_rois()  # find the cells
 
+        print("\nBleaching correction: ")
+        with alive_bar(len(self.cell_list), force_tty=True) as bar:
+            for cell in self.cell_list:
+                time.sleep(.005)
+                for step in self.processing_steps:
+                    if step is not None:
+                        time.sleep(.005)
+                        step.run(cell, self.parameters, self.model)
 
-        for cell in self.cell_list:
-            for step in self.processing_steps:
-                if step is not None:
-                    step.run(cell, self.parameters)
-
-            cell.generate_ratio_image_series()
+                cell.generate_ratio_image_series()
+                bar()
 
     def detect_hotspots(self, ratio_image, cell, i):
         if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
@@ -300,6 +312,7 @@ class ImageProcessor:
     def save_measurements(self):
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
+
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):
         # dartboard_generator = DartboardGenerator(self.save_path)
 
@@ -314,6 +327,7 @@ class ImageProcessor:
         start_frame = cell.time_of_bead_contact
         end_frame = cell.frame_number - 1
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
+
                                                                                        start_frame,
                                                                                        end_frame,
                                                                                        self.dartboard_number_of_sections,
@@ -327,14 +341,17 @@ class ImageProcessor:
                                                                                   real_bead_contact_site,
                                                                                   normalized_bead_contact_site)
 
+
     def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
         # dartboard_generator = DartboardGenerator(self.save_path)
 
         average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
+
                                                                               0,
                                                                               10,
                                                                               self.dartboard_number_of_sections,
                                                                               self.dartboard_number_of_areas_per_section)
+
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data,
                                                 len(dartboard_data_multiple_cells),
@@ -343,7 +360,7 @@ class ImageProcessor:
 
 
     def normalize_cell_shape(self, cell):
-        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image)
+        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image, self.model)
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
@@ -366,14 +383,14 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1())
-            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2())
+            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
+                      check_contrast=False)
+            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
+                      check_contrast=False)
             i += 1
 
     def save_ratio_image_files(self):
         i = 1
         for cell in self.cell_list:
-
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image())
+            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1
-

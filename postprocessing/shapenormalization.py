@@ -3,16 +3,17 @@ import math
 import numpy as np
 from scipy import interpolate
 from scipy.ndimage import shift
-from stardist.models import StarDist2D
+# from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 from skimage import measure
 
 
 class ShapeNormalization:
-    def __init__(self, ratio, channel1, channel2):
+    def __init__(self, ratio, channel1, channel2, model):
         self.ratio_image = ratio
         self.channel1 = channel1
         self.channel2 = channel2
+        self.model = model
 
         self.centroid_coords_list = []
 
@@ -120,9 +121,8 @@ class ShapeNormalization:
 
 
     def find_edge_and_centroid(self, img_frame):
-        segmodel = StarDist2D.from_pretrained('2D_versatile_fluo')
 
-        img_labels, img_details = segmodel.predict_instances(normalize(img_frame))
+        img_labels, img_details = self.model.predict_instances(normalize(img_frame), predict_kwargs=dict(verbose=False))
 
         regions = measure.regionprops(img_labels)[0]
 
