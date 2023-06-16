@@ -1,22 +1,23 @@
+import logging
 import math
 import skimage.io as io
 import numpy as np
 from alive_progress import alive_bar
 import time
-from postprocessing.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD, ATPImageConverter
-from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
+from postprocessing.cell import CellImage, ChannelImage
+from postprocessing.segmentation import SegmentationSD, ATPImageConverter
+from postprocessing.CellTracker_ROI import CellTracker
 from postprocessing.registration import Registration_SITK, Registration_SR
-
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
-
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
+
+logger = logging.getLogger(__name__)
 
 try:
     import SimpleITK as sitk
