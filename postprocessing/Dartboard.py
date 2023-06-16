@@ -189,15 +189,6 @@ class DartboardGenerator:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        plt.savefig(directory + image_identifier + '.tiff')
+        plt.savefig(directory + image_identifier + '.tiff', dpi=300)
         # plt.show()
 
-
-import random
-dartboard_gen = DartboardGenerator(None)
-dartboard_data = np.zeros(shape=(8, 12))
-for i in range(8):
-    for x in range(12):
-        dartboard_data[i][x] = random.randint(1, 4)
-
-rotated_dartboard_data = dartboard_gen.normalize_average_dartboard_data_one_cell(dartboard_data,4,2)
