@@ -40,6 +40,13 @@ class CellTracker:
         print("\nSegmentation of cells: ")
         counter = 1
 
+        for frame in range(len(image_series)):
+            # print("Segmentation of frame: ", counter)
+            label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
+            labels_for_each_frame.append(label_in_frame)
+            counter = counter + 1
+
+
         # for frame in range(len(image_series)):
         #     # print("Segmentation of frame: ", counter)
         #     label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
@@ -364,7 +371,9 @@ class CellTracker:
         :param channel2:
         :return:
         """
-        dataframe, particle_set = self.generate_trajectory(channel1, model)
+
+        # print("Get rois")
+        dataframe, particle_set = self.generate_trajectory(channel1)
 
 
         roi_cell_list = []
