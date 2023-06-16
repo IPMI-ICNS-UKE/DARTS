@@ -50,3 +50,4 @@ class BleachingAdditiveFit (BaseBleaching):
                     copy[y][x] += value
 
         return copy
+test commit
