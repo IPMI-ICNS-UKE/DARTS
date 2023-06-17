@@ -281,6 +281,8 @@ class ImageProcessor:
                                                                    "registration_framebyframe"])
 
         self.select_rois()  # find the cells
+        # bead contact, user input
+        self.define_bead_contacts()
 
         print("\nBleaching correction: ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
@@ -308,6 +310,15 @@ class ImageProcessor:
             # print("this cell is preactivated")  # only temporarily
             self.excluded_cells_list.append(cell)
             cell.is_excluded = True
+
+    def define_bead_contacts(self):
+        """
+        Let user define the bead contacts (time, location)
+        :return:
+        """
+        io.imshow(self.image[0])
+        plt.show()
+        pass
 
     def save_measurements(self):
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)

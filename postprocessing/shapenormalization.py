@@ -127,6 +127,7 @@ class ShapeNormalization:
         regions = measure.regionprops(img_labels)[0]
 
         edgecoord = img_details['coord'][0]
+
         centroid = regions.centroid
         return edgecoord, centroid
 
