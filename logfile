@@ -1,0 +1,50 @@
+14:14:17,366 root INFO Running main.py
+14:14:17,366 __main__ INFO Program started
+14:14:17,574 h5py._conv DEBUG Creating converter from 3 to 5
+14:14:30,834 matplotlib.colorbar DEBUG locator: <matplotlib.colorbar._ColorbarAutoLocator object at 0x0000027542791AF0>
+14:14:30,834 matplotlib.colorbar DEBUG Using auto colorbar locator <matplotlib.colorbar._ColorbarAutoLocator object at 0x0000027542791AF0> on colorbar
+14:14:30,835 matplotlib.colorbar DEBUG Setting pcolormesh
+14:14:31,110 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+14:14:31,110 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+14:14:31,110 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+14:14:31,110 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+14:14:31,112 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+14:14:31,112 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+14:14:31,112 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+14:14:31,112 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+14:14:31,112 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+14:14:31,112 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+14:14:31,112 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+14:14:31,112 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+14:14:31,112 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+14:14:31,113 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+14:14:31,113 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:14:31,113 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:14:31,113 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+14:14:31,113 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+14:14:31,463 __main__ INFO Program finished

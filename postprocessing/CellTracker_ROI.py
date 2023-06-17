@@ -41,8 +41,7 @@ class CellTracker:
         counter = 1
 
         for frame in range(len(image_series)):
-            # print("Segmentation of frame: ", counter)
-            label_in_frame = self.stardist_segmentation_in_frame(image_series[frame],model)
+            label_in_frame = self.stardist_segmentation_in_frame(image_series[frame], model)
 
             labels_for_each_frame.append(label_in_frame)
             counter = counter + 1
@@ -375,7 +374,8 @@ class CellTracker:
 
         # print("Get rois")
 
-        dataframe, particle_set = self.generate_trajectory(channel1,model)
+        dataframe, particle_set = self.generate_trajectory(channel1, model)
+
 
 
 
