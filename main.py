@@ -121,6 +121,7 @@ def main(gui_enabled):
                 continue
             bar()
 
+
     try:
         db_start = timeit.default_timer()
         Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_multiple_cells)
@@ -143,7 +144,6 @@ def main(gui_enabled):
     elapsed_time = end_time - start_time
     print(f'\nExecution time: {float(elapsed_time):.1f}, seconds')
 
-
 if __name__ == "__main__":
     logger.info("Program started")
     parser = argparse.ArgumentParser(description='Run program.')
@@ -155,3 +155,4 @@ if __name__ == "__main__":
 
     main(args.gui)
     logger.info("Program finished")
+

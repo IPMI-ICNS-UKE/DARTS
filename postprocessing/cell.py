@@ -11,7 +11,7 @@ from statistics import mean
 
 
 class CellImage:
-    def __init__(self, roi1, roi2, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data=None, frame_masks=None):
+    def __init__(self, roi1, roi2, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data_channel_1=None, frame_masks=None):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
@@ -22,7 +22,7 @@ class CellImage:
         self.estimated_cell_area = estimated_cell_area
         self.more_than_one_trajectory = False
         self.processing_flag = None
-        self.cell_image_data = cell_image_data
+        self.cell_image_data_channel_1 = cell_image_data_channel_1
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
 
@@ -38,7 +38,26 @@ class CellImage:
         self.is_excluded = False
 
 
+    def calculate_mean_value_in_channel_frame(self,frame,channel):
+        inverted_frame_mask = ~self.frame_masks[frame]
+        image_frame = None
+        if(channel==1):
+            image_frame = self.channel1.return_image()[frame]
+        elif(channel==2):
+            image_frame = self.channel2.return_image()[frame]
 
+
+        label = inverted_frame_mask.copy().astype(int)
+        # label = skimage.measure.label(image_frame)
+        regions = skimage.measure.regionprops(label, intensity_image=image_frame)
+
+        cell_region = regions[0]
+        mean_intensity_this_frame = cell_region.intensity_mean
+        return mean_intensity_this_frame
+
+    def return_list_of_areas(self):
+        area_data = self.cell_image_data_channel_1["area"].values.tolist()
+        return area_data
 
     def is_preactivated(self, ratio_preactivation_threshold):
         """
@@ -65,7 +84,7 @@ class CellImage:
         for frame in range(self.frame_number):
             self.measure_mean_ratio_single_frame(frame)
 
-    def measure_mean_values_in_first_n_frames(self, number_of_frames):
+    def measure_mean_ratios_in_first_n_frames(self, number_of_frames):
         mean_values = []
         for n in range(number_of_frames):
             current_mean = self.measure_mean_ratio_single_frame(n)
@@ -75,12 +94,6 @@ class CellImage:
     def standard_deviation_of_mean_values(self,mean_values):
         return np.std(mean_values)
 
-    def calculate_signal_threshold(self, first_n_frames):
-        mean_values_in_first_n_frames = self.measure_mean_values_in_first_n_frames(first_n_frames)
-        mean_value_of_mean_values = mean(mean_values_in_first_n_frames)
-        standard_deviation = self.standard_deviation_of_mean_values(mean_values_in_first_n_frames)
-        signal_threshold = mean_value_of_mean_values + 1.96*standard_deviation  # just an example
-        return signal_threshold
 
     def measure_mean_ratio_single_frame(self, frame):
         """

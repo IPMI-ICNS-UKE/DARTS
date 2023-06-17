@@ -1,5 +1,6 @@
 import pandas as pd
 import skimage
+from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 
 class BaseBleaching:
@@ -16,51 +17,21 @@ class BleachingExponentialFit (BaseBleaching):
     pass
 
 class BleachingAdditiveFit (BaseBleaching):
-    def __init__(self):
-        pass
 
     def run(self, cell, parameters, model):
         bleaching_channel_copy = cell.give_image_channel2()
-        bleaching_image_series_data = self.get_mean_value_and_area_list(bleaching_channel_copy, model)
-        area_list = self.get_area_list(bleaching_image_series_data)
-        mean_intensity_list = self.get_mean_intensity_list(bleaching_image_series_data)
-        mean_intensity_frame_zero = mean_intensity_list[0]
+        area_list = cell.return_list_of_areas()
+        mean_intensity_frame_zero = cell.calculate_mean_value_in_channel_frame(0,2)
 
-        frame_index = 0
-        for frame in bleaching_channel_copy:
+        for frame_index in range(len(bleaching_channel_copy)):
             current_area = area_list[frame_index]
-            current_mean_intensity = mean_intensity_list[frame_index]
+            current_mean_intensity = cell.calculate_mean_value_in_channel_frame(frame_index,2)
             value_to_add = self.calculate_value_to_add(mean_intensity_frame_zero,current_mean_intensity,current_area)
+
             bleaching_channel_copy[frame_index] = self.add_value_to_each_pixel_in_region(
                 bleaching_channel_copy[frame_index], value_to_add)
-            frame_index += 1
 
         cell.set_image_channel2(bleaching_channel_copy)
-
-    def get_mean_value_and_area_list(self, bleaching_image_series, model):
-        labels_for_each_frame = []
-
-        for frame in range(len(bleaching_image_series)):
-            img_label, img_detail = model.predict_instances(normalize(bleaching_image_series[frame]),
-                                                                 predict_kwargs=dict(verbose=False))
-            labels_for_each_frame.append(img_label)
-
-        features = pd.DataFrame()
-        for num, img in enumerate(bleaching_image_series):
-            for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
-                features = features._append([{'area': region.area,
-                                              'mean_intensity': region.intensity_mean
-                                              }, ])
-
-        return features
-
-    def get_area_list(self, dataframe):
-        area_list = dataframe["area"].values.tolist()
-        return area_list
-
-    def get_mean_intensity_list(self,dataframe):
-        area_list = dataframe["mean_intensity"].values.tolist()
-        return area_list
 
 
 
@@ -75,7 +46,7 @@ class BleachingAdditiveFit (BaseBleaching):
         copy = image.copy()
         for y in range(len(copy)):
             for x in range(len(copy[0])):
-                if copy[y][x] > 0:
-                    copy[y][x] += round(value)
+                if copy[y][x] > 0.1:
+                    copy[y][x] += value
 
         return copy
