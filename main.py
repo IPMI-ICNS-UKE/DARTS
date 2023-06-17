@@ -35,41 +35,40 @@ def main(gui_enabled):
             time.sleep(.005)
             ratio = cell.give_ratio_image()
             try:
-                normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
-                sh = True
+
+              normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
+              sh = True
             except Exception as E:
-                print(E)
-                print("Error in shape normalization")
-                continue
-            cell_image_radius_after_normalization = 50  # provisorisch...
-            io.imsave(savepath + "cellratio" + str(i) + ".tif", ratio)
-            io.imsave(savepath + "cellratio_normalized" + str(i) + ".tif", normalized_ratio)
+              print(E)
+              print("Error in shape normalization")
+              continue
+            cell_image_radius_after_normalization = 50 # provisorisch...
+            io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
+            io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
 
             try:
-                Processor.detect_hotspots(normalized_ratio, cell, i)
-                hd = True
+              Processor.detect_hotspots(normalized_ratio, cell, i)
+              hd = True
             except Exception as E:
-                print(E)
-                print("Error in Hotspot Detection")
-                continue
+              print(E)
+              print("Error in Hotspot Detection")
+              continue
             try:
-                Processor.save_measurements()
+              Processor.save_measurements()
             except Exception as E:
-                print(E)
-                print("Error in saving measurements")
-                continue
+              print(E)
+              print("Error in saving measurements")
+              continue
 
             try:
-                if (not cell.is_excluded):
-                    average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(
-                        centroid_coords_list,
-                        cell,
-                        cell_image_radius_after_normalization,
-                        i)
-                    normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(
-                        average_dartboard_data_single_cell,
-                        cell.bead_contact_site + 6,
-                        2)
+                if(not cell.is_excluded):
+                    average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
+                                                                                                     cell,
+                                                                                                     cell_image_radius_after_normalization,
+                                                                                                     i)
+                    normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
+                                                                                                              cell.bead_contact_site+6,
+                                                                                                              2)
 
                     normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
             except Exception as E:
@@ -77,13 +76,15 @@ def main(gui_enabled):
                 print("Error in Dartboard (single cell)")
                 continue
             bar()
-            time.sleep(.005)
-            if sh == True:
-                print("Shape normalization of: ", i + 1, "cell(s)", end='\r')
-                print()
-            if hd == True:
-                print("Hotspot detection of: ", i + 1, "cell(s)", end='\r')
-                print()
+        time.sleep(.005)
+        if sh == True:
+            print("Shape normalization of: ", i+1, "cell(s)", end='\r')
+        print()
+        if hd == True:
+            print("Hotspot detection of: ", i+1, "cell(s)", end='\r')
+        print()
+
+
 
     try:
         Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_multiple_cells)
