@@ -35,6 +35,7 @@ def main(gui_enabled):
             time.sleep(.005)
             ratio = cell.give_ratio_image()
             try:
+
               normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
               sh = True
             except Exception as E:
@@ -84,6 +85,7 @@ def main(gui_enabled):
         print()
 
 
+
     try:
         Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_multiple_cells)
         print("Dartboard plot: Done!")
@@ -95,7 +97,6 @@ def main(gui_enabled):
     Processor.save_ratio_image_files()
     # fig = Processor.plot_rois()
     # fig.savefig(save_path_Ca_cAMP + "rois.jpg")
-
 
 
 if __name__ == "__main__":
