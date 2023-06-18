@@ -361,7 +361,20 @@ class ImageProcessor:
 
 
     def normalize_cell_shape(self, cell):
-        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image, self.model)
+        df = cell.cell_image_data_channel_1
+        shifted_edge_x = df['edge_x'] + df['xshift']
+        shifted_edge_y = df['edge_y'] + df['yshift']
+        shifted_centroid_x = df["x_centroid_minus_bbox"] + df['xshift']
+        shifted_centroid_y = df["y_centroid_minus_bbox"] + df['yshift']
+        edge_list = []
+        centroid_list = []
+        for i in range(len(shifted_edge_x)):
+            e = np.vstack((shifted_edge_x[i], shifted_edge_y[i]))
+            c = np.vstack((shifted_centroid_x[i], shifted_centroid_y[i]))
+            edge_list.append(e)
+            centroid_list.append(c)
+        SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image, self.model,
+                                edge_list, centroid_list)
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
