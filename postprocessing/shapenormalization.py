@@ -9,11 +9,13 @@ from skimage import measure
 
 
 class ShapeNormalization:
-    def __init__(self, ratio, channel1, channel2, model):
+    def __init__(self, ratio, channel1, channel2, model, edge_list=None, centroid_list=None):
         self.ratio_image = ratio
         self.channel1 = channel1
         self.channel2 = channel2
         self.model = model
+        self.edge_list = edge_list
+        self.centroid_list = centroid_list
 
         self.centroid_coords_list = []
 
@@ -144,7 +146,11 @@ class ShapeNormalization:
             normalized_data_list = []
             nframes = self.ratio_image.shape[0]
             for i in range(nframes):
-                edge, centroid = self.find_edge_and_centroid(self.channel1[i])
+                if self.edge_list is not None:
+                    edge = self.edge_list[i]
+                    centroid = self.centroid_list[i]
+                else:
+                    edge, centroid = self.find_edge_and_centroid(self.channel1[i])
 
                 self.centroid_coords_list.append(centroid)
 
@@ -157,7 +163,11 @@ class ShapeNormalization:
             normalized_data = np.stack(padded_arrays)
 
         elif self.ratio_image.ndim == 2:
-            edge, centroid = self.find_edge_and_centroid(self.channel1)
+            if self.edge_list is not None:
+                edge = self.edge_list
+                centroid = self.centroid_list
+            else:
+                edge, centroid = self.find_edge_and_centroid(self.channel1)
 
             self.centroid_coords_list.append(centroid)
 
