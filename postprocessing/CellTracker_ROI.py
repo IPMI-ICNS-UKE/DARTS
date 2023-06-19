@@ -24,7 +24,7 @@ class CellTracker:
         """
         img_labels, img_details = model.predict_instances(normalize(image_frame),
                                                                predict_kwargs=dict(verbose=False))
-        return img_labels
+        return img_labels, img_details
 
     def generate_trajectory(self, image_series, model):
         """
@@ -36,32 +36,19 @@ class CellTracker:
         """
         number_of_frames = len(image_series)
         labels_for_each_frame = []  # segmented image respectively
+        details_for_each_frame = []  # segmented image respectively
 
         print("\nSegmentation of cells: ")
         counter = 1
-
-        for frame in range(len(image_series)):
-            # print("Segmentation of frame: ", counter)
-            label_in_frame = self.stardist_segmentation_in_frame(image_series[frame],model)
-
-            labels_for_each_frame.append(label_in_frame)
-            counter = counter + 1
-
-
-        # for frame in range(len(image_series)):
-        #     # print("Segmentation of frame: ", counter)
-        #     label_in_frame = self.stardist_segmentation_in_frame(image_series[frame])
-        #     labels_for_each_frame.append(label_in_frame)
-        #     counter = counter + 1
-
 
         with alive_bar(len(image_series), force_tty=True) as bar:
             # for frame in tqdm(range(len(image_series)), position=0, leave=True):
             for frame in range(len(image_series)):
                 time.sleep(.005)
                 # print("Segmentation of frame: ", counter)
-                label_in_frame = self.stardist_segmentation_in_frame(image_series[frame], model)
+                label_in_frame, details_in_frame = self.stardist_segmentation_in_frame(image_series[frame], model)
                 labels_for_each_frame.append(label_in_frame)
+                details_for_each_frame.append(details_in_frame)
                 counter = counter + 1
                 bar()
 
@@ -70,7 +57,7 @@ class CellTracker:
         with alive_bar(len(image_series), force_tty=True) as bar:
             for num, img in enumerate(image_series):
                 time.sleep(.005)
-                for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
+                for r, region in enumerate(skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img)):
                     if True:
                         features = features._append([{  'y': region.centroid[0],
                                                         'x': region.centroid[1],
@@ -83,7 +70,10 @@ class CellTracker:
                                                         'equivalent_diameter_area': region.equivalent_diameter_area,
                                                         'mean_intensity': region.intensity_mean,
                                                         'image_intensity': region.image_intensity,
-                                                        'image filled': region.image_filled
+                                                        'image filled': region.image_filled,
+                                                        'edge': details_for_each_frame[num]['coord'][r],
+                                                        'edge_x': details_for_each_frame[num]['coord'][r][0, :] - region.bbox[0],
+                                                        'edge_y': details_for_each_frame[num]['coord'][r][1, :] - region.bbox[1]
                         }, ])
                 bar()
 
@@ -153,6 +143,9 @@ class CellTracker:
         images_inside_bboxes = self.get_images_inside_bboxes(dataframe, particle)
         boolean_mask = np.empty_like(new_array, dtype=bool)
 
+        x_shift_all = []
+        y_shift_all = []
+
         for frame in range(frame_number):
             centroid_y_minus_bbox_offset = coords_bbox_offset[frame][1]
             centroid_x_minus_bbox_offset = coords_bbox_offset[frame][0]
@@ -165,8 +158,10 @@ class CellTracker:
             new_array[frame, 0:len(current_label), 0:len(current_label[0])] = current_label
             new_array[frame] = shift(new_array[frame], shift=(x_shift, y_shift))
             boolean_mask[frame] = new_array[frame] == 0
+            x_shift_all.append(x_shift)
+            y_shift_all.append(y_shift)
 
-        return boolean_mask
+        return boolean_mask, x_shift_all, y_shift_all
 
     def background_subtraction(self, frame_masks, cell_image_series):
         """
@@ -404,8 +399,11 @@ class CellTracker:
                     print(E)
                     print("Error Roi selection/ tracking")
                     continue
-                frame_masks = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
+                frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
                 roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
+
+                particle_dataframe_subset.loc[:, 'xshift'] = shiftx
+                particle_dataframe_subset.loc[:, 'yshift'] = shifty
 
                 roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
                 roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
