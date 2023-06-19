@@ -4,21 +4,21 @@ import skimage.io as io
 import numpy as np
 from alive_progress import alive_bar
 import time
-from postprocessing.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD, ATPImageConverter
-from postprocessing.CellTracker_ROI import CellTracker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
+from postprocessing.cell import CellImage, ChannelImage
+from postprocessing.segmentation import SegmentationSD, ATPImageConverter
+from postprocessing.CellTracker_ROI import CellTracker
 from postprocessing.registration import Registration_SITK, Registration_SR
-
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
-
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
 from postprocessing.Bead_Contact_GUI import BeadContactGUI
+
+logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +406,7 @@ class ImageProcessor:
             centroid_list.append(c)
         SN = ShapeNormalization(cell.ratio, cell.channel1.image, cell.channel2.image, self.model,
                                 edge_list, centroid_list)
-        
+
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list

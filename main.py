@@ -1,17 +1,41 @@
 import logging
 from pathlib import Path
 import tomli
-from postprocessing.processing import ImageProcessor
-
 import os
 import skimage.io as io
 from alive_progress import alive_bar
 import time
 import timeit
 from stardist.models import StarDist2D
-
-from GUI import TDarts_GUI
 import argparse
+
+from postprocessing.processing import ImageProcessor
+from GUI import TDarts_GUI
+
+
+# # instantiate logger
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+#
+# # define handler and formatter
+# handler = logging.StreamHandler()
+# formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+#
+# # add formatter to handler
+# handler.setFormatter(formatter)
+#
+# # add handler to logger
+# logger.addHandler(handler)
+
+logging.basicConfig(filename="logfile",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
+
+logging.info("Running main.py")
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+logger = logging.getLogger(__name__)
 
 # # instantiate logger
 # logger = logging.getLogger(__name__)
@@ -81,9 +105,11 @@ def main(gui_enabled):
                 print(E)
                 print("Error in shape normalization")
                 continue
+
             cell_image_radius_after_normalization = 50 # provisorisch...
             io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
             io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
+
 
             try:
                 hd_start = timeit.default_timer()
@@ -96,13 +122,13 @@ def main(gui_enabled):
                 print(E)
                 print("Error in Hotspot Detection")
                 continue
+
             try:
                 Processor.save_measurements()
             except Exception as E:
                 print(E)
                 print("Error in saving measurements")
                 continue
-
             try:
                 if(not cell.is_excluded):
                     db_start = timeit.default_timer()
@@ -116,6 +142,7 @@ def main(gui_enabled):
                                                                                                                   2)
 
                         normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+
                     db_took = (timeit.default_timer() - db_start) * 1000.0
                     db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
                     print(f"Dartboard analysis of cell, {i + 1} "
@@ -157,3 +184,4 @@ if __name__ == "__main__":
 
     main(args.gui)
     logger.info("Program finished")
+

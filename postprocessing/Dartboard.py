@@ -183,6 +183,7 @@ class DartboardGenerator:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        plt.savefig(directory + image_identifier + '.tiff', dpi=300)
+        plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
+
         # plt.show()
 

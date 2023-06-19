@@ -75,6 +75,7 @@ class CellTracker:
                                                         'edge_x': details_for_each_frame[num]['coord'][r][0, :] - region.bbox[0],
                                                         'edge_y': details_for_each_frame[num]['coord'][r][1, :] - region.bbox[1]
                         }, ])
+
                 bar()
 
         if not features.empty:
@@ -370,7 +371,8 @@ class CellTracker:
 
         # print("Get rois")
 
-        dataframe, particle_set = self.generate_trajectory(channel1,model)
+        dataframe, particle_set = self.generate_trajectory(channel1, model)
+
 
 
 
@@ -402,8 +404,10 @@ class CellTracker:
                 frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
                 roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
 
+
                 particle_dataframe_subset.loc[:, 'xshift'] = shiftx
                 particle_dataframe_subset.loc[:, 'yshift'] = shifty
+
 
                 roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
                 roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
