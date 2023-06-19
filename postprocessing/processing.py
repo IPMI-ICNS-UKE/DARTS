@@ -357,13 +357,13 @@ class ImageProcessor:
                                                                                        cell_image_radius_after_normalization,
                                                                                        cell_index)
         start_frame = cell.time_of_bead_contact
-        end_frame = cell.frame_number - 1
+        end_frame = cell.frame_number - 1  # in the future: 600 frames more than start_frame or last frame, if not 600 frames to add
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
-
-                                                                                       start_frame,
-                                                                                       end_frame,
                                                                                        self.dartboard_number_of_sections,
-                                                                                       self.dartboard_number_of_areas_per_section)
+                                                                                       self.dartboard_number_of_areas_per_section,
+                                                                                        start_frame,
+                                                                                        end_frame,
+                                                                                            )
 
         return mean_dartboard_data_single_cell
 
@@ -378,9 +378,6 @@ class ImageProcessor:
         # dartboard_generator = DartboardGenerator(self.save_path)
 
         average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-
-                                                                              0,
-                                                                              10,
                                                                               self.dartboard_number_of_sections,
                                                                               self.dartboard_number_of_areas_per_section)
 

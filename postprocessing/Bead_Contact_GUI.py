@@ -191,7 +191,7 @@ class BeadContactGUI():
 
     def calculate_contact_position(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y, number_of_areas):
         angle = self.calculate_contact_site_angle_relative_to_center(contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y)
-        location_on_clock = self.assign_angle_to_clock(angle,number_of_areas)
+        location_on_clock = self.assign_angle_to_clock(angle, number_of_areas)
         return location_on_clock
 
     def calculate_contact_site_angle_relative_to_center(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y):
@@ -202,10 +202,12 @@ class BeadContactGUI():
         angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180) % 360
         return angle
 
-    def assign_angle_to_clock(self, angle, number_of_areas):
-        angle_one_section = 360.0 / number_of_areas
-        location_on_clock = int(angle / angle_one_section) + 1
-        return location_on_clock + 2   # 2 as correction
+    def assign_angle_to_clock(self, angle, number_of_sections):
+        angle_one_section = 360.0 / number_of_sections
+        dartboard_area = int(angle / angle_one_section)
+        clock_list = [4,5,6,7,8,9,10,11,12,1,2,3]
+        location_on_clock = clock_list[dartboard_area]
+        return location_on_clock
 
     def return_bead_contact_information(self):
         return self.bead_contacts

@@ -27,22 +27,29 @@ class DartboardGenerator:
         x0 = centroid_coords[1]
         x = signal_coords[0]
         y = signal_coords[1]
-        angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180)% 360
+        angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180) % 360
         return angle
 
-    def assign_angle_to_dartboard_section(self, angle, number_of_areas):
-        angle_one_section = 360.0 / number_of_areas
+    def assign_angle_to_dartboard_section(self, angle, number_of_sections):
+        angle_one_section = 360.0 / number_of_sections
         dartboard_section = int(angle / angle_one_section)
         return dartboard_section
 
-    def  assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, areas_height, number_of_areas_in_one_section):
-        # interval = radius_cell_image / (number_of_areas_in_one_section - 1.0)
-        interval = radius_cell_image / (areas_height*number_of_areas_in_one_section)
-        dartboard_area = int(distance_from_center/interval)
-        if(radius_cell_image < distance_from_center < 0):
-            return -1
+    def assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, number_of_areas_in_one_section):
+        # height_of_annuli = [0, 0, 0, 0, 0, 2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
+        bottom_list = [5, 7, 8.544, 9.8489]
+        radius_dartboard = 9.8489
+
+        normalized_distance_of_signal_from_center = (distance_from_center / radius_cell_image) * radius_dartboard
+
+        if bottom_list[0] < normalized_distance_of_signal_from_center < bottom_list[1]:
+            return 5
+        elif bottom_list[1] < normalized_distance_of_signal_from_center < bottom_list[2]:
+            return 6
+        elif bottom_list[2] < normalized_distance_of_signal_from_center < bottom_list[3]:
+            return 7
         else:
-            return dartboard_area
+            return -1
 
     def assign_signal_to_dartboard_area(self, signal_coords, centroid_coords, number_of_sections, number_of_areas_in_one_section, radius_cell_image):
         if radius_cell_image < self.distance_from_pixel_to_center(signal_coords, centroid_coords): #< radius_inner_circle:
@@ -54,7 +61,6 @@ class DartboardGenerator:
             distance_to_center = self.distance_from_pixel_to_center(signal_coords, centroid_coords)
             dartboard_area_number_within_section = self.assign_signal_to_nth_area(distance_to_center,
                                                                                   radius_cell_image,
-                                                                                  1,
                                                                                   number_of_areas_in_one_section)
 
             return dartboard_section, dartboard_area_number_within_section
@@ -105,9 +111,12 @@ class DartboardGenerator:
         return dartboard_area_frequencies
 
 
-    def calculate_mean_dartboard(self, dartboard_area_frequencies, start_frame, end_frame,number_of_sections, number_of_areas_within_section):
+    def calculate_mean_dartboard(self, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, start_frame=None, end_frame=None):
         if(len(dartboard_area_frequencies)>0):
-            sub_list = dartboard_area_frequencies[start_frame:end_frame]
+            if start_frame is not None and end_frame is not None:
+                sub_list = dartboard_area_frequencies[start_frame:end_frame]
+            else:
+                sub_list = dartboard_area_frequencies
             number_of_frames = float(len(sub_list))
             average_array = np.zeros_like(dartboard_area_frequencies[0])
             for array in sub_list:
@@ -144,6 +153,9 @@ class DartboardGenerator:
         number_of_areas_in_section = number_of_areas_per_section
         angle_per_section = 360.0 / number_of_sections
 
+        height_of_annuli = [0, 0, 0, 0, 0, 2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
+        bottom_list = [0, 0, 0, 0, 0, 5, 7, 8.544, 9.8489]
+
         for i in range(number_of_sections):
             center_angle = math.radians((i * angle_per_section + angle_per_section / 2) % 360.0)
 
@@ -153,24 +165,24 @@ class DartboardGenerator:
 
                     color = red_sequential_cmap(number_of_signals_in_current_dartboard_area)  # nur vorübergehend
 
-                    ax.bar(x=center_angle, height=1, width=2 * np.pi / (number_of_sections), bottom=dartboard_area,
+                    ax.bar(x=center_angle, height=height_of_annuli[dartboard_area], width=2 * np.pi / (number_of_sections), bottom=bottom_list[dartboard_area],
                            color=color, edgecolor='white')
 
-        plt.ylim(0, 8)
+        plt.ylim(0, 9.85)
 
         ax.grid(False)
 
         ax.set_yticks([])
         ax.axis("off")
 
-        image_identifier = "Activity map (" + str(number_of_cells) + " cells)" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
+        image_identifier = "Activity map (" + str(number_of_cells) + " cell(s)" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
         plt.title(image_identifier)
         sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap)
         sm.set_clim(vmin=0, vmax=2.0)
         plt.colorbar(sm, pad=0.3)
 
         ax.annotate('Bead contact',
-                    xy=(math.radians(45), 8),  # theta, radius
+                    xy=(math.radians(45), 9.85),  # theta, radius
                     xytext=(0.6, 0.85),  # fraction, fraction
                     textcoords='figure fraction',
                     arrowprops=dict(facecolor='black', shrink=0.05, width=0.5),
@@ -187,3 +199,7 @@ class DartboardGenerator:
 
         # plt.show()
 
+dartboard_gen = DartboardGenerator(None)
+angle = dartboard_gen.calculate_signal_angle_relative_to_center((100,0), (0,0))
+# centroid coords: (0,0) = (y,x)
+# signal: (100,0) = (x,y)
