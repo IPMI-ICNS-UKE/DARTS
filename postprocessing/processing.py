@@ -287,8 +287,9 @@ class ImageProcessor:
         self.select_rois()
 
         # bead contact, user input
-        bead_contact_information = self.define_bead_contacts()
-        self.assign_bead_contacts_to_cells(bead_contact_information)
+        if len(self.cell_list) > 0:
+            bead_contact_information = self.define_bead_contacts()
+            self.assign_bead_contacts_to_cells(bead_contact_information)
 
 
         print("\nBleaching correction: ")
