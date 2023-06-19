@@ -17,6 +17,8 @@ from postprocessing.shapenormalization import ShapeNormalization
 
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
+from postprocessing.Bead_Contact_GUI import BeadContactGUI
+
 
 try:
     import SimpleITK as sitk
@@ -143,8 +145,10 @@ class ImageProcessor:
                                                     self.ATP_image_converter,
                                                     self.ATP_flag,
                                                     self.estimated_cell_area,
+                                                    self.x_max,
                                                     roi_list_cell_pairs[i][2],
-                                                    roi_list_cell_pairs[i][3]))
+                                                    roi_list_cell_pairs[i][3])
+                                                    )
                     bar()
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
@@ -279,10 +283,13 @@ class ImageProcessor:
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
                                                                    "registration_framebyframe"])
+        # find the cells
+        self.select_rois()
 
-        self.select_rois()  # find the cells
         # bead contact, user input
-        self.define_bead_contacts()
+        bead_contact_information = self.define_bead_contacts()
+        self.assign_bead_contacts_to_cells(bead_contact_information)
+
 
         print("\nBleaching correction: ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
@@ -295,6 +302,14 @@ class ImageProcessor:
 
                 cell.generate_ratio_image_series()
                 bar()
+
+    def assign_bead_contacts_to_cells(self, bead_contact_information):
+        for bead_contact in bead_contact_information:
+            cell_index = bead_contact.return_cell_index()
+            start_frame = bead_contact.return_frame_number()
+            location = bead_contact.return_location()
+            self.cell_list[cell_index].time_of_bead_contact = start_frame
+            self.cell_list[cell_index].bead_contact_site = location
 
     def detect_hotspots(self, ratio_image, cell, i):
         if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
@@ -313,12 +328,15 @@ class ImageProcessor:
 
     def define_bead_contacts(self):
         """
-        Let user define the bead contacts (time, location)
+        Let user define the bead contacts (time, location) for each cell
         :return:
         """
-        io.imshow(self.image[0])
-        plt.show()
-        pass
+        bead_contact_gui = BeadContactGUI(self.image, self.cell_list, self.dartboard_number_of_sections)
+        bead_contact_gui.run_main_loop()
+        information = bead_contact_gui.return_bead_contact_information()
+        return information
+
+
 
     def save_measurements(self):
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)

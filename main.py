@@ -62,15 +62,16 @@ def main(gui_enabled):
 
             try:
                 if(not cell.is_excluded):
-                    average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
-                                                                                                     cell,
-                                                                                                     cell_image_radius_after_normalization,
-                                                                                                     i)
-                    normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
-                                                                                                              cell.bead_contact_site+6,
-                                                                                                              2)
+                    if cell.bead_contact_site != 0:
+                        average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
+                                                                                                         cell,
+                                                                                                         cell_image_radius_after_normalization,
+                                                                                                         i)
+                        normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
+                                                                                                                  cell.bead_contact_site,
+                                                                                                                  2)
 
-                    normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+                        normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
             except Exception as E:
                 print(E)
                 print("Error in Dartboard (single cell)")

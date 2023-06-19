@@ -11,7 +11,7 @@ from statistics import mean
 
 
 class CellImage:
-    def __init__(self, roi1, roi2, atp_image_converter, atp_flag, estimated_cell_area, cell_image_data_channel_1=None, frame_masks=None):
+    def __init__(self, roi1, roi2, atp_image_converter, atp_flag, estimated_cell_area, xmax, cell_image_data_channel_1=None, frame_masks=None):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
@@ -23,6 +23,7 @@ class CellImage:
         self.more_than_one_trajectory = False
         self.processing_flag = None
         self.cell_image_data_channel_1 = cell_image_data_channel_1
+        self.width = xmax
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
 
@@ -31,9 +32,9 @@ class CellImage:
         self.cell_is_preactivated = False
         self.number_of_frames_before_cell_activation = 0
         self.signal_data = None
-        self.time_of_bead_contact = 0
 
-        self.bead_contact_site = 5  # better initialize with 0 and set to number between 1 and 12 later
+        self.time_of_bead_contact = 0  # start_frame
+        self.bead_contact_site = 0  # init value
 
         self.is_excluded = False
 
@@ -55,6 +56,28 @@ class CellImage:
         mean_intensity_this_frame = cell_region.intensity_mean
         return mean_intensity_this_frame
 
+    def return_bbox_list_channel_1(self):
+        bbox_list_channel_1 = self.cell_image_data_channel_1["bbox"].values.tolist()
+        return bbox_list_channel_1
+
+    def return_bbox_list_channel_2(self):
+        bbox_list_channel_1 = self.return_bbox_list_channel_1()
+        bbox_list_channel_2 = []
+        for bbox in bbox_list_channel_1:
+            minr_channel_1, minc_channel_1, maxr_channel_1, maxc_channel_1 = bbox  # minr = min row = min y; minc = min column = min x
+            minr_channel_2 = minr_channel_1
+            minc_channel_2 = minc_channel_1 + self.width/2
+            maxr_channel_2 = maxr_channel_1
+            maxc_channel_2 = maxc_channel_1 + self.width/2
+            bbox_channel_2 = (minr_channel_2,minc_channel_2,maxr_channel_2,maxc_channel_2)
+            bbox_list_channel_2.append(bbox_channel_2)
+        return bbox_list_channel_2
+
+    def return_coords_list_channel_1(self):  # before cropping!
+        x_coords_list = self.cell_image_data_channel_1["x"].values.tolist()
+        y_coords_list = self.cell_image_data_channel_1["y"].values.tolist()
+        return list(zip(x_coords_list, y_coords_list))
+
     def return_list_of_areas(self):
         area_data = self.cell_image_data_channel_1["area"].values.tolist()
         return area_data
@@ -69,12 +92,13 @@ class CellImage:
         self.cell_is_preactivated = cell_preactivated
         return cell_preactivated
 
-    def set_bead_contact_site(self, clock_index):
+    def set_bead_contact_site(self, clock_index, start_frame):
         """
         Sets the variable bead_contact_site to clock_index. This index is a natural number from 1 to 12.
         :param clock_index:
         """
         self.bead_contact_site = clock_index
+        self.time_of_bead_contact = start_frame
 
     def measure_mean_ratio_in_all_frames(self):
         """
