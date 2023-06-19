@@ -37,6 +37,31 @@ logging.info("Running main.py")
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
+# # instantiate logger
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+#
+# # define handler and formatter
+# handler = logging.StreamHandler()
+# formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+#
+# # add formatter to handler
+# handler.setFormatter(formatter)
+#
+# # add handler to logger
+# logger.addHandler(handler)
+
+logging.basicConfig(filename="logfile",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
+
+logging.info("Running main.py")
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+logger = logging.getLogger(__name__)
+
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
@@ -45,7 +70,6 @@ def convert_ms_to_smh(millis):
     minutes = int(millis / (1000 * 60)) % 60
     hours = int(millis / (1000 * 60 * 60)) % 24
     return seconds, minutes, hours
-
 
 def main(gui_enabled):
     if gui_enabled:
@@ -81,9 +105,11 @@ def main(gui_enabled):
                 print(E)
                 print("Error in shape normalization")
                 continue
-            cell_image_radius_after_normalization = 50  # provisorisch...
-            io.imsave(savepath + "cellratio" + str(i) + ".tif", ratio)
-            io.imsave(savepath + "cellratio_normalized" + str(i) + ".tif", normalized_ratio)
+
+            cell_image_radius_after_normalization = 50 # provisorisch...
+            io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
+            io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
+
 
             try:
                 hd_start = timeit.default_timer()
@@ -104,13 +130,19 @@ def main(gui_enabled):
                 print("Error in saving measurements")
                 continue
             try:
-                if (not cell.is_excluded):
+                if(not cell.is_excluded):
                     db_start = timeit.default_timer()
-                    average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(
-                        centroid_coords_list, cell, cell_image_radius_after_normalization, i)
-                    normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(
-                        average_dartboard_data_single_cell, cell.bead_contact_site + 6, 2)
-                    normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+                    if cell.bead_contact_site != 0:
+                        average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
+                                                                                                         cell,
+                                                                                                         cell_image_radius_after_normalization,
+                                                                                                         i)
+                        normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
+                                                                                                                  cell.bead_contact_site,
+                                                                                                                  2)
+
+                        normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+
                     db_took = (timeit.default_timer() - db_start) * 1000.0
                     db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
                     print(f"Dartboard analysis of cell, {i + 1} "
@@ -120,7 +152,6 @@ def main(gui_enabled):
                 print("Error in Dartboard (single cell)")
                 continue
             bar()
-
 
     try:
         db_start = timeit.default_timer()
@@ -135,8 +166,6 @@ def main(gui_enabled):
 
     Processor.save_image_files()  # save processed cropped images
     Processor.save_ratio_image_files()
-    # fig = Processor.plot_rois()
-    # fig.savefig(save_path_Ca_cAMP + "rois.jpg")
 
     # get the end time
     end_time = time.time()

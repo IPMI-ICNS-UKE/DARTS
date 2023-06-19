@@ -31,15 +31,9 @@ class DartboardGenerator:
         return angle
 
     def assign_angle_to_dartboard_section(self, angle, number_of_areas):
-        angle_one_section = 360.0/number_of_areas
-        for i in range(number_of_areas):
-            lower_angle = (i-0.5)*angle_one_section
-            if lower_angle < 0:
-                lower_angle = 360.0 + lower_angle
-
-            upper_angle = (i+0.5)*angle_one_section % 360.0
-            if lower_angle < angle < upper_angle:
-                return i
+        angle_one_section = 360.0 / number_of_areas
+        dartboard_section = int(angle / angle_one_section)
+        return dartboard_section
 
     def  assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, areas_height, number_of_areas_in_one_section):
         # interval = radius_cell_image / (number_of_areas_in_one_section - 1.0)
