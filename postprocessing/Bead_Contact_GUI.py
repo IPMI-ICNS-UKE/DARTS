@@ -7,9 +7,11 @@ from tkinter import (Tk, ttk, Label, Scale, Listbox, Scrollbar, Frame, Button, L
 
 import matplotlib.patches as mpatches
 import math
+import time
 
 class BeadContactGUI():
     def __init__(self, image, cell_list, number_of_areas_dartboard):
+        self.cell_list = cell_list
         self.bboxes_list_each_cell = self.give_bbox_list_for_each_cell(cell_list)
         self.coords_list_each_cell = self.give_coords_list_for_each_cell(cell_list)
         self.number_of_areas = number_of_areas_dartboard
@@ -74,6 +76,15 @@ class BeadContactGUI():
 
         self.remove_bead_contact_button = Button(self.root, text="Remove bead contact", command=self.remove_bead_contact)
         self.remove_bead_contact_button.place(x=750, y=510)
+        self.save_button = Button(self.root,text="Save bead contacts",command=self.assign_bead_contacts_to_cells)
+        self.save_button.place(x=750,y=550)
+
+        self.close_button = Button(self.root, text="Close window", command=self.close_gui)
+        self.close_button.place(x=950, y=550)
+
+
+
+
 
     def give_bbox_list_for_each_cell(self, cell_list):
         bbox_list_all_cells = []
@@ -158,6 +169,7 @@ class BeadContactGUI():
             self.bead_contact_list.delete(selected_item[0])
             self.bead_contact_list.selection_set(END,END)
 
+
     def mouse_clicked(self, event):
         if event.xdata is not None and event.ydata is not None:
             x_location = round(event.xdata)
@@ -189,9 +201,22 @@ class BeadContactGUI():
     def run_main_loop(self):
         self.root.mainloop()
 
+    def assign_bead_contacts_to_cells(self):
+        for bead_contact in self.bead_contacts:
+            cell_index = bead_contact.return_cell_index()
+            start_frame = bead_contact.return_frame_number()
+            location = bead_contact.return_location()
+            self.cell_list[cell_index].time_of_bead_contact = start_frame
+            self.cell_list[cell_index].bead_contact_site = location
+
+
+
+    def close_gui(self):
+        self.root.destroy()
+
     def calculate_contact_position(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y, number_of_areas):
         angle = self.calculate_contact_site_angle_relative_to_center(contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y)
-        location_on_clock = self.assign_angle_to_clock(angle,number_of_areas)
+        location_on_clock = self.assign_angle_to_clock(angle, number_of_areas)
         return location_on_clock
 
     def calculate_contact_site_angle_relative_to_center(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y):
@@ -202,10 +227,12 @@ class BeadContactGUI():
         angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180) % 360
         return angle
 
-    def assign_angle_to_clock(self, angle, number_of_areas):
-        angle_one_section = 360.0 / number_of_areas
-        location_on_clock = int(angle / angle_one_section) + 1
-        return location_on_clock + 2   # 2 as correction
+    def assign_angle_to_clock(self, angle, number_of_sections):
+        angle_one_section = 360.0 / number_of_sections
+        dartboard_area = int(angle / angle_one_section)
+        clock_list = [4,5,6,7,8,9,10,11,12,1,2,3]
+        location_on_clock = clock_list[dartboard_area]
+        return location_on_clock
 
     def return_bead_contact_information(self):
         return self.bead_contacts

@@ -290,8 +290,8 @@ class ImageProcessor:
 
         # bead contact, user input
         if len(self.cell_list) > 0:
-            bead_contact_information = self.define_bead_contacts()
-            self.assign_bead_contacts_to_cells(bead_contact_information)
+            self.define_bead_contacts()
+            # self.assign_bead_contacts_to_cells(bead_contact_information)
 
 
         print("\nBleaching correction: ")
@@ -306,13 +306,6 @@ class ImageProcessor:
                 cell.generate_ratio_image_series()
                 bar()
 
-    def assign_bead_contacts_to_cells(self, bead_contact_information):
-        for bead_contact in bead_contact_information:
-            cell_index = bead_contact.return_cell_index()
-            start_frame = bead_contact.return_frame_number()
-            location = bead_contact.return_location()
-            self.cell_list[cell_index].time_of_bead_contact = start_frame
-            self.cell_list[cell_index].bead_contact_site = location
 
     def detect_hotspots(self, ratio_image, cell, i):
         if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
@@ -336,8 +329,6 @@ class ImageProcessor:
         """
         bead_contact_gui = BeadContactGUI(self.image, self.cell_list, self.dartboard_number_of_sections)
         bead_contact_gui.run_main_loop()
-        information = bead_contact_gui.return_bead_contact_information()
-        return information
 
 
 
@@ -357,13 +348,13 @@ class ImageProcessor:
                                                                                        cell_image_radius_after_normalization,
                                                                                        cell_index)
         start_frame = cell.time_of_bead_contact
-        end_frame = cell.frame_number - 1
+        end_frame = cell.frame_number - 1  # in the future: 600 frames more than start_frame or last frame, if not 600 frames to add
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
-
-                                                                                       start_frame,
-                                                                                       end_frame,
                                                                                        self.dartboard_number_of_sections,
-                                                                                       self.dartboard_number_of_areas_per_section)
+                                                                                       self.dartboard_number_of_areas_per_section,
+                                                                                        start_frame,
+                                                                                        end_frame,
+                                                                                            )
 
         return mean_dartboard_data_single_cell
 
@@ -378,9 +369,6 @@ class ImageProcessor:
         # dartboard_generator = DartboardGenerator(self.save_path)
 
         average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-
-                                                                              0,
-                                                                              10,
                                                                               self.dartboard_number_of_sections,
                                                                               self.dartboard_number_of_areas_per_section)
 

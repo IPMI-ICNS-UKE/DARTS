@@ -171,4 +171,3 @@ class ShapeNormalization:
 
         return normalized_data
 
-

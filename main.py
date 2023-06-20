@@ -184,4 +184,5 @@ if __name__ == "__main__":
 
     main(args.gui)
     logger.info("Program finished")
+    quit()
 
