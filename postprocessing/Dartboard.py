@@ -114,7 +114,7 @@ class DartboardGenerator:
     def calculate_mean_dartboard(self, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, start_frame=None, end_frame=None):
         if(len(dartboard_area_frequencies)>0):
             if start_frame is not None and end_frame is not None:
-                sub_list = dartboard_area_frequencies[start_frame:end_frame]
+                sub_list = dartboard_area_frequencies[start_frame:end_frame+1]
             else:
                 sub_list = dartboard_area_frequencies
             number_of_frames = float(len(sub_list))
@@ -175,7 +175,7 @@ class DartboardGenerator:
         ax.set_yticks([])
         ax.axis("off")
 
-        image_identifier = "Activity map (" + str(number_of_cells) + " cell(s)" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
+        image_identifier = "Activity map (" + str(number_of_cells) + " cell[s] )" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
         plt.title(image_identifier)
         sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap)
         sm.set_clim(vmin=0, vmax=2.0)

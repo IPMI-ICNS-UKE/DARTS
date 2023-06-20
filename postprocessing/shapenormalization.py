@@ -52,57 +52,48 @@ class ShapeNormalization:
         shifted_edge_y = edgecoord[0] + shift_y
         return shifted_edge_x, shifted_edge_y
 
-    def shapeNormalization(self, centeredData, x, y, radius=None):
-        # coordinates of cell shape
+    def shapeNormalization(self, centeredData, x, y):
         edgeCoords = np.array([y, x]).T
         centroid = np.array(centeredData.shape) / 2
-        area = np.count_nonzero(centeredData)
 
-        if radius is not None:
-            cellRadius = radius
-        else:
-            cellRadius = math.sqrt(area / math.pi)
-
-        # move to center
+        # move to center -> so origin for polar coordinates is at centroid
         centeredEdgeCoords = edgeCoords - centroid
-        centeredEdgeCoords = np.vstack([centeredEdgeCoords, centeredEdgeCoords[0, :]])
+        centeredEdgeCoords_c = np.vstack([centeredEdgeCoords, centeredEdgeCoords[0, :]])
 
         # convert to polar coodinates. gives transformation parameters
-        polCoords = np.zeros_like(centeredEdgeCoords)
-        polCoords[:, 0], polCoords[:, 1] = np.arctan2(centeredEdgeCoords[:, 0], centeredEdgeCoords[:, 1]), np.hypot(
-            centeredEdgeCoords[:, 0], centeredEdgeCoords[:, 1])
-        transformParameter = polCoords
+        polCoords = np.zeros_like(centeredEdgeCoords_c)
+        polCoords[:, 0], polCoords[:, 1] = np.arctan2(centeredEdgeCoords_c[:, 0], centeredEdgeCoords_c[:, 1]), np.hypot(
+            centeredEdgeCoords_c[:, 0], centeredEdgeCoords_c[:, 1])
 
         # has to start from 0 to 2pi for the interpolation
-        transformParameter = np.vstack(
-            [transformParameter[-1, :] - [2 * np.pi, 0], transformParameter, transformParameter[0, :] + [2 * np.pi, 0]])
+        polCoords_sorted = np.vstack(
+            [polCoords[-1, :] - [2 * np.pi, 0], polCoords, polCoords[0, :] + [2 * np.pi, 0]])
 
-        # scale parameter
-        transformParameter[:, 1] = (0.962 * np.mean(transformParameter[:, 1])) / transformParameter[:, 1]
+        # scale parameter --> transforms edge coordinates onto circle
+        scale_parameter = (0.962 * np.mean(polCoords_sorted[:, 1])) / polCoords_sorted[:, 1]
 
-        # do transformation with image
+        # ---- now: transformation of entire image
+
         sz = centeredData.shape
 
-        # set to image center
-        aMid = (np.array(sz) + 1) / 2
 
-        # generate image coordinates of output image with origin in aMid
+        # generate image coordinates of output image with origin in centroid
         y, x = np.meshgrid(range(1, sz[1] + 1), range(1, sz[0] + 1))
-        x = x - aMid[1]
-        y = y - aMid[0]
+        x_shifted = x - centroid[1]
+        y_shifted = y - centroid[0]
 
         # calculate positions in input image
-        theta, rho = np.arctan2(y, x), np.hypot(x, y)
+        theta, rho = np.arctan2(y_shifted, x_shifted), np.hypot(x_shifted, y_shifted)
 
         # add small linearly increasing scalar to ensure uniqueness
-        a = np.linspace(1, 2, transformParameter.shape[0])
-        transformParameter = transformParameter + (a[:, np.newaxis] / 1e10)
+        a = np.linspace(1, 2, len(scale_parameter))
+        scale_parameter_a = scale_parameter + (a / 1e10)
 
-        # transform
-        f = interpolate.interp1d(transformParameter[:, 0], (1) / transformParameter[:, 1], fill_value="extrapolate")
+        # transform: interpolate INVERSE transformation to get new coordinates
+        f = interpolate.interp1d(polCoords_sorted[:, 0], 1 / scale_parameter_a, fill_value="extrapolate")
         rho = rho * f(theta)
 
-        x, y = rho * np.cos(theta) + aMid[1], rho * np.sin(theta) + aMid[0]
+        x_new, y_new = rho * np.cos(theta) + centroid[1], rho * np.sin(theta) + centroid[0]
 
         # interpolate Data to output template
         y_coords = np.arange(centeredData.shape[0])
@@ -111,15 +102,15 @@ class ShapeNormalization:
                                                                      bounds_error=False)
 
         # Create a grid for the interpolator using the previously computed x and y
-        points = np.vstack((y.ravel(), x.ravel())).T
+        points = np.vstack((y_new.ravel(), x_new.ravel())).T
 
         # Interpolate
         normalized_data = interpolating_function(points)
 
         # Reshape the data back to the original shape and set nan to 0
-        normalized_data = np.nan_to_num(normalized_data.reshape(sz))
+        normalized_data_reshaped = np.nan_to_num(normalized_data.reshape(sz, order='F'))
 
-        return normalized_data, cellRadius
+        return normalized_data_reshaped
 
 
     def find_edge_and_centroid(self, img_frame):
@@ -157,7 +148,7 @@ class ShapeNormalization:
 
                 img_shifted = self.shift_image_to_centroid(self.ratio_image[i], centroid)
                 x_s, y_s = self.shift_edge_coord(img_shifted, edge, centroid)
-                ndata, cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
+                ndata = self.shapeNormalization(img_shifted, x_s, y_s)
                 normalized_data_list.append(ndata)
             max_shape = np.max([arr.shape for arr in normalized_data_list], axis=0)
             padded_arrays = [self.pad_array(arr, max_shape) for arr in normalized_data_list]
@@ -174,10 +165,9 @@ class ShapeNormalization:
 
             img_shifted = self.shift_image_to_centroid(self.ratio_image, centroid)
             x_s, y_s = self.shift_edge_coord(img_shifted, edge, centroid)
-            normalized_data, cellRadius = self.shapeNormalization(img_shifted, x_s, y_s)
+            normalized_data = self.shapeNormalization(img_shifted, x_s, y_s)
         else:
             normalized_data = None
 
         return normalized_data
-
 
