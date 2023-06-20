@@ -44,7 +44,7 @@ class HotSpotDetector():
         regions = [region for region in raw_regions_in_frame if lower_limit_area < region.area < upper_limit_area]
         return regions
 
-    def measure_microdomains(self, image_series, threshold, lower_limit_area, upper_limit_area):
+    def measure_microdomains(self, image_series, threshold, lower_limit_area, upper_limit_area, cell_type, ratio_converter):
         """
         Measures the number and the intensites of microdomains in each frame of the ratio image and returns a dataframe
         :return:
@@ -61,9 +61,12 @@ class HotSpotDetector():
                                                   'frame': num,
                                                   'time_in_seconds': float(num)/self.frames_per_second,
                                                   'area': region.area,
-                                                  'max_intensity': region.intensity_max,
+                                                  'max_intensity': region.intensity_max,  # muss man noch umrechnen in calcium konzentration
                                                   'min_intensity': region.intensity_min,
                                                   'mean_intensity': region.intensity_mean,
+                                                  'max calcium concentration in nM': ratio_converter.convert_ratio_to_concentration(cell_type, region.intensity_max),
+                                                  'min calcium concentration in nM': ratio_converter.convert_ratio_to_concentration(cell_type, region.intensity_min),
+                                                  'mean calcium concentration in nM': ratio_converter.convert_ratio_to_concentration(cell_type, region.intensity_mean),
 
                                                   }, ])
         return features

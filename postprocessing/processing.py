@@ -17,6 +17,7 @@ from postprocessing.shapenormalization import ShapeNormalization
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
 from postprocessing.Bead_Contact_GUI import BeadContactGUI
+from postprocessing.RatioToConcentrationConverter import RatioConverter
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ class ImageProcessor:
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
         self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
+        self.cell_type = self.parameters["properties"]["cell_type"]
         self.frame_number = len(self.channel1)
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
@@ -100,8 +102,11 @@ class ImageProcessor:
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
-        self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
-        self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+        # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
+        self.ratio_converter = RatioConverter()
+        # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+        self.microdomain_signal_threshold = self.ratio_converter.give_signal_threshold_as_ratio(self.cell_type)
+
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
@@ -312,7 +317,9 @@ class ImageProcessor:
             measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
                                                                                  self.microdomain_signal_threshold,
                                                                                  6,   # lower area limit
-                                                                                 20)  # upper area limit
+                                                                                 20,  # upper area limit
+                                                                                 self.cell_type,
+                                                                                 self.ratio_converter)
             cell.signal_data = measurement_microdomains
             # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
             self.dataframes_microdomains_list.append(measurement_microdomains)
