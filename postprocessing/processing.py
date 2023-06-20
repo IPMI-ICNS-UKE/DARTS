@@ -387,7 +387,7 @@ class ImageProcessor:
 
 
     def normalize_cell_shape(self, cell):
-        df = cell.cell_image_data_channel_1
+        df = cell.cell_image_data_channel_2
         shifted_edge_x = df['edge_x'] + df['xshift']
         shifted_edge_y = df['edge_y'] + df['yshift']
         shifted_centroid_x = df["x_centroid_minus_bbox"] + df['xshift']
