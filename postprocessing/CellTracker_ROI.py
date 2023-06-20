@@ -81,7 +81,7 @@ class CellTracker:
         if not features.empty:
             tp.annotate(features[features.frame == (0)], image_series[0])
             # tracking, linking of coordinates
-            search_range = 10  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
+            search_range = 50  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
             t = tp.link_df(features, search_range, memory=0)
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
             # print (t)
@@ -371,7 +371,7 @@ class CellTracker:
 
         # print("Get rois")
 
-        dataframe, particle_set = self.generate_trajectory(channel1, model)
+        dataframe, particle_set = self.generate_trajectory(channel2, model)
 
 
 
@@ -396,21 +396,21 @@ class CellTracker:
 
             if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
                 try:
-                    roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
+                    roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
                 except Exception as E:
                     print(E)
                     print("Error Roi selection/ tracking")
                     continue
-                frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
-                roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
+                frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi2, 0.5*max_delta_x, 0.5*max_delta_y)
+                roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
 
 
                 particle_dataframe_subset.loc[:, 'xshift'] = shiftx
                 particle_dataframe_subset.loc[:, 'yshift'] = shifty
 
 
-                roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
-                roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
+                roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
+                roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
                 roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,frame_masks))
         return roi_cell_list
 

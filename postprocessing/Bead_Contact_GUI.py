@@ -98,8 +98,8 @@ class BeadContactGUI():
     def give_coords_list_for_each_cell(self, cell_list):
         coords_list_all_cells = []
         for cell in cell_list:
-            coords_list_cell_channel_1 = cell.return_coords_list_channel_1()
-            coords_list_all_cells.append(coords_list_cell_channel_1)
+            coords_list_cell_channel_2 = cell.return_coords_list_channel_2()
+            coords_list_all_cells.append(coords_list_cell_channel_2)
         return coords_list_all_cells
 
     def bboxes_for_cell(self, frame, cell_index = None):

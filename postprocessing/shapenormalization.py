@@ -72,6 +72,7 @@ class ShapeNormalization:
         # scale parameter --> transforms edge coordinates onto circle
         scale_parameter = (0.962 * np.mean(polCoords_sorted[:, 1])) / polCoords_sorted[:, 1]
 
+
         # ---- now: transformation of entire image
 
         sz = centeredData.shape

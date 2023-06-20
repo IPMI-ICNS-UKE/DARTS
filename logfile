@@ -3589,4 +3589,839 @@
 13:57:35,663 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
 13:57:35,663 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
 13:57:36,24 __main__ INFO Program finished
+14:07:54,426 root INFO Running main.py
+14:07:54,427 root INFO Running main.py
+14:07:54,427 __main__ INFO Program started
+14:07:55,416 h5py._conv DEBUG Creating converter from 3 to 5
+14:08:05,125 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+14:08:29,183 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x174e9b130>
+14:08:29,476 PIL.Image DEBUG Importing BlpImagePlugin
+14:08:29,479 PIL.Image DEBUG Importing BmpImagePlugin
+14:08:29,479 PIL.Image DEBUG Importing BufrStubImagePlugin
+14:08:29,481 PIL.Image DEBUG Importing CurImagePlugin
+14:08:29,487 PIL.Image DEBUG Importing DcxImagePlugin
+14:08:29,492 PIL.Image DEBUG Importing DdsImagePlugin
+14:08:29,492 PIL.Image DEBUG Importing EpsImagePlugin
+14:08:29,493 PIL.Image DEBUG Importing FitsImagePlugin
+14:08:29,496 PIL.Image DEBUG Importing FitsStubImagePlugin
+14:08:29,499 PIL.Image DEBUG Importing FliImagePlugin
+14:08:29,500 PIL.Image DEBUG Importing FpxImagePlugin
+14:08:29,501 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+14:08:29,501 PIL.Image DEBUG Importing FtexImagePlugin
+14:08:29,504 PIL.Image DEBUG Importing GbrImagePlugin
+14:08:29,507 PIL.Image DEBUG Importing GifImagePlugin
+14:08:29,507 PIL.Image DEBUG Importing GribStubImagePlugin
+14:08:29,507 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+14:08:29,507 PIL.Image DEBUG Importing IcnsImagePlugin
+14:08:29,517 PIL.Image DEBUG Importing IcoImagePlugin
+14:08:29,517 PIL.Image DEBUG Importing ImImagePlugin
+14:08:29,518 PIL.Image DEBUG Importing ImtImagePlugin
+14:08:29,518 PIL.Image DEBUG Importing IptcImagePlugin
+14:08:29,519 PIL.Image DEBUG Importing JpegImagePlugin
+14:08:29,519 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+14:08:29,519 PIL.Image DEBUG Importing McIdasImagePlugin
+14:08:29,522 PIL.Image DEBUG Importing MicImagePlugin
+14:08:29,524 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+14:08:29,524 PIL.Image DEBUG Importing MpegImagePlugin
+14:08:29,525 PIL.Image DEBUG Importing MpoImagePlugin
+14:08:29,535 PIL.Image DEBUG Importing MspImagePlugin
+14:08:29,535 PIL.Image DEBUG Importing PalmImagePlugin
+14:08:29,538 PIL.Image DEBUG Importing PcdImagePlugin
+14:08:29,538 PIL.Image DEBUG Importing PcxImagePlugin
+14:08:29,538 PIL.Image DEBUG Importing PdfImagePlugin
+14:08:29,543 PIL.Image DEBUG Importing PixarImagePlugin
+14:08:29,543 PIL.Image DEBUG Importing PngImagePlugin
+14:08:29,543 PIL.Image DEBUG Importing PpmImagePlugin
+14:08:29,543 PIL.Image DEBUG Importing PsdImagePlugin
+14:08:29,544 PIL.Image DEBUG Importing QoiImagePlugin
+14:08:29,544 PIL.Image DEBUG Importing SgiImagePlugin
+14:08:29,544 PIL.Image DEBUG Importing SpiderImagePlugin
+14:08:29,545 PIL.Image DEBUG Importing SunImagePlugin
+14:08:29,545 PIL.Image DEBUG Importing TgaImagePlugin
+14:08:29,545 PIL.Image DEBUG Importing TiffImagePlugin
+14:08:29,545 PIL.Image DEBUG Importing WebPImagePlugin
+14:08:29,553 PIL.Image DEBUG Importing WmfImagePlugin
+14:08:29,554 PIL.Image DEBUG Importing XbmImagePlugin
+14:08:29,554 PIL.Image DEBUG Importing XpmImagePlugin
+14:08:29,555 PIL.Image DEBUG Importing XVThumbImagePlugin
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+14:08:29,561 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+14:08:29,562 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+14:08:29,562 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+14:08:29,562 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+14:08:29,562 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+14:08:29,562 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+14:08:29,562 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+14:08:29,562 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+14:08:29,562 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+14:08:29,562 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+14:08:29,563 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+14:08:29,563 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+14:08:29,563 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+14:08:29,563 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+14:08:29,563 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+14:08:29,563 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+14:08:29,563 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+14:08:29,564 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+14:08:29,564 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+14:08:29,564 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:08:29,564 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:08:29,564 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+14:08:29,564 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+14:08:29,564 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+14:08:30,74 __main__ INFO Program finished
+14:10:32,481 root INFO Running main.py
+14:10:32,482 root INFO Running main.py
+14:10:32,482 __main__ INFO Program started
+14:10:33,63 h5py._conv DEBUG Creating converter from 3 to 5
+14:15:47,19 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+14:15:50,485 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x1749a8b20>
+14:15:50,817 PIL.Image DEBUG Importing BlpImagePlugin
+14:15:50,823 PIL.Image DEBUG Importing BmpImagePlugin
+14:15:50,823 PIL.Image DEBUG Importing BufrStubImagePlugin
+14:15:50,824 PIL.Image DEBUG Importing CurImagePlugin
+14:15:50,825 PIL.Image DEBUG Importing DcxImagePlugin
+14:15:50,828 PIL.Image DEBUG Importing DdsImagePlugin
+14:15:50,829 PIL.Image DEBUG Importing EpsImagePlugin
+14:15:50,832 PIL.Image DEBUG Importing FitsImagePlugin
+14:15:50,833 PIL.Image DEBUG Importing FitsStubImagePlugin
+14:15:50,834 PIL.Image DEBUG Importing FliImagePlugin
+14:15:50,835 PIL.Image DEBUG Importing FpxImagePlugin
+14:15:50,840 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+14:15:50,840 PIL.Image DEBUG Importing FtexImagePlugin
+14:15:50,841 PIL.Image DEBUG Importing GbrImagePlugin
+14:15:50,842 PIL.Image DEBUG Importing GifImagePlugin
+14:15:50,843 PIL.Image DEBUG Importing GribStubImagePlugin
+14:15:50,843 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+14:15:50,843 PIL.Image DEBUG Importing IcnsImagePlugin
+14:15:50,848 PIL.Image DEBUG Importing IcoImagePlugin
+14:15:50,849 PIL.Image DEBUG Importing ImImagePlugin
+14:15:50,852 PIL.Image DEBUG Importing ImtImagePlugin
+14:15:50,854 PIL.Image DEBUG Importing IptcImagePlugin
+14:15:50,854 PIL.Image DEBUG Importing JpegImagePlugin
+14:15:50,854 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+14:15:50,854 PIL.Image DEBUG Importing McIdasImagePlugin
+14:15:50,855 PIL.Image DEBUG Importing MicImagePlugin
+14:15:50,856 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+14:15:50,856 PIL.Image DEBUG Importing MpegImagePlugin
+14:15:50,857 PIL.Image DEBUG Importing MpoImagePlugin
+14:15:50,876 PIL.Image DEBUG Importing MspImagePlugin
+14:15:50,877 PIL.Image DEBUG Importing PalmImagePlugin
+14:15:50,880 PIL.Image DEBUG Importing PcdImagePlugin
+14:15:50,880 PIL.Image DEBUG Importing PcxImagePlugin
+14:15:50,880 PIL.Image DEBUG Importing PdfImagePlugin
+14:15:50,892 PIL.Image DEBUG Importing PixarImagePlugin
+14:15:50,892 PIL.Image DEBUG Importing PngImagePlugin
+14:15:50,893 PIL.Image DEBUG Importing PpmImagePlugin
+14:15:50,893 PIL.Image DEBUG Importing PsdImagePlugin
+14:15:50,893 PIL.Image DEBUG Importing QoiImagePlugin
+14:15:50,894 PIL.Image DEBUG Importing SgiImagePlugin
+14:15:50,895 PIL.Image DEBUG Importing SpiderImagePlugin
+14:15:50,896 PIL.Image DEBUG Importing SunImagePlugin
+14:15:50,896 PIL.Image DEBUG Importing TgaImagePlugin
+14:15:50,898 PIL.Image DEBUG Importing TiffImagePlugin
+14:15:50,898 PIL.Image DEBUG Importing WebPImagePlugin
+14:15:50,979 PIL.Image DEBUG Importing WmfImagePlugin
+14:15:50,979 PIL.Image DEBUG Importing XbmImagePlugin
+14:15:50,980 PIL.Image DEBUG Importing XpmImagePlugin
+14:15:50,980 PIL.Image DEBUG Importing XVThumbImagePlugin
+14:15:50,981 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+14:15:50,982 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+14:15:50,983 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+14:15:50,983 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+14:15:50,983 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+14:15:50,983 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+14:15:50,983 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+14:15:50,983 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+14:15:50,983 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+14:15:50,983 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+14:15:50,983 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+14:15:50,984 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+14:15:50,984 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+14:15:50,984 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:15:50,984 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:15:50,984 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+14:15:50,985 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+14:15:50,985 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+14:15:51,450 __main__ INFO Program finished
+14:16:16,848 root INFO Running main.py
+14:16:16,848 root INFO Running main.py
+14:16:16,848 __main__ INFO Program started
+14:16:17,357 h5py._conv DEBUG Creating converter from 3 to 5
+14:18:45,848 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+14:20:47,552 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x16d46aaa0>
+14:20:47,836 PIL.Image DEBUG Importing BlpImagePlugin
+14:20:47,837 PIL.Image DEBUG Importing BmpImagePlugin
+14:20:47,837 PIL.Image DEBUG Importing BufrStubImagePlugin
+14:20:47,838 PIL.Image DEBUG Importing CurImagePlugin
+14:20:47,838 PIL.Image DEBUG Importing DcxImagePlugin
+14:20:47,839 PIL.Image DEBUG Importing DdsImagePlugin
+14:20:47,839 PIL.Image DEBUG Importing EpsImagePlugin
+14:20:47,839 PIL.Image DEBUG Importing FitsImagePlugin
+14:20:47,840 PIL.Image DEBUG Importing FitsStubImagePlugin
+14:20:47,840 PIL.Image DEBUG Importing FliImagePlugin
+14:20:47,840 PIL.Image DEBUG Importing FpxImagePlugin
+14:20:47,841 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+14:20:47,841 PIL.Image DEBUG Importing FtexImagePlugin
+14:20:47,842 PIL.Image DEBUG Importing GbrImagePlugin
+14:20:47,842 PIL.Image DEBUG Importing GifImagePlugin
+14:20:47,842 PIL.Image DEBUG Importing GribStubImagePlugin
+14:20:47,842 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+14:20:47,842 PIL.Image DEBUG Importing IcnsImagePlugin
+14:20:47,843 PIL.Image DEBUG Importing IcoImagePlugin
+14:20:47,844 PIL.Image DEBUG Importing ImImagePlugin
+14:20:47,844 PIL.Image DEBUG Importing ImtImagePlugin
+14:20:47,844 PIL.Image DEBUG Importing IptcImagePlugin
+14:20:47,844 PIL.Image DEBUG Importing JpegImagePlugin
+14:20:47,844 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+14:20:47,844 PIL.Image DEBUG Importing McIdasImagePlugin
+14:20:47,845 PIL.Image DEBUG Importing MicImagePlugin
+14:20:47,845 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+14:20:47,845 PIL.Image DEBUG Importing MpegImagePlugin
+14:20:47,845 PIL.Image DEBUG Importing MpoImagePlugin
+14:20:47,848 PIL.Image DEBUG Importing MspImagePlugin
+14:20:47,849 PIL.Image DEBUG Importing PalmImagePlugin
+14:20:47,850 PIL.Image DEBUG Importing PcdImagePlugin
+14:20:47,850 PIL.Image DEBUG Importing PcxImagePlugin
+14:20:47,850 PIL.Image DEBUG Importing PdfImagePlugin
+14:20:47,856 PIL.Image DEBUG Importing PixarImagePlugin
+14:20:47,856 PIL.Image DEBUG Importing PngImagePlugin
+14:20:47,856 PIL.Image DEBUG Importing PpmImagePlugin
+14:20:47,856 PIL.Image DEBUG Importing PsdImagePlugin
+14:20:47,856 PIL.Image DEBUG Importing QoiImagePlugin
+14:20:47,857 PIL.Image DEBUG Importing SgiImagePlugin
+14:20:47,857 PIL.Image DEBUG Importing SpiderImagePlugin
+14:20:47,857 PIL.Image DEBUG Importing SunImagePlugin
+14:20:47,858 PIL.Image DEBUG Importing TgaImagePlugin
+14:20:47,858 PIL.Image DEBUG Importing TiffImagePlugin
+14:20:47,858 PIL.Image DEBUG Importing WebPImagePlugin
+14:20:47,866 PIL.Image DEBUG Importing WmfImagePlugin
+14:20:47,866 PIL.Image DEBUG Importing XbmImagePlugin
+14:20:47,867 PIL.Image DEBUG Importing XpmImagePlugin
+14:20:47,868 PIL.Image DEBUG Importing XVThumbImagePlugin
+14:20:47,868 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+14:20:47,868 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+14:20:47,868 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+14:20:47,868 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+14:20:47,868 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+14:20:47,868 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+14:20:47,868 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+14:20:47,868 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+14:20:47,868 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+14:20:47,868 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+14:20:47,869 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+14:20:47,870 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+14:20:47,870 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:20:47,870 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+14:20:47,870 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+14:20:47,870 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+14:20:48,590 __main__ INFO Program finished
+17:53:00,927 root INFO Running main.py
+17:53:00,927 root INFO Running main.py
+17:53:00,927 __main__ INFO Program started
+17:53:01,494 h5py._conv DEBUG Creating converter from 3 to 5
+17:53:59,952 root INFO Running main.py
+17:53:59,952 root INFO Running main.py
+17:53:59,952 __main__ INFO Program started
+17:54:00,352 h5py._conv DEBUG Creating converter from 3 to 5
+17:57:07,239 root INFO Running main.py
+17:57:07,240 root INFO Running main.py
+17:57:07,240 __main__ INFO Program started
+17:57:07,696 h5py._conv DEBUG Creating converter from 3 to 5
+17:57:17,92 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+17:57:40,102 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x172f71750>
+17:57:40,586 PIL.Image DEBUG Importing BlpImagePlugin
+17:57:40,588 PIL.Image DEBUG Importing BmpImagePlugin
+17:57:40,589 PIL.Image DEBUG Importing BufrStubImagePlugin
+17:57:40,589 PIL.Image DEBUG Importing CurImagePlugin
+17:57:40,591 PIL.Image DEBUG Importing DcxImagePlugin
+17:57:40,593 PIL.Image DEBUG Importing DdsImagePlugin
+17:57:40,593 PIL.Image DEBUG Importing EpsImagePlugin
+17:57:40,597 PIL.Image DEBUG Importing FitsImagePlugin
+17:57:40,599 PIL.Image DEBUG Importing FitsStubImagePlugin
+17:57:40,601 PIL.Image DEBUG Importing FliImagePlugin
+17:57:40,601 PIL.Image DEBUG Importing FpxImagePlugin
+17:57:40,602 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+17:57:40,602 PIL.Image DEBUG Importing FtexImagePlugin
+17:57:40,603 PIL.Image DEBUG Importing GbrImagePlugin
+17:57:40,605 PIL.Image DEBUG Importing GifImagePlugin
+17:57:40,605 PIL.Image DEBUG Importing GribStubImagePlugin
+17:57:40,606 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+17:57:40,606 PIL.Image DEBUG Importing IcnsImagePlugin
+17:57:40,611 PIL.Image DEBUG Importing IcoImagePlugin
+17:57:40,612 PIL.Image DEBUG Importing ImImagePlugin
+17:57:40,612 PIL.Image DEBUG Importing ImtImagePlugin
+17:57:40,614 PIL.Image DEBUG Importing IptcImagePlugin
+17:57:40,616 PIL.Image DEBUG Importing JpegImagePlugin
+17:57:40,616 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+17:57:40,616 PIL.Image DEBUG Importing McIdasImagePlugin
+17:57:40,616 PIL.Image DEBUG Importing MicImagePlugin
+17:57:40,618 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+17:57:40,618 PIL.Image DEBUG Importing MpegImagePlugin
+17:57:40,619 PIL.Image DEBUG Importing MpoImagePlugin
+17:57:40,628 PIL.Image DEBUG Importing MspImagePlugin
+17:57:40,631 PIL.Image DEBUG Importing PalmImagePlugin
+17:57:40,635 PIL.Image DEBUG Importing PcdImagePlugin
+17:57:40,636 PIL.Image DEBUG Importing PcxImagePlugin
+17:57:40,636 PIL.Image DEBUG Importing PdfImagePlugin
+17:57:40,644 PIL.Image DEBUG Importing PixarImagePlugin
+17:57:40,645 PIL.Image DEBUG Importing PngImagePlugin
+17:57:40,645 PIL.Image DEBUG Importing PpmImagePlugin
+17:57:40,645 PIL.Image DEBUG Importing PsdImagePlugin
+17:57:40,647 PIL.Image DEBUG Importing QoiImagePlugin
+17:57:40,648 PIL.Image DEBUG Importing SgiImagePlugin
+17:57:40,649 PIL.Image DEBUG Importing SpiderImagePlugin
+17:57:40,649 PIL.Image DEBUG Importing SunImagePlugin
+17:57:40,650 PIL.Image DEBUG Importing TgaImagePlugin
+17:57:40,651 PIL.Image DEBUG Importing TiffImagePlugin
+17:57:40,651 PIL.Image DEBUG Importing WebPImagePlugin
+17:57:40,824 PIL.Image DEBUG Importing WmfImagePlugin
+17:57:40,824 PIL.Image DEBUG Importing XbmImagePlugin
+17:57:40,828 PIL.Image DEBUG Importing XpmImagePlugin
+17:57:40,828 PIL.Image DEBUG Importing XVThumbImagePlugin
+17:57:40,829 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+17:57:40,829 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+17:57:40,829 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+17:57:40,829 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+17:57:40,830 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+17:57:40,831 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+17:57:40,831 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+17:57:40,831 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+17:57:40,831 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+17:57:40,831 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+17:57:40,831 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+17:57:40,831 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+17:57:40,831 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+17:57:40,831 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+17:57:40,832 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+17:57:40,832 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+17:57:40,832 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+17:57:40,832 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+17:57:40,832 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+17:57:41,443 __main__ INFO Program finished
 
+18:07:50,264 root INFO Running main.py
+18:07:50,264 root INFO Running main.py
+18:07:50,264 __main__ INFO Program started
+18:07:50,923 h5py._conv DEBUG Creating converter from 3 to 5
+18:08:01,589 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+18:08:27,688 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x1770bf850>
+18:08:27,944 PIL.Image DEBUG Importing BlpImagePlugin
+18:08:27,946 PIL.Image DEBUG Importing BmpImagePlugin
+18:08:27,946 PIL.Image DEBUG Importing BufrStubImagePlugin
+18:08:27,947 PIL.Image DEBUG Importing CurImagePlugin
+18:08:27,947 PIL.Image DEBUG Importing DcxImagePlugin
+18:08:27,949 PIL.Image DEBUG Importing DdsImagePlugin
+18:08:27,949 PIL.Image DEBUG Importing EpsImagePlugin
+18:08:27,950 PIL.Image DEBUG Importing FitsImagePlugin
+18:08:27,951 PIL.Image DEBUG Importing FitsStubImagePlugin
+18:08:27,952 PIL.Image DEBUG Importing FliImagePlugin
+18:08:27,952 PIL.Image DEBUG Importing FpxImagePlugin
+18:08:27,953 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+18:08:27,953 PIL.Image DEBUG Importing FtexImagePlugin
+18:08:27,954 PIL.Image DEBUG Importing GbrImagePlugin
+18:08:27,955 PIL.Image DEBUG Importing GifImagePlugin
+18:08:27,955 PIL.Image DEBUG Importing GribStubImagePlugin
+18:08:27,955 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+18:08:27,955 PIL.Image DEBUG Importing IcnsImagePlugin
+18:08:27,957 PIL.Image DEBUG Importing IcoImagePlugin
+18:08:27,958 PIL.Image DEBUG Importing ImImagePlugin
+18:08:27,959 PIL.Image DEBUG Importing ImtImagePlugin
+18:08:27,959 PIL.Image DEBUG Importing IptcImagePlugin
+18:08:27,959 PIL.Image DEBUG Importing JpegImagePlugin
+18:08:27,959 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+18:08:27,959 PIL.Image DEBUG Importing McIdasImagePlugin
+18:08:27,960 PIL.Image DEBUG Importing MicImagePlugin
+18:08:27,961 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+18:08:27,961 PIL.Image DEBUG Importing MpegImagePlugin
+18:08:27,961 PIL.Image DEBUG Importing MpoImagePlugin
+18:08:27,964 PIL.Image DEBUG Importing MspImagePlugin
+18:08:27,964 PIL.Image DEBUG Importing PalmImagePlugin
+18:08:27,965 PIL.Image DEBUG Importing PcdImagePlugin
+18:08:27,966 PIL.Image DEBUG Importing PcxImagePlugin
+18:08:27,966 PIL.Image DEBUG Importing PdfImagePlugin
+18:08:27,970 PIL.Image DEBUG Importing PixarImagePlugin
+18:08:27,970 PIL.Image DEBUG Importing PngImagePlugin
+18:08:27,970 PIL.Image DEBUG Importing PpmImagePlugin
+18:08:27,970 PIL.Image DEBUG Importing PsdImagePlugin
+18:08:27,970 PIL.Image DEBUG Importing QoiImagePlugin
+18:08:27,971 PIL.Image DEBUG Importing SgiImagePlugin
+18:08:27,971 PIL.Image DEBUG Importing SpiderImagePlugin
+18:08:27,971 PIL.Image DEBUG Importing SunImagePlugin
+18:08:27,971 PIL.Image DEBUG Importing TgaImagePlugin
+18:08:27,971 PIL.Image DEBUG Importing TiffImagePlugin
+18:08:27,972 PIL.Image DEBUG Importing WebPImagePlugin
+18:08:27,981 PIL.Image DEBUG Importing WmfImagePlugin
+18:08:27,981 PIL.Image DEBUG Importing XbmImagePlugin
+18:08:27,982 PIL.Image DEBUG Importing XpmImagePlugin
+18:08:27,982 PIL.Image DEBUG Importing XVThumbImagePlugin
+18:08:27,987 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+18:08:27,987 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+18:08:27,987 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+18:08:27,987 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+18:08:27,987 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+18:08:27,987 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+18:08:27,987 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+18:08:27,987 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+18:08:27,988 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+18:08:27,989 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+18:08:27,989 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+18:08:27,989 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+18:08:27,989 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+18:08:27,989 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+18:08:28,268 __main__ INFO Program finished
+18:10:33,433 root INFO Running main.py
+18:10:33,434 root INFO Running main.py
+18:10:33,434 __main__ INFO Program started
+18:10:34,58 h5py._conv DEBUG Creating converter from 3 to 5
+18:27:00,399 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+18:27:07,943 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x175361660>
+18:27:08,353 PIL.Image DEBUG Importing BlpImagePlugin
+18:27:08,374 PIL.Image DEBUG Importing BmpImagePlugin
+18:27:08,374 PIL.Image DEBUG Importing BufrStubImagePlugin
+18:27:08,377 PIL.Image DEBUG Importing CurImagePlugin
+18:27:08,383 PIL.Image DEBUG Importing DcxImagePlugin
+18:27:08,404 PIL.Image DEBUG Importing DdsImagePlugin
+18:27:08,417 PIL.Image DEBUG Importing EpsImagePlugin
+18:27:08,426 PIL.Image DEBUG Importing FitsImagePlugin
+18:27:08,427 PIL.Image DEBUG Importing FitsStubImagePlugin
+18:27:08,427 PIL.Image DEBUG Importing FliImagePlugin
+18:27:08,428 PIL.Image DEBUG Importing FpxImagePlugin
+18:27:08,431 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+18:27:08,431 PIL.Image DEBUG Importing FtexImagePlugin
+18:27:08,431 PIL.Image DEBUG Importing GbrImagePlugin
+18:27:08,431 PIL.Image DEBUG Importing GifImagePlugin
+18:27:08,431 PIL.Image DEBUG Importing GribStubImagePlugin
+18:27:08,432 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+18:27:08,432 PIL.Image DEBUG Importing IcnsImagePlugin
+18:27:08,437 PIL.Image DEBUG Importing IcoImagePlugin
+18:27:08,439 PIL.Image DEBUG Importing ImImagePlugin
+18:27:08,440 PIL.Image DEBUG Importing ImtImagePlugin
+18:27:08,446 PIL.Image DEBUG Importing IptcImagePlugin
+18:27:08,452 PIL.Image DEBUG Importing JpegImagePlugin
+18:27:08,452 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+18:27:08,452 PIL.Image DEBUG Importing McIdasImagePlugin
+18:27:08,453 PIL.Image DEBUG Importing MicImagePlugin
+18:27:08,457 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+18:27:08,457 PIL.Image DEBUG Importing MpegImagePlugin
+18:27:08,462 PIL.Image DEBUG Importing MpoImagePlugin
+18:27:08,493 PIL.Image DEBUG Importing MspImagePlugin
+18:27:08,496 PIL.Image DEBUG Importing PalmImagePlugin
+18:27:08,517 PIL.Image DEBUG Importing PcdImagePlugin
+18:27:08,517 PIL.Image DEBUG Importing PcxImagePlugin
+18:27:08,517 PIL.Image DEBUG Importing PdfImagePlugin
+18:27:08,538 PIL.Image DEBUG Importing PixarImagePlugin
+18:27:08,539 PIL.Image DEBUG Importing PngImagePlugin
+18:27:08,539 PIL.Image DEBUG Importing PpmImagePlugin
+18:27:08,539 PIL.Image DEBUG Importing PsdImagePlugin
+18:27:08,543 PIL.Image DEBUG Importing QoiImagePlugin
+18:27:08,545 PIL.Image DEBUG Importing SgiImagePlugin
+18:27:08,545 PIL.Image DEBUG Importing SpiderImagePlugin
+18:27:08,546 PIL.Image DEBUG Importing SunImagePlugin
+18:27:08,546 PIL.Image DEBUG Importing TgaImagePlugin
+18:27:08,546 PIL.Image DEBUG Importing TiffImagePlugin
+18:27:08,546 PIL.Image DEBUG Importing WebPImagePlugin
+18:27:08,737 PIL.Image DEBUG Importing WmfImagePlugin
+18:27:08,738 PIL.Image DEBUG Importing XbmImagePlugin
+18:27:08,739 PIL.Image DEBUG Importing XpmImagePlugin
+18:27:08,740 PIL.Image DEBUG Importing XVThumbImagePlugin
+18:27:08,741 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+18:27:08,742 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+18:27:08,743 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+18:27:08,743 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+18:27:08,743 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+18:27:08,743 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+18:27:08,743 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+18:27:08,743 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+18:27:08,743 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+18:27:08,743 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+18:27:08,743 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+18:27:08,744 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+18:27:08,744 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+18:27:08,744 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+18:27:08,744 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+18:27:08,744 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+18:27:09,991 __main__ INFO Program finished
+18:30:49,570 root INFO Running main.py
+18:30:49,570 root INFO Running main.py
+18:30:49,570 __main__ INFO Program started
+18:30:50,119 h5py._conv DEBUG Creating converter from 3 to 5
+18:31:26,102 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+18:33:24,715 root INFO Running main.py
+18:33:24,715 root INFO Running main.py
+18:33:24,716 __main__ INFO Program started
+18:33:25,179 h5py._conv DEBUG Creating converter from 3 to 5
+18:33:41,921 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+18:35:50,19 root INFO Running main.py
+18:35:50,19 root INFO Running main.py
+18:35:50,19 __main__ INFO Program started
+18:35:50,414 h5py._conv DEBUG Creating converter from 3 to 5
+18:37:31,125 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+18:39:24,122 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x16ff41c90>
+18:39:24,488 PIL.Image DEBUG Importing BlpImagePlugin
+18:39:24,489 PIL.Image DEBUG Importing BmpImagePlugin
+18:39:24,489 PIL.Image DEBUG Importing BufrStubImagePlugin
+18:39:24,489 PIL.Image DEBUG Importing CurImagePlugin
+18:39:24,490 PIL.Image DEBUG Importing DcxImagePlugin
+18:39:24,490 PIL.Image DEBUG Importing DdsImagePlugin
+18:39:24,491 PIL.Image DEBUG Importing EpsImagePlugin
+18:39:24,491 PIL.Image DEBUG Importing FitsImagePlugin
+18:39:24,492 PIL.Image DEBUG Importing FitsStubImagePlugin
+18:39:24,492 PIL.Image DEBUG Importing FliImagePlugin
+18:39:24,492 PIL.Image DEBUG Importing FpxImagePlugin
+18:39:24,492 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+18:39:24,493 PIL.Image DEBUG Importing FtexImagePlugin
+18:39:24,493 PIL.Image DEBUG Importing GbrImagePlugin
+18:39:24,493 PIL.Image DEBUG Importing GifImagePlugin
+18:39:24,493 PIL.Image DEBUG Importing GribStubImagePlugin
+18:39:24,493 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+18:39:24,494 PIL.Image DEBUG Importing IcnsImagePlugin
+18:39:24,497 PIL.Image DEBUG Importing IcoImagePlugin
+18:39:24,497 PIL.Image DEBUG Importing ImImagePlugin
+18:39:24,498 PIL.Image DEBUG Importing ImtImagePlugin
+18:39:24,498 PIL.Image DEBUG Importing IptcImagePlugin
+18:39:24,498 PIL.Image DEBUG Importing JpegImagePlugin
+18:39:24,498 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+18:39:24,498 PIL.Image DEBUG Importing McIdasImagePlugin
+18:39:24,499 PIL.Image DEBUG Importing MicImagePlugin
+18:39:24,499 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+18:39:24,499 PIL.Image DEBUG Importing MpegImagePlugin
+18:39:24,499 PIL.Image DEBUG Importing MpoImagePlugin
+18:39:24,503 PIL.Image DEBUG Importing MspImagePlugin
+18:39:24,504 PIL.Image DEBUG Importing PalmImagePlugin
+18:39:24,506 PIL.Image DEBUG Importing PcdImagePlugin
+18:39:24,506 PIL.Image DEBUG Importing PcxImagePlugin
+18:39:24,506 PIL.Image DEBUG Importing PdfImagePlugin
+18:39:24,513 PIL.Image DEBUG Importing PixarImagePlugin
+18:39:24,514 PIL.Image DEBUG Importing PngImagePlugin
+18:39:24,514 PIL.Image DEBUG Importing PpmImagePlugin
+18:39:24,514 PIL.Image DEBUG Importing PsdImagePlugin
+18:39:24,514 PIL.Image DEBUG Importing QoiImagePlugin
+18:39:24,515 PIL.Image DEBUG Importing SgiImagePlugin
+18:39:24,515 PIL.Image DEBUG Importing SpiderImagePlugin
+18:39:24,515 PIL.Image DEBUG Importing SunImagePlugin
+18:39:24,515 PIL.Image DEBUG Importing TgaImagePlugin
+18:39:24,516 PIL.Image DEBUG Importing TiffImagePlugin
+18:39:24,516 PIL.Image DEBUG Importing WebPImagePlugin
+18:39:24,526 PIL.Image DEBUG Importing WmfImagePlugin
+18:39:24,526 PIL.Image DEBUG Importing XbmImagePlugin
+18:39:24,527 PIL.Image DEBUG Importing XpmImagePlugin
+18:39:24,528 PIL.Image DEBUG Importing XVThumbImagePlugin
+18:39:24,528 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+18:39:24,528 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+18:39:24,529 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+18:39:24,530 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+18:39:24,530 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+18:39:24,530 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+18:39:24,530 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+18:39:24,530 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+18:39:25,145 __main__ INFO Program finished
+18:46:36,144 root INFO Running main.py
+18:46:36,145 root INFO Running main.py
+18:46:36,145 __main__ INFO Program started
+18:46:36,916 h5py._conv DEBUG Creating converter from 3 to 5
+18:46:52,506 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+22:33:12,992 root INFO Running main.py
+22:33:12,992 root INFO Running main.py
+22:33:12,992 __main__ INFO Program started
+22:33:13,528 h5py._conv DEBUG Creating converter from 3 to 5
+22:33:25,324 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+22:35:02,728 root INFO Running main.py
+22:35:02,728 root INFO Running main.py
+22:35:02,728 __main__ INFO Program started
+22:35:03,114 h5py._conv DEBUG Creating converter from 3 to 5
+22:35:14,340 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+22:37:00,332 root INFO Running main.py
+22:37:00,332 root INFO Running main.py
+22:37:00,332 __main__ INFO Program started
+22:37:00,777 h5py._conv DEBUG Creating converter from 3 to 5
+22:37:12,436 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+22:37:40,957 matplotlib.colorbar DEBUG locator: <matplotlib.ticker.AutoLocator object at 0x1712c1390>
+22:37:41,274 PIL.Image DEBUG Importing BlpImagePlugin
+22:37:41,276 PIL.Image DEBUG Importing BmpImagePlugin
+22:37:41,276 PIL.Image DEBUG Importing BufrStubImagePlugin
+22:37:41,276 PIL.Image DEBUG Importing CurImagePlugin
+22:37:41,276 PIL.Image DEBUG Importing DcxImagePlugin
+22:37:41,277 PIL.Image DEBUG Importing DdsImagePlugin
+22:37:41,277 PIL.Image DEBUG Importing EpsImagePlugin
+22:37:41,279 PIL.Image DEBUG Importing FitsImagePlugin
+22:37:41,279 PIL.Image DEBUG Importing FitsStubImagePlugin
+22:37:41,280 PIL.Image DEBUG Importing FliImagePlugin
+22:37:41,282 PIL.Image DEBUG Importing FpxImagePlugin
+22:37:41,283 PIL.Image DEBUG Image: failed to import FpxImagePlugin: No module named 'olefile'
+22:37:41,283 PIL.Image DEBUG Importing FtexImagePlugin
+22:37:41,284 PIL.Image DEBUG Importing GbrImagePlugin
+22:37:41,285 PIL.Image DEBUG Importing GifImagePlugin
+22:37:41,285 PIL.Image DEBUG Importing GribStubImagePlugin
+22:37:41,286 PIL.Image DEBUG Importing Hdf5StubImagePlugin
+22:37:41,286 PIL.Image DEBUG Importing IcnsImagePlugin
+22:37:41,289 PIL.Image DEBUG Importing IcoImagePlugin
+22:37:41,289 PIL.Image DEBUG Importing ImImagePlugin
+22:37:41,290 PIL.Image DEBUG Importing ImtImagePlugin
+22:37:41,290 PIL.Image DEBUG Importing IptcImagePlugin
+22:37:41,290 PIL.Image DEBUG Importing JpegImagePlugin
+22:37:41,290 PIL.Image DEBUG Importing Jpeg2KImagePlugin
+22:37:41,291 PIL.Image DEBUG Importing McIdasImagePlugin
+22:37:41,291 PIL.Image DEBUG Importing MicImagePlugin
+22:37:41,291 PIL.Image DEBUG Image: failed to import MicImagePlugin: No module named 'olefile'
+22:37:41,291 PIL.Image DEBUG Importing MpegImagePlugin
+22:37:41,291 PIL.Image DEBUG Importing MpoImagePlugin
+22:37:41,294 PIL.Image DEBUG Importing MspImagePlugin
+22:37:41,295 PIL.Image DEBUG Importing PalmImagePlugin
+22:37:41,296 PIL.Image DEBUG Importing PcdImagePlugin
+22:37:41,297 PIL.Image DEBUG Importing PcxImagePlugin
+22:37:41,297 PIL.Image DEBUG Importing PdfImagePlugin
+22:37:41,302 PIL.Image DEBUG Importing PixarImagePlugin
+22:37:41,302 PIL.Image DEBUG Importing PngImagePlugin
+22:37:41,302 PIL.Image DEBUG Importing PpmImagePlugin
+22:37:41,302 PIL.Image DEBUG Importing PsdImagePlugin
+22:37:41,303 PIL.Image DEBUG Importing QoiImagePlugin
+22:37:41,303 PIL.Image DEBUG Importing SgiImagePlugin
+22:37:41,303 PIL.Image DEBUG Importing SpiderImagePlugin
+22:37:41,304 PIL.Image DEBUG Importing SunImagePlugin
+22:37:41,304 PIL.Image DEBUG Importing TgaImagePlugin
+22:37:41,304 PIL.Image DEBUG Importing TiffImagePlugin
+22:37:41,304 PIL.Image DEBUG Importing WebPImagePlugin
+22:37:41,320 PIL.Image DEBUG Importing WmfImagePlugin
+22:37:41,321 PIL.Image DEBUG Importing XbmImagePlugin
+22:37:41,323 PIL.Image DEBUG Importing XpmImagePlugin
+22:37:41,323 PIL.Image DEBUG Importing XVThumbImagePlugin
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tiffinfo Keys: []
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 256, Type: 4, Value: 7680
+22:37:41,327 PIL.TiffImagePlugin DEBUG save: ImageWidth (256) - type: long (4) - value: (7680,)
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 257, Type: 4, Value: 5760
+22:37:41,327 PIL.TiffImagePlugin DEBUG save: ImageLength (257) - type: long (4) - value: (5760,)
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 258, Type: 3, Value: (8, 8, 8, 8)
+22:37:41,327 PIL.TiffImagePlugin DEBUG save: BitsPerSample (258) - type: short (3) - value: (8, 8, 8, 8)
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 259, Type: 3, Value: 1
+22:37:41,327 PIL.TiffImagePlugin DEBUG save: Compression (259) - type: short (3) - value: (1,)
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 262, Type: 3, Value: 2
+22:37:41,327 PIL.TiffImagePlugin DEBUG save: PhotometricInterpretation (262) - type: short (3) - value: (2,)
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 273, Type: 4, Value: (0,)
+22:37:41,327 PIL.TiffImagePlugin DEBUG save: StripOffsets (273) - type: long (4) - value: (0,)
+22:37:41,327 PIL.TiffImagePlugin DEBUG Tag 277, Type: 3, Value: 4
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: SamplesPerPixel (277) - type: short (3) - value: (4,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 278, Type: 4, Value: 5760
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: RowsPerStrip (278) - type: long (4) - value: (5760,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 279, Type: 4, Value: (176947200,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: StripByteCounts (279) - type: long (4) - value: (176947200,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 282, Type: 5, Value: 1200.0
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: XResolution (282) - type: rational (5) - value: (1200.0,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 283, Type: 5, Value: 1200.0
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: YResolution (283) - type: rational (5) - value: (1200.0,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 284, Type: 3, Value: 1
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: PlanarConfiguration (284) - type: short (3) - value: (1,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 296, Type: 3, Value: 2
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: ResolutionUnit (296) - type: short (3) - value: (2,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG Tag 338, Type: 3, Value: (2,)
+22:37:41,328 PIL.TiffImagePlugin DEBUG save: ExtraSamples (338) - type: short (3) - value: (2,)
+22:37:41,329 PIL.TiffImagePlugin DEBUG 256 4 1 b'\x00\x1e\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 257 4 1 b'\x80\x16\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 258 3 4 b'\xb6\x00\x00\x00' b'\x08\x00\x08\x00\x08\x00\x08\x00'
+22:37:41,329 PIL.TiffImagePlugin DEBUG 259 3 1 b'\x01\x00\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 262 3 1 b'\x02\x00\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 273 4 1 b'\xce\x00\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 277 3 1 b'\x04\x00\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 278 4 1 b'\x80\x16\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 279 4 1 b'\x00\x00\x8c\n' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 282 5 1 b'\xbe\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+22:37:41,329 PIL.TiffImagePlugin DEBUG 283 5 1 b'\xc6\x00\x00\x00' b'\xb0\x04\x00\x00\x01\x00\x00\x00'
+22:37:41,329 PIL.TiffImagePlugin DEBUG 284 3 1 b'\x01\x00\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 296 3 1 b'\x02\x00\x00\x00' b''
+22:37:41,329 PIL.TiffImagePlugin DEBUG 338 3 1 b'\x02\x00\x00\x00' b''
+22:37:41,717 __main__ INFO Program finished
+22:38:06,133 root INFO Running main.py
+22:38:06,133 root INFO Running main.py
+22:38:06,133 __main__ INFO Program started
+22:38:06,622 h5py._conv DEBUG Creating converter from 3 to 5
+22:38:24,619 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
+22:39:36,164 root INFO Running main.py
+22:39:36,164 root INFO Running main.py
+22:39:36,164 __main__ INFO Program started
+22:39:36,631 h5py._conv DEBUG Creating converter from 3 to 5
+22:39:54,574 matplotlib.pyplot DEBUG Loaded backend module://backend_interagg version unknown.
