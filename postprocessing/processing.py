@@ -20,7 +20,6 @@ from postprocessing.Bead_Contact_GUI import BeadContactGUI
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
 
 try:
     import SimpleITK as sitk

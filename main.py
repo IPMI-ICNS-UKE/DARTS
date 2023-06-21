@@ -37,31 +37,6 @@ logging.info("Running main.py")
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
-# # instantiate logger
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
-#
-# # define handler and formatter
-# handler = logging.StreamHandler()
-# formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-#
-# # add formatter to handler
-# handler.setFormatter(formatter)
-#
-# # add handler to logger
-# logger.addHandler(handler)
-
-logging.basicConfig(filename="logfile",
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.DEBUG)
-
-logging.info("Running main.py")
-logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
-logger = logging.getLogger(__name__)
-
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
