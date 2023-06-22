@@ -76,10 +76,10 @@ class BeadContactGUI():
 
         self.remove_bead_contact_button = Button(self.root, text="Remove bead contact", command=self.remove_bead_contact)
         self.remove_bead_contact_button.place(x=750, y=510)
-        self.save_button = Button(self.root,text="Save bead contacts",command=self.assign_bead_contacts_to_cells)
-        self.save_button.place(x=750,y=550)
+        self.save_button = Button(self.root,text="Use bead contact info for analysis",command=self.assign_bead_contacts_to_cells)
+        self.save_button.place(x=720,y=550)
 
-        self.close_button = Button(self.root, text="Close window", command=self.close_gui)
+        self.close_button = Button(self.root, text="Continue analysis", command=self.close_gui)
         self.close_button.place(x=950, y=550)
 
 

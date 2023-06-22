@@ -66,24 +66,28 @@ class DartboardGenerator:
             return dartboard_section, dartboard_area_number_within_section
 
     def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_sections, number_of_areas_within_section, radius_cell_image):
-        dartboard_area_frequency = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
+        if not dataframe.empty:
+            dartboard_area_frequency = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
 
-        dataframe_one_frame = self.reduce_dataframe_to_one_frame(dataframe, frame)
-        signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(dataframe_one_frame)
+            dataframe_one_frame = self.reduce_dataframe_to_one_frame(dataframe, frame)
+            signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(dataframe_one_frame)
 
-        for signal in signal_in_frame_coords_list:
-            x = signal[0]
-            y = signal[1]
-            signal_coords = (x, y)
-            dartboard_section, dartboard_area_number_within_section = self.assign_signal_to_dartboard_area(signal_coords,
-                                                                                                           centroid_coords,
-                                                                                                           number_of_sections,
-                                                                                                           number_of_areas_within_section,
-                                                                                                           radius_cell_image)
-            if(dartboard_section is not None and dartboard_area_number_within_section is not None):
-                dartboard_area_frequency[dartboard_area_number_within_section][dartboard_section] += 1
+            for signal in signal_in_frame_coords_list:
+                x = signal[0]
+                y = signal[1]
+                signal_coords = (x, y)
+                dartboard_section, dartboard_area_number_within_section = self.assign_signal_to_dartboard_area(signal_coords,
+                                                                                                               centroid_coords,
+                                                                                                               number_of_sections,
+                                                                                                               number_of_areas_within_section,
+                                                                                                               radius_cell_image)
+                if(dartboard_section is not None and dartboard_area_number_within_section is not None):
+                    dartboard_area_frequency[dartboard_area_number_within_section][dartboard_section] += 1
 
-        return dartboard_area_frequency
+            return dartboard_area_frequency
+        else:
+            dartboard_area_frequency = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
+            return dartboard_area_frequency
 
     def reduce_dataframe_to_one_frame(self, signal_dataframe, frame):
         subset = signal_dataframe.loc[signal_dataframe['frame'] == frame]

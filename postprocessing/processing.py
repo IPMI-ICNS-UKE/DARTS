@@ -315,21 +315,18 @@ class ImageProcessor:
 
 
     def detect_hotspots(self, ratio_image, cell, i):
-        if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-            measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                                 self.microdomain_signal_threshold,
-                                                                                 6,   # lower area limit
-                                                                                 20,  # upper area limit
-                                                                                 self.cell_type,
-                                                                                 self.ratio_converter)
-            cell.signal_data = measurement_microdomains
-            # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
-            self.dataframes_microdomains_list.append(measurement_microdomains)
 
-        else:
-            # print("this cell is preactivated")  # only temporarily
-            self.excluded_cells_list.append(cell)
-            cell.is_excluded = True
+        measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
+                                                                             self.microdomain_signal_threshold,
+                                                                             6,   # lower area limit
+                                                                             20,  # upper area limit
+                                                                             self.cell_type,
+                                                                             self.ratio_converter)
+        cell.signal_data = measurement_microdomains
+        self.dataframes_microdomains_list.append(measurement_microdomains)
+
+
+
 
     def define_bead_contacts(self):
         """
@@ -341,8 +338,8 @@ class ImageProcessor:
 
 
 
-    def save_measurements(self):
-        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
+    def save_measurements(self, i):
+        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
 
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):

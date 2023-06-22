@@ -130,9 +130,9 @@ class HotSpotDetector():
         return microdomains_in_each_frame
 
 
-    def save_dataframes(self, dataframes_list):
+    def save_dataframes(self, dataframes_list, i):
         # Write to Multiple Sheets
-        if(len(dataframes_list)>0):
+        if(len(dataframes_list)>i and not dataframes_list[i].empty):
             with pd.ExcelWriter(self.save_path + "/" + self.filename) as writer:
                 index = 0
 
