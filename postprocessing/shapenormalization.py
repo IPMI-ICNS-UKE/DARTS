@@ -113,7 +113,6 @@ class ShapeNormalization:
 
         return normalized_data_reshaped
 
-
     def find_edge_and_centroid(self, img_frame):
 
         img_labels, img_details = self.model.predict_instances(normalize(img_frame), predict_kwargs=dict(verbose=False))

@@ -94,7 +94,7 @@ class ImageProcessor:
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
-        self.bleaching = BleachingAdditiveFit()
+        self.bleaching = None # BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
@@ -293,6 +293,7 @@ class ImageProcessor:
         # find the cells
         self.select_rois()
 
+
         # bead contact, user input
         if len(self.cell_list) > 0:
             self.define_bead_contacts()
@@ -308,7 +309,8 @@ class ImageProcessor:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
 
-                cell.generate_ratio_image_series()
+                cell.generate_ratio_image_series()  # Nachkommastellen in Channel 2 in jeder Zelle
+
                 bar()
 
 
@@ -426,8 +428,14 @@ class ImageProcessor:
         for cell in self.cell_list:
             io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
                       check_contrast=False)
+
             io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
                       check_contrast=False)
+            # format = 'tiff'
+            # import imageio
+            # imageio.imwrite(f'image.{format}', cell.give_image_channel2())
+            # import tifffile
+            # tifffile.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif',cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):

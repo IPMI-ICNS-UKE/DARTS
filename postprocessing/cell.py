@@ -50,6 +50,8 @@ class CellImage:
 
         label = inverted_frame_mask.copy().astype(int)
         # label = skimage.measure.label(image_frame)
+
+
         regions = skimage.measure.regionprops(label, intensity_image=image_frame)
 
         cell_region = regions[0]
@@ -143,7 +145,8 @@ class CellImage:
 
 
     def generate_ratio_image_series(self):
-        ratio_image = self.channel1.return_image().astype(float)
+        self.channel1.set_image(self.channel1.return_image().astype(np.float32))
+        ratio_image = self.channel1.return_image().copy()
         frame_number = len(self.channel1.return_image())
 
         # print("Calculate ratio")
@@ -157,8 +160,8 @@ class CellImage:
         :param frame_number:
         :return:
         """
-        frame_channel_1 = (self.channel1.return_image())[frame_number] * 1.0
-        frame_channel_2 = (self.channel2.return_image())[frame_number] * 1.0
+        frame_channel_1 = self.channel1.return_image()[frame_number]
+        frame_channel_2 = self.channel2.return_image()[frame_number]
 
         # ratio = np.divide(frame_channel_1, frame_channel_2)
 
@@ -224,7 +227,7 @@ class CellImage:
         Calculates the ratio image for each cell image pair (each frame) and returns the ratio image
         :return:
         """
-        ratio_image = self.channel1.return_image().astype(float)
+        ratio_image = self.channel1.return_image().astype(np.float32)
         frame_number = len(self.channel1.return_image())
 
         for frame in range(frame_number):

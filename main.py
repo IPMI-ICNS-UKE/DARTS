@@ -129,6 +129,7 @@ def main(gui_enabled):
                 print(E)
                 print("Error in saving measurements")
                 continue
+
             try:
                 if(not cell.is_excluded):
                     db_start = timeit.default_timer()
