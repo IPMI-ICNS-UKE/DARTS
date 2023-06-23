@@ -8,20 +8,21 @@ import numpy as np
 
 
 class HotSpotDetector():
-    def __init__(self, save_path, filename, fps):
+    def __init__(self, save_path, filename, fps, ratioconverter):
         self.save_path = save_path
         self.filename = filename
         self.frames_per_second = fps
+        self.ratio_converter = ratioconverter
 
     def threshold_image_frame(self, threshold, image_series, frame):
         thresholded_frame = image_series[frame] > threshold
         return thresholded_frame
 
-    def threshold_image_series(self, threshold, image_series):
+    def threshold_image_series(self, threshold_list, image_series):
         thresholded_image = image_series.copy()
         frame_number = len(image_series)
         for frame in range(frame_number):
-            thresholded_image[frame] = self.threshold_image_frame(threshold, image_series, frame)
+            thresholded_image[frame] = self.threshold_image_frame(threshold_list[frame], image_series, frame)
         return thresholded_image
 
     def label_thresholded_image_frame(self, thresholded_image):
@@ -44,16 +45,29 @@ class HotSpotDetector():
         regions = [region for region in raw_regions_in_frame if lower_limit_area < region.area < upper_limit_area]
         return regions
 
-    def measure_microdomains(self, image_series, threshold, lower_limit_area, upper_limit_area, cell_type, ratio_converter):
+    def calculate_hotspot_threshold_for_each_frame(self, mean_ratio_list, cell_type, spotHeight):
+        threshold_list = []
+        for i in range(len(mean_ratio_list)):
+            _, _, threshold_ratio = self.ratio_converter.calcium_calibration(mean_ratio_list[i],
+                                                                          cell_type,
+                                                                          spotHeight)
+            threshold_list.append(threshold_ratio)
+        return threshold_list
+
+
+    def measure_microdomains(self, image_series, start_frame, end_frame, mean_ratio_value_list, spotHeight, lower_limit_area, upper_limit_area, cell_type):
         """
         Measures the number and the intensites of microdomains in each frame of the ratio image and returns a dataframe
         :return:
         """
-        thresholded_image_series = self.threshold_image_series(threshold, image_series)
+        image_series_in_analysis_range = image_series[start_frame:end_frame,:,:].copy()
+        hotspot_threshold_list = self.calculate_hotspot_threshold_for_each_frame(mean_ratio_value_list, cell_type, spotHeight)
+
+        thresholded_image_series = self.threshold_image_series(hotspot_threshold_list, image_series_in_analysis_range)
         labels_for_each_frame = self.label_thresholded_image_series(thresholded_image_series)
 
         features = pd.DataFrame()
-        for num, img in enumerate(image_series):
+        for num, img in enumerate(image_series_in_analysis_range):
             for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
                 if lower_limit_area < region.area < upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
@@ -61,12 +75,12 @@ class HotSpotDetector():
                                                   'frame': num,
                                                   'time_in_seconds': float(num)/self.frames_per_second,
                                                   'area': region.area,
-                                                  'max_intensity': region.intensity_max,  # muss man noch umrechnen in calcium konzentration
+                                                  'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
                                                   'mean_intensity': region.intensity_mean,
-                                                  'max calcium concentration in nM': ratio_converter.convert_ratio_to_concentration(cell_type, region.intensity_max),
-                                                  'min calcium concentration in nM': ratio_converter.convert_ratio_to_concentration(cell_type, region.intensity_min),
-                                                  'mean calcium concentration in nM': ratio_converter.convert_ratio_to_concentration(cell_type, region.intensity_mean),
+                                                  'max calcium concentration in µM': self.ratio_converter.calcium_calibration(region.intensity_max, cell_type)[0],
+                                                  'min calcium concentration in µM': self.ratio_converter.calcium_calibration(region.intensity_min, cell_type)[0],
+                                                  'mean calcium concentration in µM': self.ratio_converter.calcium_calibration(region.intensity_mean, cell_type)[0],
 
                                                   }, ])
         return features

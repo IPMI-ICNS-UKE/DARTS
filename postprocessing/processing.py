@@ -2,6 +2,7 @@ import logging
 import math
 import skimage.io as io
 import numpy as np
+import skimage.measure
 from alive_progress import alive_bar
 import time
 import matplotlib.pyplot as plt
@@ -94,7 +95,7 @@ class ImageProcessor:
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
-        self.bleaching = None # BleachingAdditiveFit()
+        self.bleaching = BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
@@ -104,12 +105,18 @@ class ImageProcessor:
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
         self.ratio_converter = RatioConverter()
+        self.spotHeight = 64  # 64µM
+        self.minimum_spotsize = 4
+        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        self.min_ratio = 0.1
+        self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
-        self.microdomain_signal_threshold = self.ratio_converter.give_signal_threshold_as_ratio(self.cell_type)
+
 
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
-                                                                self.frames_per_second)
+                                                                self.frames_per_second,
+                                                                self.ratio_converter)
         self.dartboard_generator = DartboardGenerator(self.save_path)
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -309,21 +316,32 @@ class ImageProcessor:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
 
-                cell.generate_ratio_image_series()  # Nachkommastellen in Channel 2 in jeder Zelle
+                cell.generate_ratio_image_series()
+                cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
                 bar()
 
 
-    def detect_hotspots(self, ratio_image, cell, i):
+    def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
+        if cell.bead_contact_site != 0:  # if user defined a bead contact site (in the range from 1 to 12)
+            start_frame = cell.time_of_bead_contact
+            frame_number_cell = cell.frame_number
+            end_frame = 0
+            if start_frame + self.duration_of_measurement > frame_number_cell+1:
+                end_frame = frame_number_cell-1
+            else:
+                end_frame = start_frame + self.duration_of_measurement
 
-        measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                             self.microdomain_signal_threshold,
-                                                                             6,   # lower area limit
-                                                                             20,  # upper area limit
-                                                                             self.cell_type,
-                                                                             self.ratio_converter)
-        cell.signal_data = measurement_microdomains
-        self.dataframes_microdomains_list.append(measurement_microdomains)
+            measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
+                                                                                 start_frame,
+                                                                                 end_frame,
+                                                                                 mean_ratio_value_list,
+                                                                                 self.spotHeight,
+                                                                                 self.minimum_spotsize,   # lower area limit
+                                                                                 20,  # upper area limit
+                                                                                 self.cell_type,)
+            cell.signal_data = measurement_microdomains
+            self.dataframes_microdomains_list.append(measurement_microdomains)
 
 
 
@@ -353,13 +371,9 @@ class ImageProcessor:
                                                                                        centroid_coords_list,
                                                                                        cell_image_radius_after_normalization,
                                                                                        cell_index)
-        start_frame = cell.time_of_bead_contact
-        end_frame = cell.frame_number - 1  # in the future: 600 frames more than start_frame or last frame, if not 600 frames to add
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
                                                                                        self.dartboard_number_of_sections,
                                                                                        self.dartboard_number_of_areas_per_section,
-                                                                                        start_frame,
-                                                                                        end_frame,
                                                                                             )
 
         return mean_dartboard_data_single_cell
@@ -405,6 +419,24 @@ class ImageProcessor:
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
 
+    def extract_information_for_hotspot_detection(self, normalized_image_series):
+        mean_ratio_value_list = []
+        sum_of_radii = 0
+        frame_number = len(normalized_image_series)
+
+        for frame in range(frame_number):
+            current_frame = normalized_image_series[frame]
+            thresholded_image = current_frame > 0.01  # exclude background from measurement
+            # io.imshow(thresholded_image)
+            # plt.show()
+            label = skimage.measure.label(thresholded_image)
+            regions = skimage.measure.regionprops(label_image=label, intensity_image=current_frame)
+            mean_ratio_value = regions[0].intensity_mean
+            mean_ratio_value_list.append(mean_ratio_value)
+            sum_of_radii += (regions[0].perimeter)/(2*math.pi)
+        average_radius = sum_of_radii / frame_number
+
+        return mean_ratio_value_list, average_radius
 
     def return_ratios(self):
         for cell in self.cell_list:

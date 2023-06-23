@@ -115,12 +115,15 @@ class DartboardGenerator:
         return dartboard_area_frequencies
 
 
-    def calculate_mean_dartboard(self, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, start_frame=None, end_frame=None):
+    def calculate_mean_dartboard(self, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section):
         if(len(dartboard_area_frequencies)>0):
+            """
             if start_frame is not None and end_frame is not None:
                 sub_list = dartboard_area_frequencies[start_frame:end_frame+1]
             else:
                 sub_list = dartboard_area_frequencies
+            """
+            sub_list = dartboard_area_frequencies
             number_of_frames = float(len(sub_list))
             average_array = np.zeros_like(dartboard_area_frequencies[0])
             for array in sub_list:
@@ -141,7 +144,7 @@ class DartboardGenerator:
     def rotate_dartboard_data_counterclockwise(self, dartboard_data, n):
         dartboard_data_copy = dartboard_data.copy()
         for elem in range(len(dartboard_data_copy)):
-            dartboard_data_copy[elem] = np.roll(dartboard_data_copy[elem],n)
+            dartboard_data_copy[elem] = np.roll(dartboard_data_copy[elem],n+1)
         return dartboard_data_copy
 
 

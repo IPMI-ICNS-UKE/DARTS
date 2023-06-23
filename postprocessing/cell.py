@@ -154,6 +154,12 @@ class CellImage:
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = ratio_image
 
+    def set_ratio_range(self, min_ratio, max_ratio):
+        to_zero_mask = self.ratio < min_ratio
+        to_max_ratio_mask = self.ratio > max_ratio
+        self.ratio[to_zero_mask] = 0
+        self.ratio[to_max_ratio_mask] = max_ratio
+
     def calculate_ratio(self, frame_number):
         """
         Calculates the ratio of two corresponding cell images (same frame) and returns the ratio image

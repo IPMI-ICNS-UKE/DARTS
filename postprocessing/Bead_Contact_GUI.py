@@ -103,23 +103,26 @@ class BeadContactGUI():
         return coords_list_all_cells
 
     def bboxes_for_cell(self, frame, cell_index = None):
-        bboxes = []
-        relevant_frame = frame
-        if self.cell_listbox.size() > 0:
+        if self.cell_listbox.curselection() != () or self.bead_contact_list.curselection() != ():
+            bboxes = []
+            relevant_frame = frame
+            if self.cell_listbox.size() > 0:
 
-            if self.cell_listbox.curselection() != ():
-                index_selected_cell = self.cell_listbox.curselection()[0]
-                self.cell_listbox.selection_clear(0, END)
-                self.cell_listbox.selection_set(index_selected_cell, index_selected_cell)
-            else:
-                relevant_frame = self.get_frame_from_selection_in_bead_contact_list()
-                index_selected_cell = self.get_cell_index_from_selection_in_bead_contact_list()
+                if self.cell_listbox.curselection() != ():
+                    index_selected_cell = self.cell_listbox.curselection()[0]
+                    self.cell_listbox.selection_clear(0, END)
+                    self.cell_listbox.selection_set(index_selected_cell, index_selected_cell)
+                else:
+                    relevant_frame = self.get_frame_from_selection_in_bead_contact_list()
+                    index_selected_cell = self.get_cell_index_from_selection_in_bead_contact_list()
 
-            cell_frame_bbox_channel_1 = self.bboxes_list_each_cell[index_selected_cell][0]
-            cell_frame_bbox_channel_2 = self.bboxes_list_each_cell[index_selected_cell][1]
-            bboxes.append(cell_frame_bbox_channel_1[relevant_frame])
-            bboxes.append(cell_frame_bbox_channel_2[relevant_frame])
-            return bboxes
+                cell_frame_bbox_channel_1 = self.bboxes_list_each_cell[index_selected_cell][0]
+                cell_frame_bbox_channel_2 = self.bboxes_list_each_cell[index_selected_cell][1]
+                bboxes.append(cell_frame_bbox_channel_1[relevant_frame])
+                bboxes.append(cell_frame_bbox_channel_2[relevant_frame])
+                return bboxes
+        else:
+            return None
 
     def cell_selection_changed(self, event):
         self.update_image(self.slider.get())
@@ -152,11 +155,12 @@ class BeadContactGUI():
         self.subplot_image.imshow(new_image)
 
         bboxes_for_frame_and_cell = self.bboxes_for_cell(int(new_frame), cell_index)
-        for bbox in bboxes_for_frame_and_cell:
-            minr, minc, maxr, maxc = bbox
-            rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                      fill=False, edgecolor='red', linewidth=1)
-            self.subplot_image.add_patch(rect)
+        if bboxes_for_frame_and_cell is not None:
+            for bbox in bboxes_for_frame_and_cell:
+                minr, minc, maxr, maxc = bbox
+                rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                          fill=False, edgecolor='red', linewidth=1)
+                self.subplot_image.add_patch(rect)
 
         self.subplot_image.set_axis_off()
 

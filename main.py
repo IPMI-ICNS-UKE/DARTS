@@ -97,6 +97,8 @@ def main(gui_enabled):
             try:
                 sh_start = timeit.default_timer()
                 normalized_ratio, centroid_coords_list = Processor.normalize_cell_shape(cell)
+                mean_ratio_value_list, radius_after_normalization = Processor.extract_information_for_hotspot_detection(normalized_ratio)
+
                 sh_took = (timeit.default_timer() - sh_start) * 1000.0
                 sh_sec, sh_min, sh_hour = convert_ms_to_smh(int(sh_took))
                 print(f"Shape normalization of cell, {i + 1} "
@@ -106,14 +108,13 @@ def main(gui_enabled):
                 print("Error in shape normalization")
                 continue
 
-            cell_image_radius_after_normalization = 50 # provisorisch...
             io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
             io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
 
 
             try:
                 hd_start = timeit.default_timer()
-                Processor.detect_hotspots(normalized_ratio, cell, i)
+                Processor.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
                 hd_took = (timeit.default_timer() - hd_start) * 1000.0
                 hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
                 print(f"Hotspot detection of cell, {i + 1} "
@@ -136,7 +137,7 @@ def main(gui_enabled):
                     if cell.bead_contact_site != 0:
                         average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
                                                                                                          cell,
-                                                                                                         cell_image_radius_after_normalization,
+                                                                                                         radius_after_normalization,
                                                                                                          i)
                         normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
                                                                                                                   cell.bead_contact_site,
