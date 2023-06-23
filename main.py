@@ -96,14 +96,16 @@ def main(gui_enabled):
                 continue
 
             try:
-                Processor.save_measurements()
+                Processor.save_measurements(i)
             except Exception as E:
                 print(E)
                 log_and_print(message="Exception occurred: Error in saving measurements",
                               level=logging.ERROR, logger=logger)
                 continue
+
             try:
-                if (not cell.is_excluded):
+                if(True or not cell.is_excluded):  # maybe delete cell.is_excluded statement...
+
                     db_start = timeit.default_timer()
                     if cell.bead_contact_site != 0:
                         average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(
