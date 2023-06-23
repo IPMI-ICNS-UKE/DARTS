@@ -17,6 +17,7 @@ from postprocessing.shapenormalization import ShapeNormalization
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
 from postprocessing.Bead_Contact_GUI import BeadContactGUI
+from postprocessing.RatioToConcentrationConverter import RatioConverter
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ class ImageProcessor:
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
         self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
+        self.cell_type = self.parameters["properties"]["cell_type"]
         self.frame_number = len(self.channel1)
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
@@ -92,7 +94,7 @@ class ImageProcessor:
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
         self.decon = None
-        self.bleaching = BleachingAdditiveFit()
+        self.bleaching = None # BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
@@ -100,8 +102,11 @@ class ImageProcessor:
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
-        self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
-        self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+        # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
+        self.ratio_converter = RatioConverter()
+        # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+        self.microdomain_signal_threshold = self.ratio_converter.give_signal_threshold_as_ratio(self.cell_type)
+
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second)
@@ -288,6 +293,7 @@ class ImageProcessor:
         # find the cells
         self.select_rois()
 
+
         # bead contact, user input
         if len(self.cell_list) > 0:
             self.define_bead_contacts()
@@ -303,24 +309,24 @@ class ImageProcessor:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
 
-                cell.generate_ratio_image_series()
+                cell.generate_ratio_image_series()  # Nachkommastellen in Channel 2 in jeder Zelle
+
                 bar()
 
 
     def detect_hotspots(self, ratio_image, cell, i):
-        if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
-            measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                                 self.microdomain_signal_threshold,
-                                                                                 6,   # lower area limit
-                                                                                 20)  # upper area limit
-            cell.signal_data = measurement_microdomains
-            # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
-            self.dataframes_microdomains_list.append(measurement_microdomains)
 
-        else:
-            # print("this cell is preactivated")  # only temporarily
-            self.excluded_cells_list.append(cell)
-            cell.is_excluded = True
+        measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
+                                                                             self.microdomain_signal_threshold,
+                                                                             6,   # lower area limit
+                                                                             20,  # upper area limit
+                                                                             self.cell_type,
+                                                                             self.ratio_converter)
+        cell.signal_data = measurement_microdomains
+        self.dataframes_microdomains_list.append(measurement_microdomains)
+
+
+
 
     def define_bead_contacts(self):
         """
@@ -332,8 +338,8 @@ class ImageProcessor:
 
 
 
-    def save_measurements(self):
-        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
+    def save_measurements(self, i):
+        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
 
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):
@@ -380,7 +386,7 @@ class ImageProcessor:
 
 
     def normalize_cell_shape(self, cell):
-        df = cell.cell_image_data_channel_1
+        df = cell.cell_image_data_channel_2
         shifted_edge_x = df['edge_x'] + df['xshift']
         shifted_edge_y = df['edge_y'] + df['yshift']
         shifted_centroid_x = df["x_centroid_minus_bbox"] + df['xshift']
@@ -419,8 +425,14 @@ class ImageProcessor:
         for cell in self.cell_list:
             io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
                       check_contrast=False)
+
             io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
                       check_contrast=False)
+            # format = 'tiff'
+            # import imageio
+            # imageio.imwrite(f'image.{format}', cell.give_image_channel2())
+            # import tifffile
+            # tifffile.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif',cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):

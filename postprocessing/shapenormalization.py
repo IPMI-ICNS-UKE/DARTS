@@ -72,6 +72,7 @@ class ShapeNormalization:
         # scale parameter --> transforms edge coordinates onto circle
         scale_parameter = (0.962 * np.mean(polCoords_sorted[:, 1])) / polCoords_sorted[:, 1]
 
+
         # ---- now: transformation of entire image
 
         sz = centeredData.shape
@@ -111,7 +112,6 @@ class ShapeNormalization:
         normalized_data_reshaped = np.nan_to_num(normalized_data.reshape(sz, order='F'))
 
         return normalized_data_reshaped
-
 
     def find_edge_and_centroid(self, img_frame):
 
