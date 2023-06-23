@@ -158,7 +158,7 @@ class CellTracker:
             y_shift = round(half_max_delta_y - centroid_y_minus_bbox_offset)
             new_array[frame, 0:len(current_label), 0:len(current_label[0])] = current_label
             new_array[frame] = shift(new_array[frame], shift=(x_shift, y_shift))
-            boolean_mask[frame] = new_array[frame] == 0
+            boolean_mask[frame] = np.abs(new_array[frame]) <= 1e-6
             x_shift_all.append(x_shift)
             y_shift_all.append(y_shift)
 
@@ -375,7 +375,7 @@ class CellTracker:
 
 
 
-
+        roi_before_backgroundcor_dict = {}
         roi_cell_list = []
         for particle in particle_set:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
@@ -401,17 +401,36 @@ class CellTracker:
                     print(E)
                     print("Error Roi selection/ tracking")
                     continue
-                frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
-                roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
-
-
-                particle_dataframe_subset.loc[:, 'xshift'] = shiftx
-                particle_dataframe_subset.loc[:, 'yshift'] = shifty
-
-
                 roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
-                roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-                roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,frame_masks))
+                roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, max_delta_x,
+                                                           max_delta_y]
+        return dataframe, roi_before_backgroundcor_dict
+    def apply_backgroundcorrection(self, dataframe, roi_before_backgroundcor_dict):
+        """
+        Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
+        Background subtraction included.
+        In addition, the tuple contains the cell image data from the pandas dataframe
+        [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted, cell_1_cellimage_data),
+         (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted, cell_2_cellimage_data)
+         ...]
+
+        :param channel1:
+        :param channel2:
+        :return:
+        """
+        roi_cell_list = []
+        for particle in roi_before_backgroundcor_dict:
+            [roi1, roi2, particle_dataframe_subset, max_delta_x, max_delta_y] = roi_before_backgroundcor_dict[particle]
+            frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
+            roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
+
+
+            particle_dataframe_subset.loc[:, 'xshift'] = shiftx
+            particle_dataframe_subset.loc[:, 'yshift'] = shifty
+
+
+            roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
         return roi_cell_list
 
 
