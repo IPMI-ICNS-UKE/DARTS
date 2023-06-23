@@ -144,7 +144,7 @@ class DartboardGenerator:
     def rotate_dartboard_data_counterclockwise(self, dartboard_data, n):
         dartboard_data_copy = dartboard_data.copy()
         for elem in range(len(dartboard_data_copy)):
-            dartboard_data_copy[elem] = np.roll(dartboard_data_copy[elem],n+1)
+            dartboard_data_copy[elem] = np.roll(dartboard_data_copy[elem],n)
         return dartboard_data_copy
 
 
@@ -204,11 +204,14 @@ class DartboardGenerator:
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
 
-        # plt.show()
 
-dartboard_gen = DartboardGenerator(None)
-angle = dartboard_gen.calculate_signal_angle_relative_to_center((100,0), (0,0))
-# centroid coords: (0,0) = (y,x)
-# signal: (100,0) = (x,y)
+"""
+dartboard_gen = DartboardGenerator("/Users/dejan/Documents/GitHub/T-DARTS/results")
+number_of_areas_within_section = 8
+number_of_sections = 12
+dartboard_data = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
+dartboard_data[7][0] = 0.2
+dartboard_data = dartboard_gen.normalize_average_dartboard_data_one_cell(dartboard_data,3,2)
+dartboard_gen.save_dartboard_plot(dartboard_data,1,12,8)
+"""
 
-# git new commit...
