@@ -250,6 +250,13 @@ class TDarts_GUI():
                 self.text_path_to_input_combined.delete(1.0, END)
                 self.text_path_to_input_combined.insert(1.0, combined_path)
 
+            #TODO
+            self.text_user.delete(1.0, END)
+            self.text_user.insert(1.0, config["inputoutput"]["user"])
+
+            self.text_experiment_name.delete(1.0, END)
+            self.text_experiment_name.insert(1.0, config["inputoutput"]["experiment_name"])
+
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["inputoutput"]["path_to_output"])
 
@@ -364,10 +371,15 @@ class TDarts_GUI():
 
             config["inputoutput"]["path_to_output"] = self.text_results_directory.get("1.0", "end-1c")
 
+            config["inputoutput"]["user"] = str(self.text_user.get("1.0", "end-1c"))
+            config["inputoutput"]["experiment_name"] = str(self.text_experiment_name.get("1.0", "end-1c"))
+
             config["properties"]["scale_microns_per_pixel"] = float(self.text_scale.get("1.0", END))
             config["properties"]["frames_per_second"] = float(self.text_fps.get("1.0", END))
             config["properties"]["spatial_resolution"] = int(self.text_resolution.get("1.0", END))
             config["properties"]["registration_framebyframe"] = str(self.frame_by_frame_registration.get() == 1).lower()
+
+
 
             # write back
         with open("config.toml", mode="wt", encoding="utf-8") as fp:

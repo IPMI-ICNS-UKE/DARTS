@@ -22,7 +22,6 @@ from postprocessing.RatioToConcentrationConverter import RatioConverter
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
 
 try:
     import SimpleITK as sitk
