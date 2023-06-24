@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+import skimage.measure
+
+
 class DartboardGenerator:
     def __init__(self, save_path):
         self.save_path = save_path
@@ -27,7 +30,9 @@ class DartboardGenerator:
         y0 = centroid_coords[1]
         x = signal_coords[0]
         y = signal_coords[1]
-        angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180) % 360
+
+        angle = (math.degrees(math.atan2(-(y0 - y), x0 - x)) + 180) % 360
+        print("angle", str(angle))
         return angle
 
     def assign_angle_to_dartboard_section(self, angle, number_of_sections):
@@ -53,7 +58,7 @@ class DartboardGenerator:
 
     def assign_signal_to_dartboard_area(self, signal_coords, centroid_coords, number_of_sections, number_of_areas_in_one_section, radius_cell_image):
         if radius_cell_image < self.distance_from_pixel_to_center(signal_coords, centroid_coords): #< radius_inner_circle:
-            return None,None
+            return None, None
         else:
             # angle_one_dartboard_area = 360.0/number_of_sections
             angle = self.calculate_signal_angle_relative_to_center(centroid_coords, signal_coords)
@@ -73,10 +78,7 @@ class DartboardGenerator:
             signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(dataframe_one_frame)
 
             for signal in signal_in_frame_coords_list:
-                x = signal[0]
-                y = signal[1]
-                signal_coords = (x, y)
-                dartboard_section, dartboard_area_number_within_section = self.assign_signal_to_dartboard_area(signal_coords,
+                dartboard_section, dartboard_area_number_within_section = self.assign_signal_to_dartboard_area(signal,
                                                                                                                centroid_coords,
                                                                                                                number_of_sections,
                                                                                                                number_of_areas_within_section,
@@ -203,15 +205,4 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
-
-
-"""
-dartboard_gen = DartboardGenerator("/Users/dejan/Documents/GitHub/T-DARTS/results")
-number_of_areas_within_section = 8
-number_of_sections = 12
-dartboard_data = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
-dartboard_data[7][0] = 0.2
-dartboard_data = dartboard_gen.normalize_average_dartboard_data_one_cell(dartboard_data,3,2)
-dartboard_gen.save_dartboard_plot(dartboard_data,1,12,8)
-"""
 

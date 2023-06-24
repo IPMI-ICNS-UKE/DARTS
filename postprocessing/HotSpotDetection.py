@@ -42,7 +42,7 @@ class HotSpotDetector():
         return regions
 
     def exclude_small_and_large_areas(self, raw_regions_in_frame, lower_limit_area, upper_limit_area):
-        regions = [region for region in raw_regions_in_frame if lower_limit_area < region.area < upper_limit_area]
+        regions = [region for region in raw_regions_in_frame if lower_limit_area <= region.area <= upper_limit_area]
         return regions
 
     def calculate_hotspot_threshold_for_each_frame(self, mean_ratio_list, cell_type, spotHeight):
