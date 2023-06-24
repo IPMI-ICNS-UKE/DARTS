@@ -17,14 +17,14 @@ class DartboardGenerator:
         return dartboard_area_list
 
     def distance_from_pixel_to_center(self, signal_coords, centroid_coords):
-        delta_x = float(centroid_coords[1]) - signal_coords[1]
-        delta_y = float(centroid_coords[0]) - signal_coords[0]
+        delta_x = float(centroid_coords[0]) - signal_coords[0]
+        delta_y = float(centroid_coords[1]) - signal_coords[1]
         distance = math.sqrt(delta_x**2 + delta_y**2)
         return distance
 
     def calculate_signal_angle_relative_to_center(self, centroid_coords, signal_coords):
-        y0 = centroid_coords[0]
-        x0 = centroid_coords[1]
+        x0 = centroid_coords[0]
+        y0 = centroid_coords[1]
         x = signal_coords[0]
         y = signal_coords[1]
         angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180) % 360
@@ -99,7 +99,7 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def calculate_signals_in_dartboard_each_frame(self, number_of_frames, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radius_cell_image, cell_index):
+    def calculate_signals_in_dartboard_each_frame(self, number_of_frames, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index):
         dartboard_area_frequencies = []
         for frame in range(number_of_frames):
             centroid_coords = list_of_centroid_coords[frame]
@@ -108,7 +108,7 @@ class DartboardGenerator:
                                                                                                          centroid_coords,
                                                                                                          number_of_dartboard_sections,
                                                                                                          number_of_dartboard_areas_per_section,
-                                                                                                         radius_cell_image)
+                                                                                                         radii_after_normalization[frame])
 
             # self.plot_dartboard(dartboard_area_frequency_this_frame, radius_cell_image, cell_index, frame)
             dartboard_area_frequencies.append(dartboard_area_frequency_this_frame)

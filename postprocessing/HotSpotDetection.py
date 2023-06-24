@@ -69,7 +69,7 @@ class HotSpotDetector():
         features = pd.DataFrame()
         for num, img in enumerate(image_series_in_analysis_range):
             for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
-                if lower_limit_area < region.area < upper_limit_area:
+                if lower_limit_area <= region.area <= upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
                                                   'frame': num,

@@ -360,7 +360,7 @@ class ImageProcessor:
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
 
 
-    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, cell_image_radius_after_normalization, cell_index):
+    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
         # dartboard_generator = DartboardGenerator(self.save_path)
 
 
@@ -369,7 +369,7 @@ class ImageProcessor:
                                                                                        self.dartboard_number_of_sections,
                                                                                        self.dartboard_number_of_areas_per_section,
                                                                                        centroid_coords_list,
-                                                                                       cell_image_radius_after_normalization,
+                                                                                       radii_after_normalization,
                                                                                        cell_index)
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
                                                                                        self.dartboard_number_of_sections,
@@ -421,7 +421,7 @@ class ImageProcessor:
 
     def extract_information_for_hotspot_detection(self, normalized_image_series):
         mean_ratio_value_list = []
-        sum_of_radii = 0
+        radii_list = []
         frame_number = len(normalized_image_series)
 
         for frame in range(frame_number):
@@ -433,10 +433,10 @@ class ImageProcessor:
             regions = skimage.measure.regionprops(label_image=label, intensity_image=current_frame)
             mean_ratio_value = regions[0].intensity_mean
             mean_ratio_value_list.append(mean_ratio_value)
-            sum_of_radii += (regions[0].perimeter)/(2*math.pi)
-        average_radius = sum_of_radii / frame_number
+            current_radius = regions[0].equivalent_diameter_area / 2
+            radii_list.append(current_radius)
 
-        return mean_ratio_value_list, average_radius
+        return mean_ratio_value_list, radii_list
 
     def return_ratios(self):
         for cell in self.cell_list:
