@@ -22,7 +22,6 @@ class BleachingAdditiveFit (BaseBleaching):
 
     def run(self, cell, parameters, model):
         bleaching_channel_copy = cell.give_image_channel2()
-        area_list = cell.return_list_of_areas()
         mean_intensity_frame_zero = cell.calculate_mean_value_in_channel_frame(0, 2)
 
         for frame_index in range(len(bleaching_channel_copy)):
