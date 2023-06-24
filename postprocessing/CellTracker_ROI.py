@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from alive_progress import alive_bar
 import time
 
-
+pd.options.mode.chained_assignment = None  # default='warn'
 tp.quiet(suppress=True)
 
 class CellTracker:
