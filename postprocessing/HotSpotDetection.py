@@ -78,9 +78,9 @@ class HotSpotDetector():
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
                                                   'mean_intensity': region.intensity_mean,
-                                                  'max calcium concentration in µM': self.ratio_converter.calcium_calibration(region.intensity_max, cell_type)[0],
-                                                  'min calcium concentration in µM': self.ratio_converter.calcium_calibration(region.intensity_min, cell_type)[0],
-                                                  'mean calcium concentration in µM': self.ratio_converter.calcium_calibration(region.intensity_mean, cell_type)[0],
+                                                  'max calcium concentration in nM': self.ratio_converter.calcium_calibration(region.intensity_max, cell_type)[0],
+                                                  'min calcium concentration in nM': self.ratio_converter.calcium_calibration(region.intensity_min, cell_type)[0],
+                                                  'mean calcium concentration in nM': self.ratio_converter.calcium_calibration(region.intensity_mean, cell_type)[0],
 
                                                   }, ])
         return features
