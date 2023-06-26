@@ -58,7 +58,7 @@ class RatioConverter():
 
             corresponding_Ca_value = a*math.e**(b*ratio_mean_value) + c*math.e**(d*ratio_mean_value)
             threshold_Calcium = corresponding_Ca_value + spotHeight
-            threshold_ratio = aInv*math.e**(bInv*threshold_Calcium) + cInv*math.e**(dInv*y)
+            threshold_ratio = aInv*math.e**(bInv*threshold_Calcium) + cInv*math.e**(dInv*threshold_Calcium)
             return corresponding_Ca_value, threshold_Calcium, threshold_ratio
         else:
             return None

@@ -79,8 +79,13 @@ class ImageProcessor:
 
         self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
         self.cell_type = self.parameters["properties"]["cell_type"]
-        self.frame_number = len(self.channel1)
+        self.spotHeight = None
+        if self.cell_type == 'primary':
+            self.spotHeight = 112.5
+        elif self.cell_type == 'jurkat':
+            self.spotHeight = 72
 
+        self.frame_number = len(self.channel1)
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
@@ -104,7 +109,6 @@ class ImageProcessor:
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
         self.ratio_converter = RatioConverter()
-        self.spotHeight = 64  # 64µM
         self.minimum_spotsize = 4
         self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         self.min_ratio = 0.1
