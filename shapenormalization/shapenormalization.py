@@ -9,7 +9,7 @@ from skimage import measure
 
 
 class ShapeNormalization:
-    def __init__(self, ratio, channel1, channel2, model, edge_list=None, centroid_list=None):
+    def __init__(self, ratio, channel1, channel2, model=None, edge_list=None, centroid_list=None):
         self.ratio_image = ratio
         self.channel1 = channel1
         self.channel2 = channel2
@@ -88,7 +88,8 @@ class ShapeNormalization:
 
         # add small linearly increasing scalar to ensure uniqueness
         a = np.linspace(1, 2, len(scale_parameter))
-        scale_parameter_a = scale_parameter + (a / 1e10)
+        scale_parameter_a = scale_parameter
+        #scale_parameter_a = scale_parameter + (a / 1e10)
 
         # transform: interpolate INVERSE transformation to get new coordinates
         f = interpolate.interp1d(polCoords_sorted[:, 0], 1 / scale_parameter_a, fill_value="extrapolate")
@@ -100,7 +101,7 @@ class ShapeNormalization:
         y_coords = np.arange(centeredData.shape[0])
         x_coords = np.arange(centeredData.shape[1])
         interpolating_function = interpolate.RegularGridInterpolator((y_coords, x_coords), centeredData,
-                                                                     bounds_error=False)
+                                                                     bounds_error=False, fill_value=None)
 
         # Create a grid for the interpolator using the previously computed x and y
         points = np.vstack((y_new.ravel(), x_new.ravel())).T
@@ -111,6 +112,7 @@ class ShapeNormalization:
         # Reshape the data back to the original shape and set nan to 0
         normalized_data_reshaped = np.nan_to_num(normalized_data.reshape(sz, order='F'))
 
+        normalized_data_reshaped[normalized_data_reshaped < 1e-16] = 0.0
         return normalized_data_reshaped
 
     def find_edge_and_centroid(self, img_frame):

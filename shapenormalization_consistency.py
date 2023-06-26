@@ -15,10 +15,8 @@ import os
 
 folder = "/Users/lwoelk/PycharmProjects/T-DARTS/Data/K2"
 
-
-
-
 parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
+model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
 for file in os.listdir(folder):
      filename = os.fsdecode(file)
@@ -26,7 +24,9 @@ for file in os.listdir(folder):
         parameters["inputoutput"]["path_to_input_combined"] = folder + "/" + filename
         print("processing image ", parameters["inputoutput"]["path_to_input_combined"])
 
-        Processor = ImageProcessor(parameters)
+        Processor = ImageProcessor(parameters, model)
 
         Processor.start_postprocessing()
+
+
 
