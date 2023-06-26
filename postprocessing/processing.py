@@ -2,6 +2,7 @@ import logging
 import math
 import skimage.io as io
 import numpy as np
+import skimage.measure
 from alive_progress import alive_bar
 import time
 import matplotlib.pyplot as plt
@@ -18,10 +19,10 @@ from postprocessing.shapenormalization import ShapeNormalization
 from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
 from postprocessing.Bead_Contact_GUI import BeadContactGUI
+from postprocessing.RatioToConcentrationConverter import RatioConverter
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
 
 try:
     import SimpleITK as sitk
@@ -78,6 +79,7 @@ class ImageProcessor:
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
         self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
+        self.cell_type = self.parameters["properties"]["cell_type"]
         self.frame_number = len(self.channel1)
 
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
@@ -108,11 +110,20 @@ class ImageProcessor:
 
         self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
-        self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
-        self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+        # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
+        self.ratio_converter = RatioConverter()
+        self.spotHeight = 64  # 64µM
+        self.minimum_spotsize = 4
+        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        self.min_ratio = 0.1
+        self.max_ratio = 2.0
+        # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+
+
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.parameters["inputoutput"]["excel_filename"],
-                                                                self.frames_per_second)
+                                                                self.frames_per_second,
+                                                                self.ratio_converter)
         self.dartboard_generator = DartboardGenerator(self.save_path)
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -309,10 +320,11 @@ class ImageProcessor:
         # find the cells
         self.select_rois()
 
+
         # bead contact, user input
         if len(self.cell_list) > 0:
-            bead_contact_information = self.define_bead_contacts()
-            self.assign_bead_contacts_to_cells(bead_contact_information)
+            self.define_bead_contacts()
+            # self.assign_bead_contacts_to_cells(bead_contact_information)
 
         print("\nBleaching correction: ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
@@ -324,30 +336,34 @@ class ImageProcessor:
                         step.run(cell, self.parameters, self.model)
 
                 cell.generate_ratio_image_series()
+                cell.set_ratio_range(self.min_ratio, self.max_ratio)
+
                 bar()
 
-    def assign_bead_contacts_to_cells(self, bead_contact_information):
-        for bead_contact in bead_contact_information:
-            cell_index = bead_contact.return_cell_index()
-            start_frame = bead_contact.return_frame_number()
-            location = bead_contact.return_location()
-            self.cell_list[cell_index].time_of_bead_contact = start_frame
-            self.cell_list[cell_index].bead_contact_site = location
 
-    def detect_hotspots(self, ratio_image, cell, i):
-        if (not cell.is_preactivated(self.ratio_preactivation_threshold)):
+    def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
+        if cell.bead_contact_site != 0:  # if user defined a bead contact site (in the range from 1 to 12)
+            start_frame = cell.time_of_bead_contact
+            frame_number_cell = cell.frame_number
+            end_frame = 0
+            if start_frame + self.duration_of_measurement > frame_number_cell+1:
+                end_frame = frame_number_cell-1
+            else:
+                end_frame = start_frame + self.duration_of_measurement
+
             measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                                 self.microdomain_signal_threshold,
-                                                                                 6,  # lower area limit
-                                                                                 20)  # upper area limit
+                                                                                 start_frame,
+                                                                                 end_frame,
+                                                                                 mean_ratio_value_list,
+                                                                                 self.spotHeight,
+                                                                                 self.minimum_spotsize,   # lower area limit
+                                                                                 20,  # upper area limit
+                                                                                 self.cell_type)
             cell.signal_data = measurement_microdomains
-            # self.hotspotdetector.save_dataframe(measurement_microdomains, i)
             self.dataframes_microdomains_list.append(measurement_microdomains)
 
-        else:
-            # print("this cell is preactivated")  # only temporarily
-            self.excluded_cells_list.append(cell)
-            cell.is_excluded = True
+
+
 
     def define_bead_contacts(self):
         """
@@ -356,32 +372,28 @@ class ImageProcessor:
         """
         bead_contact_gui = BeadContactGUI(self.image, self.cell_list, self.dartboard_number_of_sections)
         bead_contact_gui.run_main_loop()
-        information = bead_contact_gui.return_bead_contact_information()
-        return information
 
-    def save_measurements(self):
-        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list)
 
-    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell,
-                                                    cell_image_radius_after_normalization, cell_index):
+
+    def save_measurements(self, i):
+        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
+
+
+    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
         # dartboard_generator = DartboardGenerator(self.save_path)
 
-        dartboard_data_all_frames = self.dartboard_generator.calculate_signals_in_dartboard_each_frame(
-            cell.frame_number,
-            cell.signal_data,
-            self.dartboard_number_of_sections,
-            self.dartboard_number_of_areas_per_section,
-            centroid_coords_list,
-            cell_image_radius_after_normalization,
-            cell_index)
-        start_frame = cell.time_of_bead_contact
-        end_frame = cell.frame_number - 1
+        dartboard_data_all_frames = self.dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
+                                                                                       cell.signal_data,
+                                                                                       self.dartboard_number_of_sections,
+                                                                                       self.dartboard_number_of_areas_per_section,
+                                                                                       centroid_coords_list,
+                                                                                       radii_after_normalization,
+                                                                                       cell_index)
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
+                                                                                       self.dartboard_number_of_sections,
+                                                                                       self.dartboard_number_of_areas_per_section
+                                                                                            )
 
-                                                                                            start_frame,
-                                                                                            end_frame,
-                                                                                            self.dartboard_number_of_sections,
-                                                                                            self.dartboard_number_of_areas_per_section)
 
         return mean_dartboard_data_single_cell
 
@@ -407,7 +419,7 @@ class ImageProcessor:
                                                      self.dartboard_number_of_areas_per_section)
 
     def normalize_cell_shape(self, cell):
-        df = cell.cell_image_data_channel_1
+        df = cell.cell_image_data_channel_2
         shifted_edge_x = df['edge_x'] + df['xshift']
         shifted_edge_y = df['edge_y'] + df['yshift']
         shifted_centroid_x = df["x_centroid_minus_bbox"] + df['xshift']
@@ -425,6 +437,25 @@ class ImageProcessor:
         cell.normalized_ratio_image = SN.apply_shape_normalization()
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
+
+    def extract_information_for_hotspot_detection(self, normalized_image_series):
+        mean_ratio_value_list = []
+        radii_list = []
+        frame_number = len(normalized_image_series)
+
+        for frame in range(frame_number):
+            current_frame = normalized_image_series[frame]
+            thresholded_image = current_frame > 0.01  # exclude background from measurement
+            # io.imshow(thresholded_image)
+            # plt.show()
+            label = skimage.measure.label(thresholded_image)
+            regions = skimage.measure.regionprops(label_image=label, intensity_image=current_frame)
+            mean_ratio_value = regions[0].intensity_mean
+            mean_ratio_value_list.append(mean_ratio_value)
+            current_radius = regions[0].equivalent_diameter_area / 2
+            radii_list.append(current_radius)
+
+        return mean_ratio_value_list, radii_list
 
     def return_ratios(self):
         for cell in self.cell_list:
@@ -445,8 +476,14 @@ class ImageProcessor:
         for cell in self.cell_list:
             io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
                       check_contrast=False)
+
             io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
                       check_contrast=False)
+            # format = 'tiff'
+            # import imageio
+            # imageio.imwrite(f'image.{format}', cell.give_image_channel2())
+            # import tifffile
+            # tifffile.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif',cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):

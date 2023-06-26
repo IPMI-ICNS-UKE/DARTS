@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from alive_progress import alive_bar
 import time
 
-
+pd.options.mode.chained_assignment = None  # default='warn'
 tp.quiet(suppress=True)
 
 class CellTracker:
@@ -81,7 +81,7 @@ class CellTracker:
         if not features.empty:
             tp.annotate(features[features.frame == (0)], image_series[0])
             # tracking, linking of coordinates
-            search_range = 10  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
+            search_range = 50  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
             t = tp.link_df(features, search_range, memory=0)
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
             # print (t)
@@ -123,46 +123,26 @@ class CellTracker:
 
         return max_delta_x, max_delta_y
 
-    def generate_frame_masks(self, dataframe, particle, image_series, half_max_delta_x, half_max_delta_y):
+    def generate_shifted_frame_masks(self, empty_rois, dataframe, particle, x_shift_all, y_shift_all):
         """
         Creates a series of boolean masks for a cell image series so that background subtraction can be performed later.
-        Uses the offset between the current bounding box and the biggest bounding box of an image series to shift the
-        created mask into the right position.
-
-        :param dataframe:
-        :param particle:
-        :param image_series:
-        :param half_max_delta_x:
-        :param half_max_delta_y:
-        :return: series of boolean masks
         """
-        bbox_list = self.get_bboxes_list(particle, dataframe)
-
-        coords_bbox_offset = self.get_offset_between_centroid_and_bbox(particle, dataframe)
-        frame_number = len(bbox_list)
-        new_array = np.zeros_like(image_series)
+        frame_number = len(empty_rois)
+        label_container = empty_rois.copy()
         images_inside_bboxes = self.get_images_inside_bboxes(dataframe, particle)
-        boolean_mask = np.empty_like(new_array, dtype=bool)
-
-        x_shift_all = []
-        y_shift_all = []
+        boolean_mask = np.empty_like(empty_rois, dtype=bool)
 
         for frame in range(frame_number):
-            centroid_y_minus_bbox_offset = coords_bbox_offset[frame][1]
-            centroid_x_minus_bbox_offset = coords_bbox_offset[frame][0]
-
             current_label = images_inside_bboxes[frame]
             # io.imshow(current_label)
             # plt.show()
-            x_shift = round(half_max_delta_x - centroid_x_minus_bbox_offset)
-            y_shift = round(half_max_delta_y - centroid_y_minus_bbox_offset)
-            new_array[frame, 0:len(current_label), 0:len(current_label[0])] = current_label
-            new_array[frame] = shift(new_array[frame], shift=(x_shift, y_shift))
-            boolean_mask[frame] = np.abs(new_array[frame]) <= 1e-6
-            x_shift_all.append(x_shift)
-            y_shift_all.append(y_shift)
 
-        return boolean_mask, x_shift_all, y_shift_all
+            label_container[frame, 0:len(current_label), 0:len(current_label[0])] = current_label
+            label_container[frame] = shift(label_container[frame], shift=(x_shift_all[frame], y_shift_all[frame]))
+            boolean_mask[frame] = label_container[frame] == 0
+
+
+        return boolean_mask
 
     def background_subtraction(self, frame_masks, cell_image_series):
         """
@@ -355,6 +335,52 @@ class CellTracker:
         else:
             return max_delta_x,max_delta_y
 
+    def create_roi_template(self,image_series,max_delta_x,max_delta_y):
+        cropped_template = np.zeros_like(image_series[:,0:max_delta_y,0:max_delta_x])
+        return cropped_template
+
+    def create_cell_image_series(self,empty_rois,intensity_image_series,bbox_list):
+        roi_with_intensity_image = empty_rois.copy()
+        for i in range(len(intensity_image_series)):
+            delta_y = bbox_list[i][2] - bbox_list[i][0]
+            delta_x = bbox_list[i][3] - bbox_list[i][1]
+
+            roi_with_intensity_image[i][0:delta_y,0:delta_x] = intensity_image_series[i]
+        return roi_with_intensity_image
+
+    def crop_image_series_with_rois(self,image_series,bbox_list):
+        cropped_images_list = []
+        for i in range(len(image_series)):
+            min_row, min_col, max_row, max_col = bbox_list[i]
+            cropped_image = image_series[i][min_row:max_row, min_col:max_col]
+            cropped_images_list.append(cropped_image)
+        return cropped_images_list
+
+    def create_roi_image_series(self, empty_rois, intensity_images_in_bbox, shift_x_list, shift_y_list):
+        roi_image_series = empty_rois.copy()
+        for i in range(len(empty_rois)):
+            delta_x_image = len(intensity_images_in_bbox[i][0])
+            delta_y_image = len(intensity_images_in_bbox[i])
+            roi_image_series[i][0:delta_y_image, 0:delta_x_image] = intensity_images_in_bbox[i]
+
+            x_shift = shift_x_list[i]
+            y_shift = shift_y_list[i]
+            roi_image_series[i] = shift(roi_image_series[i], shift=(x_shift, y_shift))
+        return roi_image_series
+
+    def calculate_shift_in_each_frame(self, centroid_bbox_offset_list, max_delta_x, max_delta_y):
+        x_shift_all = []
+        y_shift_all = []
+        for i in range(len(centroid_bbox_offset_list)):
+            centroid_bbox_offset_x = centroid_bbox_offset_list[i][0]
+            centroid_bbox_offset_y = centroid_bbox_offset_list[i][1]
+            x_shift = round(0.5 * max_delta_x - centroid_bbox_offset_x)
+            y_shift = round(0.5 * max_delta_y - centroid_bbox_offset_y)
+            x_shift_all.append(x_shift)
+            y_shift_all.append(y_shift)
+        return x_shift_all, y_shift_all
+
+
     def give_rois(self, channel1, channel2, ymax, xmax, model):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
@@ -370,7 +396,7 @@ class CellTracker:
 
         # print("Get rois")
 
-        dataframe, particle_set = self.generate_trajectory(channel1, model)
+        dataframe, particle_set = self.generate_trajectory(channel2, model)
 
 
 
@@ -380,45 +406,45 @@ class CellTracker:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
             coords_list = self.get_coords_list_for_particle(particle, dataframe)
             bbox_list = self.get_bboxes_list(particle, dataframe)
-
+            centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle,dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
             max_delta_x, max_delta_y = self.equal_width_and_height(max_delta_x, max_delta_y)
             max_delta_x, max_delta_y = int(max_delta_x*1.4), int(max_delta_y*1.4)
 
             try:
-                roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
+                # roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
+                empty_rois = self.create_roi_template(channel1, max_delta_x, max_delta_y)  # empty rois with maximum bbox size
+                image_series_channel_1_bboxes = self.crop_image_series_with_rois(channel1, bbox_list)
+                image_series_channel_2_bboxes = self.crop_image_series_with_rois(channel2, bbox_list)
+                x_shift_all, y_shift_all = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y)
+
+                particle_dataframe_subset.loc[:, 'xshift'] = x_shift_all
+                particle_dataframe_subset.loc[:, 'yshift'] = y_shift_all
+
+                roi1 = self.create_roi_image_series(empty_rois, image_series_channel_1_bboxes,x_shift_all,y_shift_all)
+                roi2 = self.create_roi_image_series(empty_rois, image_series_channel_2_bboxes,x_shift_all,y_shift_all)
+
+                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois, dataframe, particle, x_shift_all,
+                                                                        y_shift_all)
+
+                roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, shifted_frame_masks]
             except Exception as E:
                 print(E)
                 print("Error Roi selection/ tracking")
                 continue
 
 
-            if (self.cell_completely_in_image(roi_list_particle, ymax, xmax)):
-                try:
-                    roi1 = self.generate_sequence_moving_ROI(channel1, roi_list_particle, max_delta_x, max_delta_y)
-                except Exception as E:
-                    print(E)
-                    print("Error Roi selection/ tracking")
-                    continue
-                roi2 = self.generate_sequence_moving_ROI(channel2, roi_list_particle, max_delta_x, max_delta_y)
-                roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, max_delta_x,
-                                                           max_delta_y]
         return dataframe, roi_before_backgroundcor_dict
     def apply_backgroundcorrection(self, dataframe, roi_before_backgroundcor_dict):
 
         roi_cell_list = []
         for particle in roi_before_backgroundcor_dict:
-            [roi1, roi2, particle_dataframe_subset, max_delta_x, max_delta_y] = roi_before_backgroundcor_dict[particle]
-            frame_masks, shiftx, shifty = self.generate_frame_masks(dataframe, particle, roi1, 0.5*max_delta_x, 0.5*max_delta_y)
-            roi1_background_subtracted = self.background_subtraction(frame_masks, roi1)
+            [roi1, roi2, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
 
+            roi1_background_subtracted = self.background_subtraction(shifted_frame_masks, roi1)
+            roi2_background_subtracted = self.background_subtraction(shifted_frame_masks, roi2)
 
-            particle_dataframe_subset.loc[:, 'xshift'] = shiftx
-            particle_dataframe_subset.loc[:, 'yshift'] = shifty
-
-
-            roi2_background_subtracted = self.background_subtraction(frame_masks, roi2)
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, frame_masks))
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, shifted_frame_masks))
         return roi_cell_list
 
 

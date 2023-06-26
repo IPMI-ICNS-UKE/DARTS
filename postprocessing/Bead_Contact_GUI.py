@@ -7,9 +7,11 @@ from tkinter import (Tk, ttk, Label, Scale, Listbox, Scrollbar, Frame, Button, L
 
 import matplotlib.patches as mpatches
 import math
+import time
 
 class BeadContactGUI():
     def __init__(self, image, cell_list, number_of_areas_dartboard):
+        self.cell_list = cell_list
         self.bboxes_list_each_cell = self.give_bbox_list_for_each_cell(cell_list)
         self.coords_list_each_cell = self.give_coords_list_for_each_cell(cell_list)
         self.number_of_areas = number_of_areas_dartboard
@@ -74,6 +76,15 @@ class BeadContactGUI():
 
         self.remove_bead_contact_button = Button(self.root, text="Remove bead contact", command=self.remove_bead_contact)
         self.remove_bead_contact_button.place(x=750, y=510)
+        self.save_button = Button(self.root,text="Use bead contact info for analysis",command=self.assign_bead_contacts_to_cells)
+        self.save_button.place(x=720,y=550)
+
+        self.close_button = Button(self.root, text="Continue analysis", command=self.close_gui)
+        self.close_button.place(x=950, y=550)
+
+
+
+
 
     def give_bbox_list_for_each_cell(self, cell_list):
         bbox_list_all_cells = []
@@ -87,28 +98,31 @@ class BeadContactGUI():
     def give_coords_list_for_each_cell(self, cell_list):
         coords_list_all_cells = []
         for cell in cell_list:
-            coords_list_cell_channel_1 = cell.return_coords_list_channel_1()
-            coords_list_all_cells.append(coords_list_cell_channel_1)
+            coords_list_cell_channel_2 = cell.return_coords_list_channel_2()
+            coords_list_all_cells.append(coords_list_cell_channel_2)
         return coords_list_all_cells
 
     def bboxes_for_cell(self, frame, cell_index = None):
-        bboxes = []
-        relevant_frame = frame
-        if self.cell_listbox.size() > 0:
+        if self.cell_listbox.curselection() != () or self.bead_contact_list.curselection() != ():
+            bboxes = []
+            relevant_frame = frame
+            if self.cell_listbox.size() > 0:
 
-            if self.cell_listbox.curselection() != ():
-                index_selected_cell = self.cell_listbox.curselection()[0]
-                self.cell_listbox.selection_clear(0, END)
-                self.cell_listbox.selection_set(index_selected_cell, index_selected_cell)
-            else:
-                relevant_frame = self.get_frame_from_selection_in_bead_contact_list()
-                index_selected_cell = self.get_cell_index_from_selection_in_bead_contact_list()
+                if self.cell_listbox.curselection() != ():
+                    index_selected_cell = self.cell_listbox.curselection()[0]
+                    self.cell_listbox.selection_clear(0, END)
+                    self.cell_listbox.selection_set(index_selected_cell, index_selected_cell)
+                else:
+                    relevant_frame = self.get_frame_from_selection_in_bead_contact_list()
+                    index_selected_cell = self.get_cell_index_from_selection_in_bead_contact_list()
 
-            cell_frame_bbox_channel_1 = self.bboxes_list_each_cell[index_selected_cell][0]
-            cell_frame_bbox_channel_2 = self.bboxes_list_each_cell[index_selected_cell][1]
-            bboxes.append(cell_frame_bbox_channel_1[relevant_frame])
-            bboxes.append(cell_frame_bbox_channel_2[relevant_frame])
-            return bboxes
+                cell_frame_bbox_channel_1 = self.bboxes_list_each_cell[index_selected_cell][0]
+                cell_frame_bbox_channel_2 = self.bboxes_list_each_cell[index_selected_cell][1]
+                bboxes.append(cell_frame_bbox_channel_1[relevant_frame])
+                bboxes.append(cell_frame_bbox_channel_2[relevant_frame])
+                return bboxes
+        else:
+            return None
 
     def cell_selection_changed(self, event):
         self.update_image(self.slider.get())
@@ -141,11 +155,12 @@ class BeadContactGUI():
         self.subplot_image.imshow(new_image)
 
         bboxes_for_frame_and_cell = self.bboxes_for_cell(int(new_frame), cell_index)
-        for bbox in bboxes_for_frame_and_cell:
-            minr, minc, maxr, maxc = bbox
-            rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                      fill=False, edgecolor='red', linewidth=1)
-            self.subplot_image.add_patch(rect)
+        if bboxes_for_frame_and_cell is not None:
+            for bbox in bboxes_for_frame_and_cell:
+                minr, minc, maxr, maxc = bbox
+                rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                          fill=False, edgecolor='red', linewidth=1)
+                self.subplot_image.add_patch(rect)
 
         self.subplot_image.set_axis_off()
 
@@ -157,6 +172,7 @@ class BeadContactGUI():
         if(self.bead_contact_list.size()>0 and selected_item!= ()):
             self.bead_contact_list.delete(selected_item[0])
             self.bead_contact_list.selection_set(END,END)
+
 
     def mouse_clicked(self, event):
         if event.xdata is not None and event.ydata is not None:
@@ -189,9 +205,22 @@ class BeadContactGUI():
     def run_main_loop(self):
         self.root.mainloop()
 
+    def assign_bead_contacts_to_cells(self):
+        for bead_contact in self.bead_contacts:
+            cell_index = bead_contact.return_cell_index()
+            start_frame = bead_contact.return_frame_number()
+            location = bead_contact.return_location()
+            self.cell_list[cell_index].time_of_bead_contact = start_frame
+            self.cell_list[cell_index].bead_contact_site = location
+
+
+
+    def close_gui(self):
+        self.root.destroy()
+
     def calculate_contact_position(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y, number_of_areas):
         angle = self.calculate_contact_site_angle_relative_to_center(contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y)
-        location_on_clock = self.assign_angle_to_clock(angle,number_of_areas)
+        location_on_clock = self.assign_angle_to_clock(angle, number_of_areas)
         return location_on_clock
 
     def calculate_contact_site_angle_relative_to_center(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y):
@@ -202,10 +231,12 @@ class BeadContactGUI():
         angle = (math.degrees(math.atan2(y0 - y, x0 - x)) + 180) % 360
         return angle
 
-    def assign_angle_to_clock(self, angle, number_of_areas):
-        angle_one_section = 360.0 / number_of_areas
-        location_on_clock = int(angle / angle_one_section) + 1
-        return location_on_clock + 2   # 2 as correction
+    def assign_angle_to_clock(self, angle, number_of_sections):
+        angle_one_section = 360.0 / number_of_sections
+        dartboard_area = int(angle / angle_one_section)
+        clock_list = [4,5,6,7,8,9,10,11,12,1,2,3]
+        location_on_clock = clock_list[dartboard_area]
+        return location_on_clock
 
     def return_bead_contact_information(self):
         return self.bead_contacts

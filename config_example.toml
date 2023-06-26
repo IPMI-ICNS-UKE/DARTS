@@ -3,18 +3,15 @@
 
 path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-duplicated-image.tif"
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
+
 path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-150-2900.tif"
-# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-160-1150.tif"
-# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-159-2900-1.tif"
-# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2-ab.tif"
-# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 4 - short_100_frames.tif"
+
 
 path_to_output = "results"
 excel_filename = "output.xlsx"
 
 start_frame = 0
-end_frame = 99
+end_frame = 30
 
 
 [properties]
@@ -30,14 +27,13 @@ laserpower_wavelength_1 = 0.6 # e.g. 60%, important for bleaching correction
 laserpower_wavelength_2 = 0.4 # 40%
 scale_microns_per_pixel = 3.0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
-cell_type = "CD4 positive murine T-cells"
+cell_type = "jurkat"  # ['jurkat', 'primary', 'NK']
 frames_per_second = 20.0 # how many frames are being measured per second?
 spatial_resolution = 3 # pixels
 ratio_preactivation_threshold = 1.0
 dartboard_number_of_sections = 12
 dartboard_number_of_areas_per_section = 8
-number_of_frames_to_analyse = 600
-microdomain_signal_threshold = 0.75  # needs to be adjusted to the cell type! see MATLAB script
+
 
 # TO DO Fura etc.
 
