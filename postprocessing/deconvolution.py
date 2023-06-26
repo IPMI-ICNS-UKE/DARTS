@@ -72,8 +72,8 @@ class LRDeconvolution(BaseDecon):
         channel1_deconvolved = np.empty_like(input_roi_channel1).astype(float)
         channel2_deconvolved = np.empty_like(input_roi_channel2).astype(float)
         for frame in range(input_roi_channel1.shape[0]):
-            channel1_deconvolved[frame, :, :] = restoration.richardson_lucy(input_roi_channel1[frame, :, :], psf_ch1.data, num_iter=30)
-            channel2_deconvolved[frame, :, :] = restoration.richardson_lucy(input_roi_channel2[frame, :, :], psf_ch2.data, num_iter=30)
+            channel1_deconvolved[frame, :, :] = restoration.richardson_lucy(input_roi_channel1[frame, :, :], psf_ch1.data, num_iter=4, clip=False)
+            channel2_deconvolved[frame, :, :] = restoration.richardson_lucy(input_roi_channel2[frame, :, :], psf_ch2.data, num_iter=4, clip=False)
         return channel1_deconvolved, channel2_deconvolved
 
     def give_name(self):

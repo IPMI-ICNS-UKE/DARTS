@@ -358,7 +358,6 @@ class CellTracker:
     def give_rois(self, channel1, channel2, ymax, xmax, model):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
-        Background subtraction included.
         In addition, the tuple contains the cell image data from the pandas dataframe
         [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted, cell_1_cellimage_data),
          (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted, cell_2_cellimage_data)
@@ -406,18 +405,7 @@ class CellTracker:
                                                            max_delta_y]
         return dataframe, roi_before_backgroundcor_dict
     def apply_backgroundcorrection(self, dataframe, roi_before_backgroundcor_dict):
-        """
-        Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
-        Background subtraction included.
-        In addition, the tuple contains the cell image data from the pandas dataframe
-        [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted, cell_1_cellimage_data),
-         (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted, cell_2_cellimage_data)
-         ...]
 
-        :param channel1:
-        :param channel2:
-        :return:
-        """
         roi_cell_list = []
         for particle in roi_before_backgroundcor_dict:
             [roi1, roi2, particle_dataframe_subset, max_delta_x, max_delta_y] = roi_before_backgroundcor_dict[particle]
