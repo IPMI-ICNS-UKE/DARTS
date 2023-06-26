@@ -17,7 +17,7 @@ class TDarts_GUI():
         height = 900
         # self.window.geometry("500x900")
         self.window.geometry(str(width)+"x"+str(height))
-        self.window.title("Welcome to T-DARTS")
+        self.window.title("Welcome to C-DARTS")
 
         self.frame = Frame(self.window)
         self.frame.pack()
