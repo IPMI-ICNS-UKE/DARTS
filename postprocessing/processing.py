@@ -145,11 +145,11 @@ class ImageProcessor:
             roi_after_decon_dict = {}
             for cells_for_decon in roi_before_backgroundcor_dict:
                 [roi_channel1, roi_channel2, particle_dataframe_subset,
-                 max_delta_x, max_delta_y] = roi_before_backgroundcor_dict[cells_for_decon]
+                 shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
                 roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
                                                                           self.parameters)
                 roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
-                                                         particle_dataframe_subset, max_delta_x, max_delta_y]
+                                                         particle_dataframe_subset, shifted_frame_masks]
 
             roi_list_cell_pairs = self.cell_tracker.apply_backgroundcorrection(dataframe, roi_after_decon_dict)
             self.nb_rois = len(roi_list_cell_pairs)

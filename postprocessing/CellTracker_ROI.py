@@ -435,6 +435,8 @@ class CellTracker:
 
 
         return dataframe, roi_before_backgroundcor_dict
+
+
     def apply_backgroundcorrection(self, dataframe, roi_before_backgroundcor_dict):
 
         roi_cell_list = []
