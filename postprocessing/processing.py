@@ -107,7 +107,15 @@ class ImageProcessor:
             self.deconvolution = LRDeconvolution()
         else:
             self.deconvolution = BaseDecon()
-        self.bleaching = BleachingAdditiveFit()
+
+        if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
+            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv":
+                self.bleaching = BleachingAdditiveFit()
+            else:
+                self.bleaching = None
+        else:
+            self.bleaching = None
+
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
@@ -140,7 +148,6 @@ class ImageProcessor:
 
     def select_rois(self):
         if not self.ATP_flag:
-            # offset = self.estimated_cell_diameter_in_pixels * 0.6
             dataframe, roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1,
                                                                                                  self.channel2,
                                                                                                  self.y_max, self.x_max,
@@ -316,7 +323,6 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
@@ -411,9 +417,6 @@ class ImageProcessor:
         # dartboard_generator = DartboardGenerator(self.save_path)
 
         average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-
-                                                                                   0,
-                                                                                   10,
                                                                                    self.dartboard_number_of_sections,
                                                                                    self.dartboard_number_of_areas_per_section)
 
