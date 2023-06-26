@@ -384,7 +384,6 @@ class CellTracker:
     def give_rois(self, channel1, channel2, ymax, xmax, model):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
-        Background subtraction included.
         In addition, the tuple contains the cell image data from the pandas dataframe
         [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted, cell_1_cellimage_data),
          (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted, cell_2_cellimage_data)
@@ -401,7 +400,7 @@ class CellTracker:
 
 
 
-
+        roi_before_backgroundcor_dict = {}
         roi_cell_list = []
         for particle in particle_set:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
@@ -424,16 +423,28 @@ class CellTracker:
 
                 roi1 = self.create_roi_image_series(empty_rois, image_series_channel_1_bboxes,x_shift_all,y_shift_all)
                 roi2 = self.create_roi_image_series(empty_rois, image_series_channel_2_bboxes,x_shift_all,y_shift_all)
-                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois,dataframe,particle,x_shift_all,y_shift_all)
-                roi1_background_subtracted = self.background_subtraction(shifted_frame_masks,roi1)
-                roi2_background_subtracted = self.background_subtraction(shifted_frame_masks,roi2)
-                roi_cell_list.append(
-                    (roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, shifted_frame_masks))
+
+                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois, dataframe, particle, x_shift_all,
+                                                                        y_shift_all)
+
+                roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, shifted_frame_masks]
             except Exception as E:
                 print(E)
                 print("Error Roi selection/ tracking")
                 continue
 
+
+        return dataframe, roi_before_backgroundcor_dict
+    def apply_backgroundcorrection(self, dataframe, roi_before_backgroundcor_dict):
+
+        roi_cell_list = []
+        for particle in roi_before_backgroundcor_dict:
+            [roi1, roi2, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
+
+            roi1_background_subtracted = self.background_subtraction(shifted_frame_masks, roi1)
+            roi2_background_subtracted = self.background_subtraction(shifted_frame_masks, roi2)
+
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, shifted_frame_masks))
         return roi_cell_list
 
 

@@ -12,6 +12,7 @@ from matplotlib.patches import Rectangle
 from postprocessing.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
 from postprocessing.CellTracker_ROI import CellTracker
+from postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
 from postprocessing.registration import Registration_SITK, Registration_SR
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
@@ -93,7 +94,14 @@ class ImageProcessor:
         self.cell_tracker = CellTracker()
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
-        self.decon = None
+        # ff
+        self.deconvolution_parameters = self.parameters["deconvolution"]
+        if self.deconvolution_parameters["decon"] == "TDE":
+            self.deconvolution = TDEDeconvolution()
+        elif self.deconvolution_parameters["decon"] == "LR":
+            self.deconvolution = LRDeconvolution()
+        else:
+            self.deconvolution = BaseDecon()
         self.bleaching = BleachingAdditiveFit()
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
@@ -124,13 +132,26 @@ class ImageProcessor:
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
-        self.processing_steps = [self.decon, self.bleaching]
+        self.processing_steps = [self.bleaching]
 
     def select_rois(self):
         if not self.ATP_flag:
             # offset = self.estimated_cell_diameter_in_pixels * 0.6
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max,
-                                                              self.model)
+            dataframe, roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1,
+                                                                                                 self.channel2,
+                                                                                                 self.y_max, self.x_max,
+                                                                                                 self.model)
+
+            roi_after_decon_dict = {}
+            for cells_for_decon in roi_before_backgroundcor_dict:
+                [roi_channel1, roi_channel2, particle_dataframe_subset,
+                 max_delta_x, max_delta_y] = roi_before_backgroundcor_dict[cells_for_decon]
+                roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
+                                                                          self.parameters)
+                roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
+                                                         particle_dataframe_subset, max_delta_x, max_delta_y]
+
+            roi_list_cell_pairs = self.cell_tracker.apply_backgroundcorrection(dataframe, roi_after_decon_dict)
             self.nb_rois = len(roi_list_cell_pairs)
             print("\nCalculating ratio: ")
             with alive_bar(self.nb_rois, force_tty=True) as bar:
@@ -161,7 +182,7 @@ class ImageProcessor:
                                                     self.x_max,
                                                     roi_list_cell_pairs[i][2],
                                                     roi_list_cell_pairs[i][3])
-                                                    )
+                                          )
                     bar()
         elif self.ATP_flag:
             seg_image = self.channel1[0].copy()
@@ -305,7 +326,6 @@ class ImageProcessor:
             self.define_bead_contacts()
             # self.assign_bead_contacts_to_cells(bead_contact_information)
 
-
         print("\nBleaching correction: ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for cell in self.cell_list:
@@ -338,7 +358,7 @@ class ImageProcessor:
                                                                                  self.spotHeight,
                                                                                  self.minimum_spotsize,   # lower area limit
                                                                                  20,  # upper area limit
-                                                                                 self.cell_type,)
+                                                                                 self.cell_type)
             cell.signal_data = measurement_microdomains
             self.dataframes_microdomains_list.append(measurement_microdomains)
 
@@ -362,7 +382,6 @@ class ImageProcessor:
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
         # dartboard_generator = DartboardGenerator(self.save_path)
 
-
         dartboard_data_all_frames = self.dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
                                                                                        cell.signal_data,
                                                                                        self.dartboard_number_of_sections,
@@ -372,8 +391,9 @@ class ImageProcessor:
                                                                                        cell_index)
         mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
                                                                                        self.dartboard_number_of_sections,
-                                                                                       self.dartboard_number_of_areas_per_section,
+                                                                                       self.dartboard_number_of_areas_per_section
                                                                                             )
+
 
         return mean_dartboard_data_single_cell
 
@@ -383,20 +403,20 @@ class ImageProcessor:
                                                                                   real_bead_contact_site,
                                                                                   normalized_bead_contact_site)
 
-
     def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
         # dartboard_generator = DartboardGenerator(self.save_path)
 
         average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-                                                                              self.dartboard_number_of_sections,
-                                                                              self.dartboard_number_of_areas_per_section)
 
+                                                                                   0,
+                                                                                   10,
+                                                                                   self.dartboard_number_of_sections,
+                                                                                   self.dartboard_number_of_areas_per_section)
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data,
-                                                len(dartboard_data_multiple_cells),
-                                                self.dartboard_number_of_sections,
-                                                self.dartboard_number_of_areas_per_section)
-
+                                                     len(dartboard_data_multiple_cells),
+                                                     self.dartboard_number_of_sections,
+                                                     self.dartboard_number_of_areas_per_section)
 
     def normalize_cell_shape(self, cell):
         df = cell.cell_image_data_channel_2
