@@ -133,29 +133,12 @@ class ImageProcessor:
     def select_rois(self):
         if not self.ATP_flag:
             # offset = self.estimated_cell_diameter_in_pixels * 0.6
-            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.y_max, self.x_max,
-                                                              self.model)
+            roi_list_cell_pairs = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
             self.nb_rois = len(roi_list_cell_pairs)
             print("\nCalculating ratio: ")
             with alive_bar(self.nb_rois, force_tty=True) as bar:
                 time.sleep(.005)
                 for i in range(self.nb_rois):
-                    """
-                    roi_m = [[xmin, ymin], [xmax, ymax]]
-    
-                    self.roi_minmax_list.append(roi_m)
-                    # self.roi_coord_list.append(roi_coord[i])
-    
-                    roi1 = self.channel1[slice_roi]
-                    roi2 = self.channel2[slice_roi]
-                    """
-
-                    """ # commented out for trouble shooting
-                    if self.ATP_flag:
-                        roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
-                                                                                                 self.estimated_cell_area)
-                    """
-
                     self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
                                                     ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
 
