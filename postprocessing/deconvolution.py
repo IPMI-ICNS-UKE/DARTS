@@ -7,7 +7,6 @@ import numpy as np
 
 class BaseDecon:
     def execute(self, input_roi_channel1, input_roi_channel2, parameters):
-        print(self.give_name())
         processed_roi_channel1, processed_roi_channel2 = self.deconvolve(input_roi_channel1, input_roi_channel2,
                                                                          parameters)
         return processed_roi_channel1, processed_roi_channel2

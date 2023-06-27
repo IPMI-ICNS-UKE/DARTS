@@ -20,6 +20,7 @@ from postprocessing.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveFit
 from postprocessing.Bead_Contact_GUI import BeadContactGUI
 from postprocessing.RatioToConcentrationConverter import RatioConverter
+from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ class ImageProcessor:
         self.cell_tracker = CellTracker()
         self.segmentation = SegmentationSD()
         self.ATP_image_converter = ATPImageConverter()
+        self.background_subtractor = BackgroundSubtractor()
         # ff
         self.deconvolution_parameters = self.parameters["deconvolution"]
         if self.deconvolution_parameters["decon"] == "TDE":
@@ -147,87 +149,43 @@ class ImageProcessor:
         self.processing_steps = [self.bleaching]
 
     def select_rois(self):
-        if not self.ATP_flag:
-            dataframe, roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1,
-                                                                                                 self.channel2,
-                                                                                                 self.y_max, self.x_max,
-                                                                                                 self.model)
+        roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
+        return roi_before_backgroundcor_dict
 
+    def deconvolve_cell_images(self, roi_before_backgroundcor_dict):
             roi_after_decon_dict = {}
-            for cells_for_decon in roi_before_backgroundcor_dict:
-                [roi_channel1, roi_channel2, particle_dataframe_subset,
-                 shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
-                roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
-                                                                          self.parameters)
-                roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
-                                                         particle_dataframe_subset, shifted_frame_masks]
-
-            roi_list_cell_pairs = self.cell_tracker.apply_backgroundcorrection(dataframe, roi_after_decon_dict)
-            self.nb_rois = len(roi_list_cell_pairs)
-            print("\nCalculating ratio: ")
-            with alive_bar(self.nb_rois, force_tty=True) as bar:
+            print("\n"+ self.deconvolution.give_name() + ": ")
+            with alive_bar(len(roi_before_backgroundcor_dict), force_tty=True) as bar:
                 time.sleep(.005)
-                for i in range(self.nb_rois):
-                    """
-                    roi_m = [[xmin, ymin], [xmax, ymax]]
-    
-                    self.roi_minmax_list.append(roi_m)
-                    # self.roi_coord_list.append(roi_coord[i])
-    
-                    roi1 = self.channel1[slice_roi]
-                    roi2 = self.channel2[slice_roi]
-                    """
-
-                    """ # commented out for trouble shooting
-                    if self.ATP_flag:
-                        roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
-                                                                                                 self.estimated_cell_area)
-                    """
-
-                    self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
-                                                    ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
-
-                                                    self.ATP_image_converter,
-                                                    self.ATP_flag,
-                                                    self.estimated_cell_area,
-                                                    self.x_max,
-                                                    roi_list_cell_pairs[i][2],
-                                                    roi_list_cell_pairs[i][3])
-                                          )
+                for cells_for_decon in roi_before_backgroundcor_dict:
+                    [roi_channel1, roi_channel2, particle_dataframe_subset,
+                     shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
+                    roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
+                                                                              self.parameters)
+                    roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
+                                                             particle_dataframe_subset, shifted_frame_masks]
                     bar()
-        elif self.ATP_flag:
-            seg_image = self.channel1[0].copy()
 
-            if self.ATP_flag:
-                seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image,
-                                                                                        self.estimated_cell_area)
+            return roi_after_decon_dict
 
-            self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag,
-                                                                   self.model)
-            print(self.roi_bounding_boxes)
-            self.nb_rois = len(self.roi_bounding_boxes)
-            yoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
-            xoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
+    def background_correction(self, roi_after_decon_dict):
+        roi_list_cell_pairs = self.background_subtractor.apply_backgroundcorrection(roi_after_decon_dict)
+        return roi_list_cell_pairs
 
+    def create_cell_images(self, roi_list_cell_pairs):
+        self.nb_rois = len(roi_list_cell_pairs)
+        print("\nCreating cell images: ")
+        with alive_bar(self.nb_rois, force_tty=True) as bar:
+            time.sleep(.005)
             for i in range(self.nb_rois):
-                ymin = self.roi_bounding_boxes[i][0] - yoffset
-                ymax = self.roi_bounding_boxes[i][1] + yoffset
-                xmin = self.roi_bounding_boxes[i][2] - xoffset
-                xmax = self.roi_bounding_boxes[i][3] + xoffset
-                ymin, ymax, xmin, xmax = self.correct_coordinates(ymin, ymax, xmin, xmax)
-                slice_roi = np.s_[:, int(ymin):int(ymax), int(xmin):int(xmax)]
-                roi_m = [[xmin, ymin], [xmax, ymax]]
-                self.roi_minmax_list.append(roi_m)
-                # self.roi_coord_list.append(roi_coord[i])
 
-                roi1 = self.channel1[slice_roi]
-                roi2 = self.channel2[slice_roi]
-                self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
-                                                ChannelImage(roi2, self.wl2),
-                                                self.segmentation,
-                                                self.ATP_image_converter,
-                                                self.ATP_flag,
-                                                self.estimated_cell_area))
+                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
+                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
+                                                self.x_max,
+                                                roi_list_cell_pairs[i][2],
+                                                roi_list_cell_pairs[i][3])
+                                      )
+                bar()
 
     def correct_coordinates(self, ymin, ymax, xmin, xmax):
         ymin_corrected = ymin
@@ -327,16 +285,32 @@ class ImageProcessor:
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
                                                                    "registration_framebyframe"])
-        # find the cells
-        self.select_rois()
+        # segmentation of cells, tracking
+        roi_before_backgroundcor_dict = self.select_rois()
 
+        # deconvolution
+        roi_after_deconvolution_dict = self.deconvolve_cell_images(roi_before_backgroundcor_dict)
+
+        # background correction
+        roi_list_cell_pairs = self.background_correction(roi_after_deconvolution_dict)
+
+        # cell images
+        self.create_cell_images(roi_list_cell_pairs)
 
         # bead contact, user input
         if len(self.cell_list) > 0:
             self.define_bead_contacts()
-            # self.assign_bead_contacts_to_cells(bead_contact_information)
 
-        print("\nBleaching correction: ")
+        # bleaching correction
+        self.bleaching_correction()
+
+        # generation of ratio images
+        self.generate_ratio_images()
+
+
+
+    def bleaching_correction(self):
+        print("\n" + self.bleaching.give_name() + ": ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for cell in self.cell_list:
                 time.sleep(.005)
@@ -344,12 +318,12 @@ class ImageProcessor:
                     if step is not None:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
-
-                cell.generate_ratio_image_series()
-                cell.set_ratio_range(self.min_ratio, self.max_ratio)
-
                 bar()
 
+    def generate_ratio_images(self):
+        for cell in self.cell_list:
+            cell.generate_ratio_image_series()
+            cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         if cell.bead_contact_site != 0:  # if user defined a bead contact site (in the range from 1 to 12)
