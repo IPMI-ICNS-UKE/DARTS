@@ -4,20 +4,24 @@
 path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-duplicated-image.tif"
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
 
-path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-
+# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
+path_to_input_combined = "Data/WT OKT3/170424 11.tif"
 
 path_to_output = "results"
 excel_filename = "output.xlsx"
 
 start_frame = 0
-end_frame = 30
-
+end_frame = 10
+user = "test user Y"
+experiment_name = "experiment name"
 
 [properties]
 
 # can either be "two-in-one" or "single"
 # (where in the latter, the two input channels are in separate files)
+experiment_name = "experiment name"
+used_microscope = "zeiss test microscope X "
+day_of_measurement = "2023/06/26"
 
 channel_format = "two-in-one"
 wavelength_1 = 488
@@ -25,19 +29,52 @@ wavelength_2 = 561
 # further information regarding the imaging:
 laserpower_wavelength_1 = 0.6 # e.g. 60%, important for bleaching correction
 laserpower_wavelength_2 = 0.4 # 40%
-scale_microns_per_pixel = 3.0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
+scale_microns_per_pixel = 0.0 # Maßstab/scale: Wieviele Mikrometer pro Pixel?
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
 cell_type = "jurkat"  # ['jurkat', 'primary', 'NK']
-frames_per_second = 20.0 # how many frames are being measured per second?
+frames_per_second = 3.0 # how many frames are being measured per second?
 spatial_resolution = 3 # pixels
 ratio_preactivation_threshold = 1.0
 dartboard_number_of_sections = 12
 dartboard_number_of_areas_per_section = 8
 
+bleaching_correction_in_pipeline = true
+bleaching_correction_algorithm = "additiv"
 
 # TO DO Fura etc.
-
+registration_in_pipeline = true
 registration_method = "SITK"
 registration_framebyframe = false
 
 ATP = false
+
+[deconvolution]
+deconvolution_in_pipeline = true
+decon = "LR"
+lambda = 0.5
+lambda_t = 0.5
+
+[psf]
+
+# accepted types: "confocal" and "widefield"
+type = "confocal"
+
+# wavelengths channel1
+lambdaEx_ch1 = 488
+lambdaEm_ch1 = 520
+
+# wavelengths channel2
+lambdaEx_ch2 = 488
+lambdaEm_ch2 = 600
+
+numAper = 1.4
+magObj = 100
+rindexObj = 1.518
+ccdSize =  6450
+dz = 0
+nslices = 1
+depth = 0
+rindexSp = 1.518
+nor = 0
+xysize = 150
+

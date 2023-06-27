@@ -1,12 +1,26 @@
 
 
+
 class BackgroundSubtractor():
     def __init__(self):
         pass
 
+    def apply_backgroundcorrection(self, roi_before_backgroundcor_dict):
+
+        roi_cell_list = []
+        for particle in roi_before_backgroundcor_dict:
+            [roi1, roi2, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
+
+            roi1_background_subtracted = self.delete_background(shifted_frame_masks, roi1)
+            roi2_background_subtracted = self.delete_background(shifted_frame_masks, roi2)
+
+            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,
+                                  shifted_frame_masks))
+        return roi_cell_list
+
     def delete_background(self, frame_masks, cell_image_series):
         """
-        Delete background in a given cell image series by using a series of boolean masks
+        Set background in a given cell image series to zero using a series of boolean masks
         :param frame_masks:
         :param cell_image_series:
         :return: the background subtracted image series
@@ -31,5 +45,4 @@ class BackgroundSubtractor():
 
     def subtract_background(self, frame_masks, cell_image_series):
         pass
-
 

@@ -1,6 +1,7 @@
 import tkinter
 from tkinter import (Tk, ttk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
-                     Checkbutton, Radiobutton, IntVar,StringVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton)
+                     Checkbutton, Radiobutton, IntVar,StringVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton,
+                     DISABLED, NORMAL)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
 import tomlkit
@@ -16,7 +17,7 @@ class TDarts_GUI():
         height = 900
         # self.window.geometry("500x900")
         self.window.geometry(str(width)+"x"+str(height))
-        self.window.title("Welcome to T-DARTS")
+        self.window.title("Welcome to C-DARTS")
 
         self.frame = Frame(self.window)
         self.frame.pack()
@@ -107,13 +108,13 @@ class TDarts_GUI():
         self.label_cell_type = Label(self.properties_of_measurement_frame, text="Cell type:  ")
         self.label_cell_type.grid(row=4, column=0, sticky="W")
         cell_types = [
-            "CD4+ primary murine cells",
-            "Jurkat cells",
-            "more cell types will follow..."
+            "jurkat",
+            "primary",
+            "NK"
         ]
-        cell_type = StringVar(self.properties_of_measurement_frame)
-        cell_type.set(cell_types[0])
-        self.option_menu_cell_types = OptionMenu(self.properties_of_measurement_frame, cell_type, *cell_types)
+        self.cell_type = StringVar(self.properties_of_measurement_frame)
+        self.cell_type.set(cell_types[0])
+        self.option_menu_cell_types = OptionMenu(self.properties_of_measurement_frame, self.cell_type, *cell_types)
         self.option_menu_cell_types.grid(row=4, column=1, sticky="W")
 
         # time
@@ -121,7 +122,7 @@ class TDarts_GUI():
         self.label_time.grid(row=5, column=0, sticky="W")
         self.entry_time = Entry(self.properties_of_measurement_frame)
         self.entry_time.grid(row=5, column=1, sticky="W")
-        self.entry_time.insert(0, "dd/mm/yyyy")
+        self.entry_time.insert(0, "yyyy/mm/dd")
         self.entry_time.bind("<1>", self.pick_date)
 
         ###################################################################################
@@ -132,10 +133,10 @@ class TDarts_GUI():
 
         self.label_channel_alignment = Label(self.label_processing_pipeline, text="Channel alignment (SITK):  ")
         self.label_channel_alignment.grid(column=1, row=12, sticky="W")
-        self.channel_alignment_in_pipeline = IntVar(value=1)
+        self.channel_alignment_in_pipeline = IntVar(value=0)
         self.check_box_channel_alignment = Checkbutton(self.label_processing_pipeline,
                                                        variable=self.channel_alignment_in_pipeline,
-                                                       onvalue=1, offvalue=0, )
+                                                       onvalue=1, offvalue=0, command=self.update_settings_for_registration)
         self.check_box_channel_alignment.grid(column=2, row=12, sticky="W")
 
         self.label_frame_by_frame_registration = Label(self.label_processing_pipeline,
@@ -147,22 +148,48 @@ class TDarts_GUI():
                                                                  onvalue=1, offvalue=0, )
         self.check_box_frame_by_frame_registration.grid(column=4, row=12, sticky="W")
 
-        self.label_deconvolution = Label(self.label_processing_pipeline, text="TDEntropy Deconvolution:  ")
+        self.label_deconvolution = Label(self.label_processing_pipeline, text="Deconvolution:  ")
         self.label_deconvolution.grid(column=1, row=13, sticky="W")
         self.deconvolution_in_pipeline = IntVar()
         self.check_box_deconvolution_in_pipeline = Checkbutton(self.label_processing_pipeline,
                                                                variable=self.deconvolution_in_pipeline,
-                                                               onvalue=1, offvalue=0, )
+                                                               onvalue=1,
+                                                               offvalue=0,
+                                                               command=self.update_deconvolution)
         self.check_box_deconvolution_in_pipeline.grid(column=2, row=13, sticky="W")
+
+        deconvolution_algorithms = [
+            "LR",
+            "TDE"
+        ]
+        self.deconvolution_algorithm = StringVar(self.label_processing_pipeline)
+        self.deconvolution_algorithm.set(deconvolution_algorithms[0])
+        self.option_menu_deconvolution = OptionMenu(self.label_processing_pipeline, self.deconvolution_algorithm, *deconvolution_algorithms)
+        self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_deconvolution.grid(column=3, row=13, sticky="W")
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
         self.label_bleaching_correction.grid(column=1, row=14, sticky="W")
         self.bleaching_correction_in_pipeline = IntVar()
         self.check_box_bleaching_correction = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.bleaching_correction_in_pipeline,
-                                                          onvalue=1, offvalue=0, )
+                                                          onvalue=1,
+                                                          offvalue=0,
+                                                          command=self.update_bleaching_correction)
         self.check_box_bleaching_correction.grid(column=2, row=14, sticky="W")
 
+        bleaching_correction_algorithms = [
+            "additiv"
+        ]
+
+        self.bleaching_correction_algorithm = StringVar(self.label_processing_pipeline)
+        self.bleaching_correction_algorithm.set(bleaching_correction_algorithms[0])
+        self.option_menu_bleaching_correction = OptionMenu(self.label_processing_pipeline, self.bleaching_correction_algorithm,
+                                                    *bleaching_correction_algorithms)
+        self.option_menu_bleaching_correction.config(state=DISABLED)
+        self.option_menu_bleaching_correction.grid(column=3, row=14, sticky="W")
+
+        """
         self.label_dartboard_projection = Label(self.label_processing_pipeline, text="Dartboard projection:  ")
         self.label_dartboard_projection.grid(column=1, row=15, sticky="W")
         self.dartboard_projection_in_pipeline = IntVar()
@@ -170,19 +197,20 @@ class TDarts_GUI():
                                                           variable=self.dartboard_projection_in_pipeline,
                                                           onvalue=1, offvalue=0, )
         self.check_box_dartboard_projection.grid(column=2, row=15, sticky="W")
+        """
 
         self.label_further_information = Label(self.label_processing_pipeline, text="Further information:  ")
-        self.label_further_information.grid(column=1, row=16, sticky="W")
+        self.label_further_information.grid(column=1, row=15, sticky="W")
 
         self.label_user = Label(self.label_processing_pipeline, text="User:  ")
-        self.label_user.grid(column=2, row=16, sticky="W")
+        self.label_user.grid(column=2, row=15, sticky="W")
         self.text_user = Text(self.label_processing_pipeline, height=1, width=30)
-        self.text_user.grid(column=3, row=16, sticky="W")
+        self.text_user.grid(column=3, row=15, sticky="W")
 
         self.label_experiment_name = Label(self.label_processing_pipeline, text="Name of experiment:  ")
-        self.label_experiment_name.grid(column=1, row=17, sticky="W")
+        self.label_experiment_name.grid(column=1, row=16, sticky="W")
         self.text_experiment_name = Text(self.label_processing_pipeline, height=1, width=30)
-        self.text_experiment_name.grid(column=2, row=17, sticky="W")
+        self.text_experiment_name.grid(column=2, row=16, sticky="W")
 
         ##################################################################################
 
@@ -227,7 +255,7 @@ class TDarts_GUI():
                             foreground="gray",
                             normalbackground="black",
                             selectedbackground="gray",
-                            date_pattern="dd/mm/y")
+                            date_pattern="y/mm/dd")
         calendar.place(x=0, y=0)
         submit_button = Button(date_window, text='submit', command=self.grab_date)
         submit_button.place(x=80, y=190)
@@ -238,27 +266,29 @@ class TDarts_GUI():
             image_config = self.convert_image_config_to_number(config["properties"]["channel_format"])
             self.selected_image_configuration.set(image_config)
 
-            if self.get_image_configuration() == "single":
+            if config["properties"]["channel_format"] == "single":
                 channel1_path = config["inputoutput"]["path_to_input_channel1"]
                 self.text_single_path_to_input_channel1.delete(1.0, END)
                 self.text_single_path_to_input_channel1.insert(1.0, channel1_path)
                 channel2_path = config["inputoutput"]["path_to_input_channel2"]
                 self.text_single_path_to_input_channel2.delete(1.0, END)
                 self.text_single_path_to_input_channel2.insert(1.0, channel2_path)
-            elif self.get_image_configuration() == "two-in-one":
+            elif config["properties"]["channel_format"] == "two-in-one":
                 combined_path = config["inputoutput"]["path_to_input_combined"]
                 self.text_path_to_input_combined.delete(1.0, END)
                 self.text_path_to_input_combined.insert(1.0, combined_path)
 
-            #TODO
             self.text_user.delete(1.0, END)
             self.text_user.insert(1.0, config["inputoutput"]["user"])
 
             self.text_experiment_name.delete(1.0, END)
-            self.text_experiment_name.insert(1.0, config["inputoutput"]["experiment_name"])
+            self.text_experiment_name.insert(1.0, config["properties"]["experiment_name"])
 
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["inputoutput"]["path_to_output"])
+
+            self.text_microscope.delete(1.0, END)
+            self.text_microscope.insert(1.0, config["properties"]["used_microscope"])
 
             self.text_scale.delete(1.0, END)
             self.text_scale.insert(1.0, config["properties"]["scale_microns_per_pixel"])
@@ -269,28 +299,29 @@ class TDarts_GUI():
             self.text_resolution.delete(1.0, END)
             self.text_resolution.insert(1.0, config["properties"]["spatial_resolution"])
 
-            self.check_box_channel_alignment.select()
-            frame_by_frame_registration = config["properties"]["registration_framebyframe"] == "true"
-            if frame_by_frame_registration:
+            if config["properties"]["registration_in_pipeline"]:
+                self.check_box_channel_alignment.select()
+
+            if config["properties"]["registration_framebyframe"]:
                 self.check_box_frame_by_frame_registration.select()
 
-    def pick_date(self, event):
-        global calendar, date_window
+            if config["deconvolution"]["deconvolution_in_pipeline"]:
+                self.check_box_deconvolution_in_pipeline.select()
+                self.deconvolution_algorithm.set(config["deconvolution"]["decon"])
+                self.option_menu_deconvolution.config(state=NORMAL)
 
-        date_window = Toplevel()
-        date_window.grab_set()
-        date_window.title("Choose date of measurement")
-        date_window.geometry('270x220+590+370')
-        calendar = Calendar(date_window,
-                            selectmode="day",
-                            background="white",
-                            foreground="gray",
-                            normalbackground="white",
-                            selectedbackground="gray",
-                            date_pattern="dd/mm/y")
-        calendar.place(x=0, y=0)
-        submit_button = Button(date_window, text='submit', command=self.grab_date)
-        submit_button.place(x=80, y=190)
+            if config["properties"]["bleaching_correction_in_pipeline"]:
+                self.check_box_bleaching_correction.select()
+                self.bleaching_correction_algorithm.set(config["properties"]["bleaching_correction_algorithm"])
+                self.option_menu_bleaching_correction.config(state=NORMAL)
+
+            self.cell_type.set(config["properties"]["cell_type"])
+            self.entry_time.delete(0, END)
+            self.entry_time.insert(0, config["properties"]["day_of_measurement"])
+
+
+
+
 
     def grab_date(self):
         self.entry_time.delete(0, END)
@@ -304,6 +335,25 @@ class TDarts_GUI():
     def cancel(self):
         self.window.destroy()
         quit()
+
+    def update_settings_for_registration(self):
+        if self.channel_alignment_in_pipeline.get() == 0:
+            self.frame_by_frame_registration.set(0)
+            self.check_box_frame_by_frame_registration.config(state=DISABLED)
+        elif self.channel_alignment_in_pipeline.get() == 1:
+            self.check_box_frame_by_frame_registration.config(state=NORMAL)
+
+    def update_deconvolution(self):
+        if self.deconvolution_in_pipeline.get() == 0:
+            self.option_menu_deconvolution.config(state=DISABLED)
+        elif self.deconvolution_in_pipeline.get() == 1:
+            self.option_menu_deconvolution.config(state=NORMAL)
+
+    def update_bleaching_correction(self):
+        if self.bleaching_correction_in_pipeline.get() == 0:
+            self.option_menu_bleaching_correction.config(state=DISABLED)
+        elif self.bleaching_correction_in_pipeline.get() == 1:
+            self.option_menu_bleaching_correction.config(state=NORMAL)
 
     def get_image_configuration(self):
         if self.selected_image_configuration.get() == 1:
@@ -372,13 +422,25 @@ class TDarts_GUI():
             config["inputoutput"]["path_to_output"] = self.text_results_directory.get("1.0", "end-1c")
 
             config["inputoutput"]["user"] = str(self.text_user.get("1.0", "end-1c"))
-            config["inputoutput"]["experiment_name"] = str(self.text_experiment_name.get("1.0", "end-1c"))
+            config["inputoutput"]["experiment_name"] = self.text_experiment_name.get("1.0", "end-1c")
+
+            config["properties"]["used_microscope"] = str(self.text_microscope.get("1.0", "end-1c"))
+            config["properties"]["day_of_measurement"] = str(self.entry_time.get())
 
             config["properties"]["scale_microns_per_pixel"] = float(self.text_scale.get("1.0", END))
             config["properties"]["frames_per_second"] = float(self.text_fps.get("1.0", END))
             config["properties"]["spatial_resolution"] = int(self.text_resolution.get("1.0", END))
-            config["properties"]["registration_framebyframe"] = str(self.frame_by_frame_registration.get() == 1).lower()
 
+            config["properties"]["registration_framebyframe"] = self.frame_by_frame_registration.get() == 1
+            config["properties"]["registration_in_pipeline"] = self.channel_alignment_in_pipeline.get() == 1
+
+            config["deconvolution"]["deconvolution_in_pipeline"] = self.deconvolution_in_pipeline.get() == 1
+            config["deconvolution"]["decon"] = str(self.deconvolution_algorithm.get())
+
+            config["properties"]["bleaching_correction_algorithm"] = self.bleaching_correction_algorithm.get()
+            config["properties"]["bleaching_correction_in_pipeline"] = self.bleaching_correction_in_pipeline.get() == 1
+
+            config["properties"]["cell_type"] = self.cell_type.get()
 
 
             # write back
@@ -393,5 +455,3 @@ class TDarts_GUI():
 
     def close_window(self):
         self.window.destroy()
-
-# empty commit

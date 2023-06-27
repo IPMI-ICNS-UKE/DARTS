@@ -39,3 +39,6 @@ class BleachingAdditiveFit (BaseBleaching):
                     copy[y][x] += value
 
         return copy
+
+    def give_name(self):
+        return "Bleaching correction (additive)"

@@ -125,7 +125,7 @@ class CellTracker:
 
     def generate_shifted_frame_masks(self, empty_rois, dataframe, particle, x_shift_all, y_shift_all):
         """
-        Creates a series of boolean masks for a cell image series
+        Creates a series of boolean masks for a cell image series so that background subtraction can be performed later.
         """
         frame_number = len(empty_rois)
         label_container = empty_rois.copy()
@@ -294,6 +294,18 @@ class CellTracker:
                                                 int(roi_list[frame][0]):int(roi_list[frame][1])]
         return cropped_image
 
+    def apply_masks_on_image_series(self, image_series, masks):
+        """
+        Applies a mask onto an image and sets a copy of the image series to 0 if the mask is True at that position
+        :param image_series:
+        :param masks:
+        :return:
+        """
+        copy = image_series.copy()
+        for frame in range(len(image_series)):
+            copy[frame][masks[frame]] = 0
+        return copy
+
     def cell_completely_in_image(self, roi_list_particle, ymax, xmax):
         """
         Checks, if the cell is completely in the image in each frame
@@ -361,23 +373,20 @@ class CellTracker:
     def give_rois(self, channel1, channel2, model):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
-
         In addition, the tuple contains the cell image data from the pandas dataframe
-        [(cell_1_roi1, cell_1_roi2, cell_1_cellimage_data),
-         (cell_2_roi1, cell_2_roi2, cell_2_cellimage_data)
+        [(cell_1_roi1, cell_1_roi1, cell_1_cellimage_data),
+         (cell_2_roi1, cell_2_roi1, cell_2_cellimage_data)
          ...]
 
         :param channel1:
         :param channel2:
         :return:
         """
-
         dataframe, particle_set = self.generate_trajectory(channel2, model)
 
-        roi_cell_list = []
+        roi_before_backgroundcor_dict = {}
         for particle in particle_set:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
-            coords_list = self.get_coords_list_for_particle(particle, dataframe)
             bbox_list = self.get_bboxes_list(particle, dataframe)
             centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle,dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
@@ -396,14 +405,16 @@ class CellTracker:
 
                 roi1 = self.create_roi_image_series(empty_rois, image_series_channel_1_bboxes,x_shift_all,y_shift_all)
                 roi2 = self.create_roi_image_series(empty_rois, image_series_channel_2_bboxes,x_shift_all,y_shift_all)
-                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois,dataframe,particle,x_shift_all,y_shift_all)
-                roi_cell_list.append(
-                    (roi1, roi2, particle_dataframe_subset, shifted_frame_masks))
+
+                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois, dataframe, particle, x_shift_all,
+                                                                        y_shift_all)
+
+                roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, shifted_frame_masks]
             except Exception as E:
                 print(E)
                 print("Error Roi selection/ tracking")
                 continue
 
-        return roi_cell_list
+        return roi_before_backgroundcor_dict
 
 
