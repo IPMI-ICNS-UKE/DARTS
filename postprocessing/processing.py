@@ -98,9 +98,9 @@ class ImageProcessor:
         # self.roi_coord_list = []
         self.roi_bounding_boxes = []
         self.cell_tracker = CellTracker()
-        self.segmentation = SegmentationSD()
+        self.segmentation = SegmentationSD(self.model)
         self.ATP_image_converter = ATPImageConverter()
-        self.background_subtractor = BackgroundSubtractor()
+        self.background_subtractor = BackgroundSubtractor(self.segmentation)
         # ff
         self.deconvolution_parameters = self.parameters["deconvolution"]
         if self.deconvolution_parameters["decon"] == "TDE":
@@ -168,9 +168,20 @@ class ImageProcessor:
 
             return roi_after_decon_dict
 
-    def background_correction(self, roi_after_decon_dict):
-        roi_list_cell_pairs = self.background_subtractor.apply_backgroundcorrection(roi_after_decon_dict)
+    def clear_outside_of_cells(self, roi_after_decon_dict):
+        roi_list_cell_pairs = self.background_subtractor.clear_outside_of_cells(roi_after_decon_dict)
         return roi_list_cell_pairs
+
+    def background_subtraction(self, channel_1, channel_2):
+        print("\nBackground subtraction: ")
+        with alive_bar(1, force_tty=True) as bar:
+            time.sleep(.005)
+            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
+            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
+            bar()
+
+        return channel_1_background_subtracted, channel_2_background_subtracted
+
 
     def create_cell_images(self, roi_list_cell_pairs):
         self.nb_rois = len(roi_list_cell_pairs)
@@ -285,14 +296,17 @@ class ImageProcessor:
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
                                                                    "registration_framebyframe"])
+        # background subtraction
+        self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
+
         # segmentation of cells, tracking
-        roi_before_backgroundcor_dict = self.select_rois()
+        cell_rois = self.select_rois()
 
         # deconvolution
-        roi_after_deconvolution_dict = self.deconvolve_cell_images(roi_before_backgroundcor_dict)
+        roi_after_deconvolution_dict = self.deconvolve_cell_images(cell_rois)
 
-        # background correction
-        roi_list_cell_pairs = self.background_correction(roi_after_deconvolution_dict)
+        # clear area outside the cells
+        roi_list_cell_pairs = self.clear_outside_of_cells(roi_after_deconvolution_dict)
 
         # cell images
         self.create_cell_images(roi_list_cell_pairs)
