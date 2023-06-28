@@ -122,7 +122,7 @@ class TDarts_GUI():
         self.label_time.grid(row=5, column=0, sticky="W")
         self.entry_time = Entry(self.properties_of_measurement_frame)
         self.entry_time.grid(row=5, column=1, sticky="W")
-        self.entry_time.insert(0, "yyyy/mm/dd")
+        self.entry_time.insert(0, "yyyy-mm-dd")
         self.entry_time.bind("<1>", self.pick_date)
 
         ###################################################################################
@@ -255,7 +255,7 @@ class TDarts_GUI():
                             foreground="gray",
                             normalbackground="black",
                             selectedbackground="gray",
-                            date_pattern="y/mm/dd")
+                            date_pattern="y-mm-dd")
         calendar.place(x=0, y=0)
         submit_button = Button(date_window, text='submit', command=self.grab_date)
         submit_button.place(x=80, y=190)
@@ -376,13 +376,16 @@ class TDarts_GUI():
 
         if (chosen_image_configuration == "single"):
             filename_channel1 = fd.askopenfilename()
+            self.text_single_path_to_input_channel1.delete('1.0', END)
             self.text_single_path_to_input_channel1.insert(1.0, filename_channel1)
             filename_channel2 = fd.askopenfilename()
+            self.text_single_path_to_input_channel2.delete('1.0', END)
             self.text_single_path_to_input_channel2.insert(1.0, filename_channel2)
             self.text_path_to_input_combined.delete('1.0', END)
 
         elif (chosen_image_configuration == "two-in-one"):
             filename_combined = fd.askopenfilename()
+            self.text_path_to_input_combined.delete('1.0', END)
             self.text_path_to_input_combined.insert(1.0, filename_combined)
             self.text_single_path_to_input_channel1.delete('1.0', END)
             self.text_single_path_to_input_channel2.delete('1.0', END)

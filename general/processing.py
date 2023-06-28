@@ -8,6 +8,8 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
+import ntpath
+import os
 
 from general.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
@@ -58,6 +60,7 @@ class ImageProcessor:
         if self.parameters["properties"]["channel_format"] == "two-in-one":
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
             self.image = cut_image_frames(self.image, start, end)
+            self.file_name = ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -88,7 +91,13 @@ class ImageProcessor:
             self.spotHeight = 72
 
         self.frame_number = len(self.channel1)
-        self.save_path = self.parameters["inputoutput"]["path_to_output"]
+
+        self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
+        self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
+        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        self.results_folder = self.parameters["inputoutput"]["path_to_output"]
+        self.save_path = self.parameters["inputoutput"]["path_to_output"] + '/' + self.measurement_name
+
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
         self.excluded_cells_list = []
@@ -133,12 +142,18 @@ class ImageProcessor:
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
 
-
+        self.excel_file_name = self.measurement_name + '_' + self.parameters["inputoutput"]["excel_filename"]
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-                                                                self.parameters["inputoutput"]["excel_filename"],
+                                                                self.excel_file_name,
                                                                 self.frames_per_second,
                                                                 self.ratio_converter)
-        self.dartboard_generator = DartboardGenerator(self.save_path, self.frames_per_second)
+
+
+        self.dartboard_generator = DartboardGenerator(self.save_path,
+                                                      self.frames_per_second,
+                                                      self.measurement_name,
+                                                      self.experiment_name,
+                                                      self.results_folder)
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
         else:
@@ -375,7 +390,7 @@ class ImageProcessor:
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
 
 
-    def generate_average_dartboard_data_per_second_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
+    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
         # generate cumualted dartboard data for one cell
         cumulated_dartboard_data_all_frames = self.dartboard_generator.cumulate_dartboard_data_multiple_frames(cell.frame_number,
                                                                                        cell.signal_data,
@@ -402,12 +417,14 @@ class ImageProcessor:
                                                                                   real_bead_contact_site,
                                                                                   normalized_bead_contact_site)
 
-    def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
-        average_dartboard_data_per_second_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(dartboard_data_multiple_cells,
-                                                                                   self.dartboard_number_of_sections,
-                                                                                   self.dartboard_number_of_areas_per_section)
+    def generate_average_and_save_dartboard_multiple_cells(self, number_of_cells, dartboard_data_multiple_cells):
+        average_dartboard_data_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(number_of_cells,
+                                                                                                                 dartboard_data_multiple_cells,
+                                                                                                                 self.dartboard_number_of_sections,
+                                                                                                                 self.dartboard_number_of_areas_per_section,
+                                                                                                                 save_dartboard_data=True)
 
-        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_per_second_multiple_cells,
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_multiple_cells,
                                                      len(dartboard_data_multiple_cells),
                                                      self.dartboard_number_of_sections,
                                                      self.dartboard_number_of_areas_per_section)
@@ -468,20 +485,19 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
+            save_path = self.save_path + '/cell_image_processed_files/'
+            os.makedirs(save_path, exist_ok=True)
+            io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_1' + '.tif', cell.give_image_channel1(),
                       check_contrast=False)
 
-            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
+            io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_2' + '.tif', cell.give_image_channel2(),
                       check_contrast=False)
-            # format = 'tiff'
-            # import imageio
-            # imageio.imwrite(f'image.{format}', cell.give_image_channel2())
-            # import tifffile
-            # tifffile.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif',cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):
+        save_path = self.save_path + '/cell_image_ratio_files/'
+        os.makedirs(save_path, exist_ok=True)
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
+            io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1

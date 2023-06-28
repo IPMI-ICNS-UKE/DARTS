@@ -5,11 +5,13 @@ import matplotlib as mpl
 import os
 
 
-
 class DartboardGenerator:
-    def __init__(self, save_path, frame_rate):
+    def __init__(self, save_path, frame_rate, measurement_name, experiment_name, results_folder):
         self.save_path = save_path
         self.frames_per_second = frame_rate
+        self.measurement_name = measurement_name
+        self.experiment_name = experiment_name
+        self.results_folder = results_folder
 
     def distance_from_pixel_to_center(self, signal_coords, centroid_coords):
         delta_x = float(centroid_coords[0]) - signal_coords[0]
@@ -111,28 +113,35 @@ class DartboardGenerator:
         return cumulated_dartboard_data
 
 
-    def calculate_mean_dartboard_multiple_cells(self, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section):
+    def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, save_dartboard_data=True):
         if(len(dartboard_area_frequencies)>0):
-            """
-            if start_frame is not None and end_frame is not None:
-                sub_list = dartboard_area_frequencies[start_frame:end_frame+1]
-            else:
-                sub_list = dartboard_area_frequencies
-            """
-            number_of_cells = float(len(dartboard_area_frequencies))
+            number_of_cells = float(number_of_cells)
             average_array = np.zeros_like(dartboard_area_frequencies[0]).astype(float)
             for array in dartboard_area_frequencies:
                 average_array = np.add(average_array, array)
             average_array = np.divide(average_array, number_of_cells)
+            if save_dartboard_data:
+                self.save_dartboard_data_multiple_cells_to_computer(average_array, number_of_cells)
             return average_array
         else:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
             return average_array
 
+    def save_dartboard_data_multiple_cells_to_computer(self, average_array, number_of_cells):
+        directory = self.save_path + '/Dartboards/dartboard_data/'
+        os.makedirs(directory, exist_ok=True)
+
+        directory_for_general_dartboard = self.results_folder + '/' + self.experiment_name + '_average_dartboard_data_arrays'
+        os.makedirs(directory_for_general_dartboard, exist_ok=True)
+
+        np.save(directory + self.measurement_name + '_average_dartboard_data_' + str(int(number_of_cells)) + '_cells', average_array)
+
+        np.save(directory_for_general_dartboard + '/' + self.measurement_name + '_average_dartboard_data_' + str(int(number_of_cells)) + '_cells',
+                average_array)
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site, normalized_bead_contact_site):
         difference = real_bead_contact_site - normalized_bead_contact_site
-        return self.rotate_dartboard_data_counterclockwise(average_dartboard_data,difference)
+        return self.rotate_dartboard_data_counterclockwise(average_dartboard_data, difference)
 
     def rotate_dartboard_data_counterclockwise(self, dartboard_data, n):
         dartboard_data_copy = dartboard_data.copy()
@@ -194,7 +203,7 @@ class DartboardGenerator:
         ax.set_yticks([])
         ax.axis("off")
 
-        image_identifier = "Activity map (" + str(number_of_cells) + " cell[s] )" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
+        image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
         plt.title(image_identifier)
 
         sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap, norm=normalized_color)
@@ -211,8 +220,7 @@ class DartboardGenerator:
                     verticalalignment='bottom',
                     )
 
-
-        directory = self.save_path + '/Dartboard_plots/cell_number_' + image_identifier + '/'
+        directory = self.save_path + '/Dartboards/Dartboard_plots/'
         if not os.path.exists(directory):
             os.makedirs(directory)
 
