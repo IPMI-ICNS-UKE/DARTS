@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-import skimage.measure
 
 
 class DartboardGenerator:
@@ -32,7 +31,7 @@ class DartboardGenerator:
         y = signal_coords[1]
 
         angle = (math.degrees(math.atan2(-(y0 - y), x0 - x)) + 180) % 360
-        print("angle", str(angle))
+
         return angle
 
     def assign_angle_to_dartboard_section(self, angle, number_of_sections):

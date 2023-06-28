@@ -166,7 +166,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run program.')
     parser.add_argument('--no-gui', dest='gui', action='store_false',
                         help='run without graphical interface')
-    parser.set_defaults(gui=False)
+    parser.set_defaults(gui=True)
 
     args = parser.parse_args()
 

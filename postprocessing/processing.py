@@ -80,8 +80,13 @@ class ImageProcessor:
 
         self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
         self.cell_type = self.parameters["properties"]["cell_type"]
-        self.frame_number = len(self.channel1)
+        self.spotHeight = None
+        if self.cell_type == 'primary':
+            self.spotHeight = 112.5
+        elif self.cell_type == 'jurkat':
+            self.spotHeight = 72
 
+        self.frame_number = len(self.channel1)
         self.save_path = self.parameters["inputoutput"]["path_to_output"]
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
@@ -102,7 +107,15 @@ class ImageProcessor:
             self.deconvolution = LRDeconvolution()
         else:
             self.deconvolution = BaseDecon()
-        self.bleaching = BleachingAdditiveFit()
+
+        if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
+            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv":
+                self.bleaching = BleachingAdditiveFit()
+            else:
+                self.bleaching = None
+        else:
+            self.bleaching = None
+
         self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
@@ -112,7 +125,6 @@ class ImageProcessor:
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
         self.ratio_converter = RatioConverter()
-        self.spotHeight = 64  # 64µM
         self.minimum_spotsize = 4
         self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         self.min_ratio = 0.1
@@ -137,7 +149,6 @@ class ImageProcessor:
 
     def select_rois(self):
         if not self.ATP_flag:
-            # offset = self.estimated_cell_diameter_in_pixels * 0.6
             dataframe, roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1,
                                                                                                  self.channel2,
                                                                                                  self.y_max, self.x_max,
@@ -146,11 +157,11 @@ class ImageProcessor:
             roi_after_decon_dict = {}
             for cells_for_decon in roi_before_backgroundcor_dict:
                 [roi_channel1, roi_channel2, particle_dataframe_subset,
-                 max_delta_x, max_delta_y] = roi_before_backgroundcor_dict[cells_for_decon]
+                 shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
                 roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
                                                                           self.parameters)
                 roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
-                                                         particle_dataframe_subset, max_delta_x, max_delta_y]
+                                                         particle_dataframe_subset, shifted_frame_masks]
 
             roi_list_cell_pairs = self.cell_tracker.apply_backgroundcorrection(dataframe, roi_after_decon_dict)
             self.nb_rois = len(roi_list_cell_pairs)
@@ -313,7 +324,6 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
-
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
@@ -411,9 +421,6 @@ class ImageProcessor:
         # dartboard_generator = DartboardGenerator(self.save_path)
 
         average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-
-                                                                                   0,
-                                                                                   10,
                                                                                    self.dartboard_number_of_sections,
                                                                                    self.dartboard_number_of_areas_per_section)
 
