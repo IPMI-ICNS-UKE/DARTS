@@ -144,18 +144,7 @@ class CellTracker:
 
         return boolean_mask
 
-    def background_subtraction(self, frame_masks, cell_image_series):
-        """
-        Subtract background in a given cell image series by using a series of boolean masks
-        :param frame_masks:
-        :param cell_image_series:
-        :return: the background subtracted image series
-        """
-        frame_number = len(cell_image_series)
-        copy = cell_image_series.copy()
-        for frame in range(frame_number):
-            copy[frame] = self.apply_masks_on_image_series(cell_image_series[frame], frame_masks[frame])
-        return copy
+
 
     def get_images_inside_bboxes (self, dataframe, particle):
         """
@@ -381,30 +370,23 @@ class CellTracker:
         return x_shift_all, y_shift_all
 
 
-    def give_rois(self, channel1, channel2, ymax, xmax, model):
+    def give_rois(self, channel1, channel2, model):
         """
         Finds cells in two given channel image series and returns a list of the corresponding cropped cell image series.
         In addition, the tuple contains the cell image data from the pandas dataframe
-        [(cell_1_roi1_background_subtracted, cell_1_roi1_background_subtracted, cell_1_cellimage_data),
-         (cell_2_roi1_background_subtracted, cell_2_roi1_background_subtracted, cell_2_cellimage_data)
+        [(cell_1_roi1, cell_1_roi1, cell_1_cellimage_data),
+         (cell_2_roi1, cell_2_roi1, cell_2_cellimage_data)
          ...]
 
         :param channel1:
         :param channel2:
         :return:
         """
-
-        # print("Get rois")
-
         dataframe, particle_set = self.generate_trajectory(channel2, model)
 
-
-
         roi_before_backgroundcor_dict = {}
-        roi_cell_list = []
         for particle in particle_set:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
-            coords_list = self.get_coords_list_for_particle(particle, dataframe)
             bbox_list = self.get_bboxes_list(particle, dataframe)
             centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle,dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
@@ -434,19 +416,6 @@ class CellTracker:
                 continue
 
 
-        return dataframe, roi_before_backgroundcor_dict
-
-
-    def apply_backgroundcorrection(self, dataframe, roi_before_backgroundcor_dict):
-
-        roi_cell_list = []
-        for particle in roi_before_backgroundcor_dict:
-            [roi1, roi2, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
-
-            roi1_background_subtracted = self.background_subtraction(shifted_frame_masks, roi1)
-            roi2_background_subtracted = self.background_subtraction(shifted_frame_masks, roi2)
-
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset, shifted_frame_masks))
-        return roi_cell_list
+        return roi_before_backgroundcor_dict
 
 

@@ -10,7 +10,7 @@ import timeit
 from stardist.models import StarDist2D
 import argparse
 
-from postprocessing.processing import ImageProcessor
+from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 
 
@@ -55,7 +55,8 @@ def main(gui_enabled):
 
     savepath = parameters['inputoutput']['path_to_output'] + '/normalization/'
     os.makedirs(savepath, exist_ok=True)
-    normalized_dartboard_data_multiple_cells = []
+
+    normalized_dartboard_data_per_second_multiple_cells = []
 
     print("\n")
     log_and_print(message="Processing now continues with: ", level=logging.INFO, logger=logger)
@@ -110,16 +111,16 @@ def main(gui_enabled):
 
                     db_start = timeit.default_timer()
                     if cell.bead_contact_site != 0:
-                        average_dartboard_data_single_cell = Processor.generate_average_dartboard_data_single_cell(centroid_coords_list,
+                        average_dartboard_data_per_second_single_cell = Processor.generate_average_dartboard_data_per_second_single_cell(centroid_coords_list,
                                                                                                          cell,
                                                                                                          radii_after_normalization,
                                                                                                          i)
-                        normalized_dartboard_data_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_single_cell,
+                        normalized_dartboard_data_per_second_single_cell = Processor.normalize_average_dartboard_data_one_cell(average_dartboard_data_per_second_single_cell,
                                                                                                                   cell.bead_contact_site,
                                                                                                                   2)
 
 
-                        normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+                        normalized_dartboard_data_per_second_multiple_cells.append(normalized_dartboard_data_per_second_single_cell)
 
                     db_took = (timeit.default_timer() - db_start) * 1000.0
                     db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
@@ -138,7 +139,7 @@ def main(gui_enabled):
 
     try:
         db_start = timeit.default_timer()
-        Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_multiple_cells)
+        Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_per_second_multiple_cells)
         db_took = (timeit.default_timer() - db_start) * 1000.0
         db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
         print("\n")
