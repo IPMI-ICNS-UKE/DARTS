@@ -117,6 +117,7 @@ class ImageProcessor:
         self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         self.min_ratio = 0.1
         self.max_ratio = 2.0
+        self.median_filter_kernel = self.parameters["properties"]["median_filter_kernel"]
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
 
 
@@ -334,8 +335,11 @@ class ImageProcessor:
                     if step is not None:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
-
+                if self.deconvolution_parameters["decon"] == "LR":
+                    cell.medianfilter_ignore_zeroes("dual", self.median_filter_kernel)
                 cell.generate_ratio_image_series()
+                if self.deconvolution_parameters["decon"] == "LR":
+                    cell.medianfilter_ignore_zeroes("ratio", self.median_filter_kernel)
                 cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
                 bar()
@@ -491,3 +495,6 @@ class ImageProcessor:
         for cell in self.cell_list:
             io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1
+
+
+

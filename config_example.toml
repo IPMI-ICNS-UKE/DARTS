@@ -42,6 +42,8 @@ registration_framebyframe = false
 
 ATP = false
 
+median_filter_kernel = 3
+
 [deconvolution]
 
 decon = "LR"

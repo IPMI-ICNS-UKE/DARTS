@@ -241,6 +241,41 @@ class CellImage:
         self.ratio = np.nan_to_num(ratio_image)
         return self.ratio
 
+    def medianfilter_ignore_zeroes(self, channel, kernel):
+        """"
+        Apply a medianfilter on either the channels or the ratio image;
+        Pixelvalues of zeroes are excluded in median calculation
+        """
+        filtered_image_list = []
+        if channel == "dual":
+            images = [np.copy(self.channel1.return_image()), np.copy(self.channel2.return_image())]
+        elif channel == "ratio":
+            images = [self.ratio]
+        for image in images:
+            filtered_image = np.copy(image)
+            frames, columns, rows = image.shape
+            for frame in range(frames):
+                for column in range(columns):
+                    for row in range(rows):
+                        if image[frame, column, row] <= 1e-6 :
+                            continue
+                        half_window = kernel // 2
+                        start_row = row - half_window
+                        end_row = start_row + kernel
+                        start_col = column - half_window
+                        end_col = start_col + kernel
+                        window = image[frame, max(0, start_col):min(columns, end_col),
+                                 max(0, start_row):min(rows, end_row)]
+                        nonzero_values = window[window > 1e-6]
+                        filtered_value = np.median(nonzero_values)
+                        filtered_image[frame, column, row] = filtered_value
+            filtered_image_list.append(filtered_image)
+
+        if channel == "dual":
+            self.channel1.set_image(filtered_image_list[0])
+            self.channel2.set_image(filtered_image_list[1])
+        elif channel == "ratio":
+            self.ratio = filtered_image_list[0]
 
 
 
