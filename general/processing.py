@@ -323,8 +323,14 @@ class ImageProcessor:
         # bleaching correction
         self.bleaching_correction()
 
+        # first median filter
+        self.medianfilter("channels")
+
         # generation of ratio images
         self.generate_ratio_images()
+
+        # second median filter
+        self.medianfilter("ratio")
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
@@ -335,12 +341,6 @@ class ImageProcessor:
                     if step is not None:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
-                if self.deconvolution_parameters["decon"] == "LR":
-                    cell.medianfilter_ignore_zeroes("dual", self.median_filter_kernel)
-                cell.generate_ratio_image_series()
-                if self.deconvolution_parameters["decon"] == "LR":
-                    cell.medianfilter_ignore_zeroes("ratio", self.median_filter_kernel)
-                cell.set_ratio_range(self.min_ratio, self.max_ratio)
                 bar()
 
     def generate_ratio_images(self):
@@ -499,5 +499,42 @@ class ImageProcessor:
             io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1
 
-
-
+    def medianfilter(self, channel):
+       """"
+        Apply a medianfilter on either the channels or the ratio image;
+        Pixelvalues of zeroes are excluded in median calculation
+        """
+       for cell in self.cell_list:
+            if channel == "channel":
+                window = np.ones(self.median_filter_kernel, self.median_filter_kernel)
+                filtered_image_list = []
+                channel_image_list = [cell.give_image_channel1, cell.give_image_channel2]
+                for channel_image in channel_image_list:
+                    filtered_image = np.empty_like(channel_image)
+                    for frame in channel_image.shape[0]:
+                        filtered_image = skimage.filters.median(cell.give_image_channel1, footprint=window)
+                    filtered_image_list.append(filtered_image)
+                cell.set_image_channel1(filtered_image_list[0])
+                cell.set_image_channel2(filtered_image_list[1])
+            elif channel == "ratio":
+                kernel = self.median_filter_kernel
+                half_window = kernel // 2
+                images = [cell.ratio]
+                for image in images:
+                    filtered_image = np.copy(image)
+                    frames, columns, rows = image.shape
+                    for frame in range(frames):
+                        for column in range(columns):
+                            for row in range(rows):
+                                if image[frame, column, row] <= 1e-6 :
+                                    continue
+                                start_row = row - half_window
+                                end_row = start_row + kernel
+                                start_col = column - half_window
+                                end_col = start_col + kernel
+                                window = image[frame, max(0, start_col):min(columns, end_col),
+                                         max(0, start_row):min(rows, end_row)]
+                                nonzero_values = window[window > 1e-6]
+                                filtered_value = np.median(nonzero_values)
+                                filtered_image[frame, column, row] = filtered_value
+                cell.ratio =filtered_image
