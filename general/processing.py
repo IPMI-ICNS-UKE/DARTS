@@ -9,17 +9,17 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 
-from postprocessing.cell import CellImage, ChannelImage
+from general.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
 from postprocessing.CellTracker_ROI import CellTracker
 from postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
 from postprocessing.registration import Registration_SITK, Registration_SR
-from postprocessing import HotSpotDetection
-from postprocessing.shapenormalization import ShapeNormalization
-from postprocessing.Dartboard import DartboardGenerator
+from analysis import HotSpotDetection
+from shapenormalization.shapenormalization import ShapeNormalization
+from analysis.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveNoFit
-from postprocessing.Bead_Contact_GUI import BeadContactGUI
-from postprocessing.RatioToConcentrationConverter import RatioConverter
+from analysis.Bead_Contact_GUI import BeadContactGUI
+from general.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
 logger = logging.getLogger(__name__)

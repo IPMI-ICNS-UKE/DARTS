@@ -10,7 +10,7 @@ import timeit
 from stardist.models import StarDist2D
 import argparse
 
-from postprocessing.processing import ImageProcessor
+from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 
 
