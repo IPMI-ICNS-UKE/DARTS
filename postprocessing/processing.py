@@ -17,7 +17,7 @@ from postprocessing.registration import Registration_SITK, Registration_SR
 from postprocessing import HotSpotDetection
 from postprocessing.shapenormalization import ShapeNormalization
 from postprocessing.Dartboard import DartboardGenerator
-from postprocessing.Bleaching import BleachingAdditiveFit
+from postprocessing.Bleaching import BleachingAdditiveNoFit
 from postprocessing.Bead_Contact_GUI import BeadContactGUI
 from postprocessing.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
@@ -111,8 +111,8 @@ class ImageProcessor:
             self.deconvolution = BaseDecon()
 
         if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
-            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv":
-                self.bleaching = BleachingAdditiveFit()
+            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv no fit":
+                self.bleaching = BleachingAdditiveNoFit()
             else:
                 self.bleaching = None
         else:
@@ -138,7 +138,7 @@ class ImageProcessor:
                                                                 self.parameters["inputoutput"]["excel_filename"],
                                                                 self.frames_per_second,
                                                                 self.ratio_converter)
-        self.dartboard_generator = DartboardGenerator(self.save_path)
+        self.dartboard_generator = DartboardGenerator(self.save_path, self.frames_per_second)
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
         else:
@@ -321,8 +321,6 @@ class ImageProcessor:
         # generation of ratio images
         self.generate_ratio_images()
 
-
-
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
@@ -377,23 +375,26 @@ class ImageProcessor:
         self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
 
 
-    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
-        # dartboard_generator = DartboardGenerator(self.save_path)
-
-        dartboard_data_all_frames = self.dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
+    def generate_average_dartboard_data_per_second_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
+        # generate cumualted dartboard data for one cell
+        cumulated_dartboard_data_all_frames = self.dartboard_generator.cumulate_dartboard_data_multiple_frames(cell.frame_number,
                                                                                        cell.signal_data,
                                                                                        self.dartboard_number_of_sections,
                                                                                        self.dartboard_number_of_areas_per_section,
                                                                                        centroid_coords_list,
                                                                                        radii_after_normalization,
                                                                                        cell_index)
-        mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
-                                                                                       self.dartboard_number_of_sections,
-                                                                                       self.dartboard_number_of_areas_per_section
-                                                                                            )
+        # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds
+        start_frame = cell.time_of_bead_contact
+        frame_number_cell = cell.frame_number
+        if start_frame + self.duration_of_measurement > frame_number_cell + 1:
+            end_frame = frame_number_cell - 1
+        else:
+            end_frame = start_frame + self.duration_of_measurement
+        duration_of_measurement_in_seconds = (end_frame-start_frame)/self.frames_per_second  # e.g. 600 Frames, 40fps => 15s
+        average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames, duration_of_measurement_in_seconds)
 
-
-        return mean_dartboard_data_single_cell
+        return average_dartboard_data_per_second
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
                                                   normalized_bead_contact_site):
@@ -402,13 +403,11 @@ class ImageProcessor:
                                                                                   normalized_bead_contact_site)
 
     def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
-        # dartboard_generator = DartboardGenerator(self.save_path)
-
-        average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
+        average_dartboard_data_per_second_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(dartboard_data_multiple_cells,
                                                                                    self.dartboard_number_of_sections,
                                                                                    self.dartboard_number_of_areas_per_section)
 
-        self.dartboard_generator.save_dartboard_plot(average_dartboard_data,
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_per_second_multiple_cells,
                                                      len(dartboard_data_multiple_cells),
                                                      self.dartboard_number_of_sections,
                                                      self.dartboard_number_of_areas_per_section)
