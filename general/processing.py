@@ -89,6 +89,8 @@ class ImageProcessor:
             self.spotHeight = 112.5
         elif self.cell_type == 'jurkat':
             self.spotHeight = 72
+        elif self.cell_type == 'NK':
+            self.spotHeight = 72  # needs to be checked
 
         self.frame_number = len(self.channel1)
 
@@ -161,7 +163,7 @@ class ImageProcessor:
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
-        self.processing_steps = [self.bleaching]
+        # self.processing_steps = [self.bleaching]
 
     def select_rois(self):
         roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
@@ -341,10 +343,8 @@ class ImageProcessor:
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for cell in self.cell_list:
                 time.sleep(.005)
-                for step in self.processing_steps:
-                    if step is not None:
-                        time.sleep(.005)
-                        step.run(cell, self.parameters, self.model)
+                if self.bleaching is not None:
+                    self.bleaching.run(cell, self.parameters, self.model)
                 bar()
 
     def generate_ratio_images(self):

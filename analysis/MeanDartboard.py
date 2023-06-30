@@ -31,8 +31,8 @@ frame_rate = 40
 day_of_measurement = "2023-06-26"
 experiment_name = "WT OKT3"
 measurement_name = day_of_measurement + '_' + experiment_name
-
-create_average_dartboard_for_n_cells(2, average_dartboard_data_list, save_path, frame_rate, measurement_name, experiment_name, save_path)
+number_of_cells = 14
+create_average_dartboard_for_n_cells(number_of_cells, average_dartboard_data_list, save_path, frame_rate, measurement_name, experiment_name, save_path)
 
 
 

@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import colors
 import matplotlib as mpl
 import os
 
@@ -156,8 +157,10 @@ class DartboardGenerator:
         dartboard_data_per_second = dartboard_data
         dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 
-        red_sequential_cmap = plt.get_cmap("Reds")
+        # red_sequential_cmap = plt.get_cmap("Reds")
         normalized_color = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        white_to_red_cmap = colors.LinearSegmentedColormap.from_list("", ["white","red"])
+
 
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
@@ -176,7 +179,7 @@ class DartboardGenerator:
         for i in range(5):
             number_of_signals_in_bulls_eye += np.sum(dartboard_data_per_frame[i])
         normalized_number_of_signals = number_of_signals_in_bulls_eye / area_ratio_bulls_eye_dartboard_area
-        color = red_sequential_cmap(normalized_color(normalized_number_of_signals))
+        color = white_to_red_cmap(normalized_color(normalized_number_of_signals))
 
         ax.bar(x=0, height=5, width=2 * np.pi,
                bottom=0,
@@ -191,7 +194,7 @@ class DartboardGenerator:
                 if (dartboard_area>4):
                     number_of_signals_in_current_dartboard_area = dartboard_data_per_frame[dartboard_area][i]
 
-                    color = red_sequential_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
+                    color = white_to_red_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
 
                     ax.bar(x=center_angle, height=height_of_annuli[dartboard_area], width=2 * np.pi / (number_of_sections), bottom=bottom_list[dartboard_area],
                            color=color, edgecolor='white')
@@ -204,9 +207,9 @@ class DartboardGenerator:
         ax.axis("off")
 
         image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
-        plt.title(image_identifier)
+        plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)')
 
-        sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap, norm=normalized_color)
+        sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
         sm.set_clim(vmin=vmin, vmax=vmax)
         plt.colorbar(sm, pad=0.3, label="number of hotspots per frame and area unit; averaged over cells")
 
