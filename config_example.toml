@@ -4,8 +4,8 @@
 path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-duplicated-image.tif"
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
 
-# path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "Data/WT OKT3/170424 11.tif"
+path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
+
 
 path_to_output = "results"
 excel_filename = "microdomain_data.xlsx"
