@@ -10,7 +10,7 @@ import timeit
 from stardist.models import StarDist2D
 import argparse
 
-from postprocessing.processing import ImageProcessor
+from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 
 
@@ -53,8 +53,9 @@ def main(gui_enabled):
     Processor = ImageProcessor(parameters, model)
     Processor.start_postprocessing()
 
-    savepath = parameters['inputoutput']['path_to_output'] + '/normalization/'
+    savepath = Processor.save_path + '/normalization/'
     os.makedirs(savepath, exist_ok=True)
+
     normalized_dartboard_data_multiple_cells = []
 
     print("\n")
@@ -79,8 +80,8 @@ def main(gui_enabled):
                               level=logging.ERROR, logger=logger)
                 continue
 
-            io.imsave(savepath+"cellratio"+str(i)+".tif", ratio)
-            io.imsave(savepath+"cellratio_normalized"+str(i)+".tif", normalized_ratio)
+            io.imsave(savepath + Processor.measurement_name + "_cellratio_"+str(i+1)+".tif", ratio)
+            io.imsave(savepath + Processor.measurement_name + "_cellratio_normalized_"+str(i+1)+".tif", normalized_ratio)
 
 
             try:
@@ -138,7 +139,7 @@ def main(gui_enabled):
 
     try:
         db_start = timeit.default_timer()
-        Processor.generate_average_and_save_dartboard_multiple_cells(normalized_dartboard_data_multiple_cells)
+        Processor.generate_average_and_save_dartboard_multiple_cells(len(normalized_dartboard_data_multiple_cells),normalized_dartboard_data_multiple_cells)
         db_took = (timeit.default_timer() - db_start) * 1000.0
         db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
         print("\n")

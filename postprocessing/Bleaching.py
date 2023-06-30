@@ -18,7 +18,7 @@ class BaseBleaching:
 class BleachingExponentialFit (BaseBleaching):
     pass
 
-class BleachingAdditiveFit (BaseBleaching):
+class BleachingAdditiveNoFit(BaseBleaching):
 
     def run(self, cell, parameters, model):
         bleaching_channel_copy = cell.give_image_channel2()
@@ -39,3 +39,6 @@ class BleachingAdditiveFit (BaseBleaching):
                     copy[y][x] += value
 
         return copy
+
+    def give_name(self):
+        return "Bleaching correction (additive no fit)"

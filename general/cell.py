@@ -11,22 +11,18 @@ from statistics import mean
 
 
 class CellImage:
-    def __init__(self, roi1, roi2, atp_image_converter, atp_flag, estimated_cell_area, xmax, cell_image_data_channel_2=None, frame_masks=None):
+    def __init__(self, roi1, roi2, width, cell_image_data_channel_2=None, frame_masks=None):
         self.channel1 = roi1
         self.channel2 = roi2
         self.steps_executed = []
         self.ratio = None
         self.cell_image_registrator = None
-        self.atp_image_converter = atp_image_converter
-        self.atp_flag = atp_flag
-        self.estimated_cell_area = estimated_cell_area
         self.more_than_one_trajectory = False
         self.processing_flag = None
         self.cell_image_data_channel_2 = cell_image_data_channel_2
-        self.width = xmax
         self.frame_masks = frame_masks
         self.frame_number = len(self.channel1.return_image())
-
+        self.width = width
         self.normalized_ratio_image = None
 
         self.cell_is_preactivated = False
@@ -198,29 +194,28 @@ class CellImage:
 
 
     def channel_registration(self):
-        if not self.atp_flag:
-            print("Here comes the channel registration")
-            channel_1_image = self.channel1.return_image().copy()
-            channel_2_image = self.channel2.return_image().copy()
+        print("Here comes the channel registration")
+        channel_1_image = self.channel1.return_image().copy()
+        channel_2_image = self.channel2.return_image().copy()
 
-            """
-            # if the cell image represents a cell loaded with the ATP-sensor, then each frame of each cell image needs to be
-            # modified so that frame-by-frame-segmentation works
-            if self.atp_flag:
-                for frame in range(len(channel_1_image)):
-                    channel_1_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_1_image[frame],
-                                                                                                     self.estimated_cell_area)
-                    channel_2_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_2_image[frame],
-                                                                                                     self.estimated_cell_area)
-            """
+        """
+        # if the cell image represents a cell loaded with the ATP-sensor, then each frame of each cell image needs to be
+        # modified so that frame-by-frame-segmentation works
+        if self.atp_flag:
+            for frame in range(len(channel_1_image)):
+                channel_1_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_1_image[frame],
+                                                                                                 self.estimated_cell_area)
+                channel_2_image[frame] = self.atp_image_converter.prepare_ATP_image_for_segmentation_registration(channel_2_image[frame],
+                                                                                                 self.estimated_cell_area)
+        """
 
-            trajectory_channel_1 = self.cell_image_registrator.generate_trajectory(channel_1_image)
-            trajectory_channel_2 = self.cell_image_registrator.generate_trajectory(channel_2_image)
-            x_offset, y_offset = self.cell_image_registrator.calculate_channel_offset(trajectory_channel_1,
-                                                                                      trajectory_channel_2)
-            x_offset, y_offset = round(x_offset), round(y_offset)
+        trajectory_channel_1 = self.cell_image_registrator.generate_trajectory(channel_1_image)
+        trajectory_channel_2 = self.cell_image_registrator.generate_trajectory(channel_2_image)
+        x_offset, y_offset = self.cell_image_registrator.calculate_channel_offset(trajectory_channel_1,
+                                                                                  trajectory_channel_2)
+        x_offset, y_offset = round(x_offset), round(y_offset)
 
-            self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
+        self.channel2.set_image(self.cell_image_registrator.shift_channel(self.channel2.return_image(), x_offset, y_offset))
 
     def give_thresholded_image(self, frame, threshold):
         thresholded_frame = frame > threshold
@@ -240,12 +235,6 @@ class CellImage:
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = np.nan_to_num(ratio_image)
         return self.ratio
-
-
-
-
-
-
 
 
 class ChannelImage:

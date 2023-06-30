@@ -122,7 +122,7 @@ class TDarts_GUI():
         self.label_time.grid(row=5, column=0, sticky="W")
         self.entry_time = Entry(self.properties_of_measurement_frame)
         self.entry_time.grid(row=5, column=1, sticky="W")
-        self.entry_time.insert(0, "yyyy/mm/dd")
+        self.entry_time.insert(0, "yyyy-mm-dd")
         self.entry_time.bind("<1>", self.pick_date)
 
         ###################################################################################
@@ -179,7 +179,7 @@ class TDarts_GUI():
         self.check_box_bleaching_correction.grid(column=2, row=14, sticky="W")
 
         bleaching_correction_algorithms = [
-            "additiv"
+            "additiv no fit"
         ]
 
         self.bleaching_correction_algorithm = StringVar(self.label_processing_pipeline)
@@ -213,7 +213,7 @@ class TDarts_GUI():
         self.text_experiment_name.grid(column=2, row=16, sticky="W")
 
         ##################################################################################
-
+        """
         # create Properties of measurement frame to place our grid
         self.processing_mode_frame = LabelFrame(self.frame, text="Choose a processing mode:", labelanchor="n")
         self.processing_mode_frame.grid(row=4, column=0, sticky="news", padx=20, pady=20)
@@ -224,23 +224,23 @@ class TDarts_GUI():
                                                          variable=self.processing_mode)
         self.processing_mode_radiobutton_1.grid(row=0, column=0, sticky="W")
         self.processing_mode_radiobutton_2.grid(row=1, column=0, sticky="W")
-
+        """
         #################################################################################
 
         # settings from last run
         self.settings_from_last_run = Button(self.window, text="Use settings from last run",
                                              command=self.get_settings_from_last_run)
-        self.settings_from_last_run.place(x=0.09 * width, y=0.9 * height)
+        self.settings_from_last_run.place(x=0.09 * width, y=0.8 * height)
         # self.settings_from_last_run.grid(row=5, column=0, sticky="W")
 
         ################################################################################
 
         # start button
         self.start_button = Button(self.window, text='Start', command=self.start_analysis)
-        self.start_button.place(x=0.5 * width, y=0.9 * height)
+        self.start_button.place(x=0.5 * width, y=0.8 * height)
 
         self.cancel_button = Button(self.window, text='Cancel', command=self.cancel)
-        self.cancel_button.place(x=0.8 * width, y=0.9 * height)
+        self.cancel_button.place(x=0.8 * width, y=0.8 * height)
 
     def pick_date(self, event):
         global calendar, date_window
@@ -255,7 +255,7 @@ class TDarts_GUI():
                             foreground="gray",
                             normalbackground="black",
                             selectedbackground="gray",
-                            date_pattern="y/mm/dd")
+                            date_pattern="y-mm-dd")
         calendar.place(x=0, y=0)
         submit_button = Button(date_window, text='submit', command=self.grab_date)
         submit_button.place(x=80, y=190)
@@ -376,13 +376,16 @@ class TDarts_GUI():
 
         if (chosen_image_configuration == "single"):
             filename_channel1 = fd.askopenfilename()
+            self.text_single_path_to_input_channel1.delete('1.0', END)
             self.text_single_path_to_input_channel1.insert(1.0, filename_channel1)
             filename_channel2 = fd.askopenfilename()
+            self.text_single_path_to_input_channel2.delete('1.0', END)
             self.text_single_path_to_input_channel2.insert(1.0, filename_channel2)
             self.text_path_to_input_combined.delete('1.0', END)
 
         elif (chosen_image_configuration == "two-in-one"):
             filename_combined = fd.askopenfilename()
+            self.text_path_to_input_combined.delete('1.0', END)
             self.text_path_to_input_combined.insert(1.0, filename_combined)
             self.text_single_path_to_input_channel1.delete('1.0', END)
             self.text_single_path_to_input_channel2.delete('1.0', END)

@@ -17,12 +17,12 @@ from postprocessing.membrane_detection import MembraneDetector
 
 
 class SegmentationSD:
-    def __init__(self):
-        pass
+    def __init__(self, model):
+        self.model = model
 
-    def give_coord(self, input_image, estimated_cell_area, atp_flag, model):
+    def give_coord(self, input_image, estimated_cell_area, atp_flag):
         # gives list of all coordinates of ROIS in channel1
-        seg_img, output_specs = model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2,
+        seg_img, output_specs = self.model.predict_instances(normalize(input_image), prob_thresh=0.6, nms_thresh=0.2,
                                                         predict_kwargs=dict(verbose=False))
         regions = measure.regionprops(seg_img)
         cell_images_bounding_boxes = []
@@ -40,8 +40,8 @@ class SegmentationSD:
         regions_areas = [r.area for r in regions]
         return statistics.median(regions_areas)
 
-    def stardist_segmentation_in_frame(self, image_frame, model):
-        img_labels, img_details = model.predict_instances(normalize(image_frame), predict_kwargs=dict(verbose=False))
+    def stardist_segmentation_in_frame(self, image_frame):
+        img_labels, img_details = self.model.predict_instances(normalize(image_frame), predict_kwargs=dict(verbose=False))
         return img_labels
 
 

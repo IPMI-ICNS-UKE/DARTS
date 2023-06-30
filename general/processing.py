@@ -8,18 +8,21 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
+import ntpath
+import os
 
-from postprocessing.cell import CellImage, ChannelImage
+from general.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
 from postprocessing.CellTracker_ROI import CellTracker
 from postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
 from postprocessing.registration import Registration_SITK, Registration_SR
-from postprocessing import HotSpotDetection
-from postprocessing.shapenormalization import ShapeNormalization
-from postprocessing.Dartboard import DartboardGenerator
-from postprocessing.Bleaching import BleachingAdditiveFit
-from postprocessing.Bead_Contact_GUI import BeadContactGUI
-from postprocessing.RatioToConcentrationConverter import RatioConverter
+from analysis import HotSpotDetection
+from shapenormalization.shapenormalization import ShapeNormalization
+from analysis.Dartboard import DartboardGenerator
+from postprocessing.Bleaching import BleachingAdditiveNoFit
+from analysis.Bead_Contact_GUI import BeadContactGUI
+from general.RatioToConcentrationConverter import RatioConverter
+from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +60,7 @@ class ImageProcessor:
         if self.parameters["properties"]["channel_format"] == "two-in-one":
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
             self.image = cut_image_frames(self.image, start, end)
+            self.file_name = ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -87,7 +91,13 @@ class ImageProcessor:
             self.spotHeight = 72
 
         self.frame_number = len(self.channel1)
-        self.save_path = self.parameters["inputoutput"]["path_to_output"]
+
+        self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
+        self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
+        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        self.results_folder = self.parameters["inputoutput"]["path_to_output"]
+        self.save_path = self.parameters["inputoutput"]["path_to_output"] + '/' + self.measurement_name
+
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
         self.excluded_cells_list = []
@@ -97,8 +107,9 @@ class ImageProcessor:
         # self.roi_coord_list = []
         self.roi_bounding_boxes = []
         self.cell_tracker = CellTracker()
-        self.segmentation = SegmentationSD()
+        self.segmentation = SegmentationSD(self.model)
         self.ATP_image_converter = ATPImageConverter()
+        self.background_subtractor = BackgroundSubtractor(self.segmentation)
         # ff
         self.deconvolution_parameters = self.parameters["deconvolution"]
         if self.deconvolution_parameters["decon"] == "TDE":
@@ -109,8 +120,8 @@ class ImageProcessor:
             self.deconvolution = BaseDecon()
 
         if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
-            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv":
-                self.bleaching = BleachingAdditiveFit()
+            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv no fit":
+                self.bleaching = BleachingAdditiveNoFit()
             else:
                 self.bleaching = None
         else:
@@ -131,12 +142,18 @@ class ImageProcessor:
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
 
-
+        self.excel_file_name = self.measurement_name + '_' + self.parameters["inputoutput"]["excel_filename"]
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-                                                                self.parameters["inputoutput"]["excel_filename"],
+                                                                self.excel_file_name,
                                                                 self.frames_per_second,
                                                                 self.ratio_converter)
-        self.dartboard_generator = DartboardGenerator(self.save_path)
+
+
+        self.dartboard_generator = DartboardGenerator(self.save_path,
+                                                      self.frames_per_second,
+                                                      self.measurement_name,
+                                                      self.experiment_name,
+                                                      self.results_folder)
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
         else:
@@ -147,87 +164,54 @@ class ImageProcessor:
         self.processing_steps = [self.bleaching]
 
     def select_rois(self):
-        if not self.ATP_flag:
-            dataframe, roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1,
-                                                                                                 self.channel2,
-                                                                                                 self.y_max, self.x_max,
-                                                                                                 self.model)
+        roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
+        return roi_before_backgroundcor_dict
 
+    def deconvolve_cell_images(self, roi_before_backgroundcor_dict):
             roi_after_decon_dict = {}
-            for cells_for_decon in roi_before_backgroundcor_dict:
-                [roi_channel1, roi_channel2, particle_dataframe_subset,
-                 shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
-                roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
-                                                                          self.parameters)
-                roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
-                                                         particle_dataframe_subset, shifted_frame_masks]
-
-            roi_list_cell_pairs = self.cell_tracker.apply_backgroundcorrection(dataframe, roi_after_decon_dict)
-            self.nb_rois = len(roi_list_cell_pairs)
-            print("\nCalculating ratio: ")
-            with alive_bar(self.nb_rois, force_tty=True) as bar:
+            print("\n"+ self.deconvolution.give_name() + ": ")
+            with alive_bar(len(roi_before_backgroundcor_dict), force_tty=True) as bar:
                 time.sleep(.005)
-                for i in range(self.nb_rois):
-                    """
-                    roi_m = [[xmin, ymin], [xmax, ymax]]
-    
-                    self.roi_minmax_list.append(roi_m)
-                    # self.roi_coord_list.append(roi_coord[i])
-    
-                    roi1 = self.channel1[slice_roi]
-                    roi2 = self.channel2[slice_roi]
-                    """
-
-                    """ # commented out for trouble shooting
-                    if self.ATP_flag:
-                        roi1, roi2 = self.ATP_image_converter.segment_membrane_in_ATP_image_pair(roi1, roi2,
-                                                                                                 self.estimated_cell_area)
-                    """
-
-                    self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
-                                                    ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
-
-                                                    self.ATP_image_converter,
-                                                    self.ATP_flag,
-                                                    self.estimated_cell_area,
-                                                    self.x_max,
-                                                    roi_list_cell_pairs[i][2],
-                                                    roi_list_cell_pairs[i][3])
-                                          )
+                for cells_for_decon in roi_before_backgroundcor_dict:
+                    [roi_channel1, roi_channel2, particle_dataframe_subset,
+                     shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
+                    roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
+                                                                              self.parameters)
+                    roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
+                                                             particle_dataframe_subset, shifted_frame_masks]
                     bar()
-        elif self.ATP_flag:
-            seg_image = self.channel1[0].copy()
 
-            if self.ATP_flag:
-                seg_image = self.ATP_image_converter.prepare_ATP_image_for_segmentation(seg_image,
-                                                                                        self.estimated_cell_area)
+            return roi_after_decon_dict
 
-            self.roi_bounding_boxes = self.segmentation.give_coord(seg_image, self.estimated_cell_area, self.ATP_flag,
-                                                                   self.model)
-            print(self.roi_bounding_boxes)
-            self.nb_rois = len(self.roi_bounding_boxes)
-            yoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
-            xoffset = round(0.6 * self.estimated_cell_diameter_in_pixels)
+    def clear_outside_of_cells(self, roi_after_decon_dict):
+        roi_list_cell_pairs = self.background_subtractor.clear_outside_of_cells(roi_after_decon_dict)
+        return roi_list_cell_pairs
 
+    def background_subtraction(self, channel_1, channel_2):
+        print("\nBackground subtraction: ")
+        with alive_bar(1, force_tty=True) as bar:
+            time.sleep(.005)
+            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
+            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
+            bar()
+
+        return channel_1_background_subtracted, channel_2_background_subtracted
+
+
+    def create_cell_images(self, roi_list_cell_pairs):
+        self.nb_rois = len(roi_list_cell_pairs)
+        print("\nCreating cell images: ")
+        with alive_bar(self.nb_rois, force_tty=True) as bar:
+            time.sleep(.005)
             for i in range(self.nb_rois):
-                ymin = self.roi_bounding_boxes[i][0] - yoffset
-                ymax = self.roi_bounding_boxes[i][1] + yoffset
-                xmin = self.roi_bounding_boxes[i][2] - xoffset
-                xmax = self.roi_bounding_boxes[i][3] + xoffset
-                ymin, ymax, xmin, xmax = self.correct_coordinates(ymin, ymax, xmin, xmax)
-                slice_roi = np.s_[:, int(ymin):int(ymax), int(xmin):int(xmax)]
-                roi_m = [[xmin, ymin], [xmax, ymax]]
-                self.roi_minmax_list.append(roi_m)
-                # self.roi_coord_list.append(roi_coord[i])
 
-                roi1 = self.channel1[slice_roi]
-                roi2 = self.channel2[slice_roi]
-                self.cell_list.append(CellImage(ChannelImage(roi1, self.wl1),
-                                                ChannelImage(roi2, self.wl2),
-                                                self.segmentation,
-                                                self.ATP_image_converter,
-                                                self.ATP_flag,
-                                                self.estimated_cell_area))
+                self.cell_list.append(CellImage(ChannelImage(roi_list_cell_pairs[i][0], self.wl1),
+                                                ChannelImage(roi_list_cell_pairs[i][1], self.wl2),
+                                                self.x_max,
+                                                roi_list_cell_pairs[i][2],
+                                                roi_list_cell_pairs[i][3])
+                                      )
+                bar()
 
     def correct_coordinates(self, ymin, ymax, xmin, xmax):
         ymin_corrected = ymin
@@ -327,16 +311,33 @@ class ImageProcessor:
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
                                                                    "registration_framebyframe"])
-        # find the cells
-        self.select_rois()
+        # background subtraction
+        self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
+        # segmentation of cells, tracking
+        cell_rois = self.select_rois()
+
+        # deconvolution
+        roi_after_deconvolution_dict = self.deconvolve_cell_images(cell_rois)
+
+        # clear area outside the cells
+        roi_list_cell_pairs = self.clear_outside_of_cells(roi_after_deconvolution_dict)
+
+        # cell images
+        self.create_cell_images(roi_list_cell_pairs)
 
         # bead contact, user input
         if len(self.cell_list) > 0:
             self.define_bead_contacts()
-            # self.assign_bead_contacts_to_cells(bead_contact_information)
 
-        print("\nBleaching correction: ")
+        # bleaching correction
+        self.bleaching_correction()
+
+        # generation of ratio images
+        self.generate_ratio_images()
+
+    def bleaching_correction(self):
+        print("\n" + self.bleaching.give_name() + ": ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for cell in self.cell_list:
                 time.sleep(.005)
@@ -344,12 +345,12 @@ class ImageProcessor:
                     if step is not None:
                         time.sleep(.005)
                         step.run(cell, self.parameters, self.model)
-
-                cell.generate_ratio_image_series()
-                cell.set_ratio_range(self.min_ratio, self.max_ratio)
-
                 bar()
 
+    def generate_ratio_images(self):
+        for cell in self.cell_list:
+            cell.generate_ratio_image_series()
+            cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         if cell.bead_contact_site != 0:  # if user defined a bead contact site (in the range from 1 to 12)
@@ -390,22 +391,25 @@ class ImageProcessor:
 
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
-        # dartboard_generator = DartboardGenerator(self.save_path)
-
-        dartboard_data_all_frames = self.dartboard_generator.calculate_signals_in_dartboard_each_frame(cell.frame_number,
+        # generate cumualted dartboard data for one cell
+        cumulated_dartboard_data_all_frames = self.dartboard_generator.cumulate_dartboard_data_multiple_frames(cell.frame_number,
                                                                                        cell.signal_data,
                                                                                        self.dartboard_number_of_sections,
                                                                                        self.dartboard_number_of_areas_per_section,
                                                                                        centroid_coords_list,
                                                                                        radii_after_normalization,
                                                                                        cell_index)
-        mean_dartboard_data_single_cell = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_all_frames,
-                                                                                       self.dartboard_number_of_sections,
-                                                                                       self.dartboard_number_of_areas_per_section
-                                                                                            )
+        # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds
+        start_frame = cell.time_of_bead_contact
+        frame_number_cell = cell.frame_number
+        if start_frame + self.duration_of_measurement > frame_number_cell + 1:
+            end_frame = frame_number_cell - 1
+        else:
+            end_frame = start_frame + self.duration_of_measurement
+        duration_of_measurement_in_seconds = (end_frame-start_frame)/self.frames_per_second  # e.g. 600 Frames, 40fps => 15s
+        average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames, duration_of_measurement_in_seconds)
 
-
-        return mean_dartboard_data_single_cell
+        return average_dartboard_data_per_second
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
                                                   normalized_bead_contact_site):
@@ -413,14 +417,14 @@ class ImageProcessor:
                                                                                   real_bead_contact_site,
                                                                                   normalized_bead_contact_site)
 
-    def generate_average_and_save_dartboard_multiple_cells(self, dartboard_data_multiple_cells):
-        # dartboard_generator = DartboardGenerator(self.save_path)
+    def generate_average_and_save_dartboard_multiple_cells(self, number_of_cells, dartboard_data_multiple_cells):
+        average_dartboard_data_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(number_of_cells,
+                                                                                                                 dartboard_data_multiple_cells,
+                                                                                                                 self.dartboard_number_of_sections,
+                                                                                                                 self.dartboard_number_of_areas_per_section,
+                                                                                                                 save_dartboard_data=True)
 
-        average_dartboard_data = self.dartboard_generator.calculate_mean_dartboard(dartboard_data_multiple_cells,
-                                                                                   self.dartboard_number_of_sections,
-                                                                                   self.dartboard_number_of_areas_per_section)
-
-        self.dartboard_generator.save_dartboard_plot(average_dartboard_data,
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_multiple_cells,
                                                      len(dartboard_data_multiple_cells),
                                                      self.dartboard_number_of_sections,
                                                      self.dartboard_number_of_areas_per_section)
@@ -481,20 +485,19 @@ class ImageProcessor:
         """
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/cell_image_channel1_' + str(i) + '.tif', cell.give_image_channel1(),
+            save_path = self.save_path + '/cell_image_processed_files/'
+            os.makedirs(save_path, exist_ok=True)
+            io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_1' + '.tif', cell.give_image_channel1(),
                       check_contrast=False)
 
-            io.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif', cell.give_image_channel2(),
+            io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_2' + '.tif', cell.give_image_channel2(),
                       check_contrast=False)
-            # format = 'tiff'
-            # import imageio
-            # imageio.imwrite(f'image.{format}', cell.give_image_channel2())
-            # import tifffile
-            # tifffile.imsave(self.save_path + '/cell_image_channel2_' + str(i) + '.tif',cell.give_image_channel2())
             i += 1
 
     def save_ratio_image_files(self):
+        save_path = self.save_path + '/cell_image_ratio_files/'
+        os.makedirs(save_path, exist_ok=True)
         i = 1
         for cell in self.cell_list:
-            io.imsave(self.save_path + '/ratio_image' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
+            io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1
