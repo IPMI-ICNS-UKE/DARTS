@@ -27,63 +27,66 @@ class TDarts_GUI():
 
         ########################################################################
         # create config frame to place our grid
-        self.image_config_frame = LabelFrame(self.frame, text="Choose an image configuration:", labelanchor="n")
-        self.image_config_frame.grid(row=0, column=0, sticky="news", padx=20, pady=20)
+        self.input_output_frame = LabelFrame(self.frame, text="Input/Output:", labelanchor="n")
+        self.input_output_frame.grid(row=0, column=0, sticky="news", padx=20, pady=20)
+
+        self.label_image_configuration = Label(self.input_output_frame, text="Image configuration")
+        self.label_image_configuration.grid(column=0, row=0, sticky="W")
+        self.label_image_configuration.config(bg='lightgray')
 
         # image config: "single" or "two in one"
         self.selected_image_configuration = IntVar()
-        self.image_config_radiobutton_1 = Radiobutton(self.image_config_frame, text='single', value=1,
+        self.image_config_radiobutton_1 = Radiobutton(self.input_output_frame, text='single', value=1,
                                                       variable=self.selected_image_configuration)
-        self.image_config_radiobutton_2 = Radiobutton(self.image_config_frame, text='two in one', value=2,
+        self.image_config_radiobutton_2 = Radiobutton(self.input_output_frame, text='two in one', value=2,
                                                       variable=self.selected_image_configuration)
-        self.image_config_radiobutton_1.grid(row=0, column=0, sticky="W")
-        self.image_config_radiobutton_2.grid(row=3, column=0, sticky="W")
+        self.image_config_radiobutton_1.grid(row=1, column=0, sticky="W")
+        self.image_config_radiobutton_2.grid(row=4, column=0, sticky="W")
 
-        # choose files
-        self.selection_button = Button(self.image_config_frame, text="Choose file(s)", command=self.select_files)
-        self.selection_button.grid(row=5, column=0, sticky="W")
 
         # path for "single"
         # path to input channel 1
-        self.label_single_path_to_input_channel1 = Label(self.image_config_frame, text="path to input channel 1")
-        self.label_single_path_to_input_channel1.grid(row=1, column=0, sticky="W")
-        self.text_single_path_to_input_channel1 = Text(self.image_config_frame, height=1, width=30)
-        self.text_single_path_to_input_channel1.grid(row=1, column=1, sticky="W")
+        self.label_single_path_to_input_channel1 = Label(self.input_output_frame, text="path to input channel 1")
+        self.label_single_path_to_input_channel1.grid(row=2, column=0, sticky="W")
+        self.text_single_path_to_input_channel1 = Text(self.input_output_frame, height=1, width=30)
+        self.text_single_path_to_input_channel1.grid(row=2, column=1, sticky="W")
         # path to input channel 2
-        self.label_single_path_to_input_channel2 = Label(self.image_config_frame, text="path to input channel 2")
-        self.label_single_path_to_input_channel2.grid(row=2, column=0, sticky="W")
-        self.text_single_path_to_input_channel2 = Text(self.image_config_frame, height=1, width=30)
-        self.text_single_path_to_input_channel2.grid(row=2, column=1, sticky="W")
+        self.label_single_path_to_input_channel2 = Label(self.input_output_frame, text="path to input channel 2")
+        self.label_single_path_to_input_channel2.grid(row=3, column=0, sticky="W")
+        self.text_single_path_to_input_channel2 = Text(self.input_output_frame, height=1, width=30)
+        self.text_single_path_to_input_channel2.grid(row=3, column=1, sticky="W")
 
         # path for "two in one"
         # path to combined
-        self.label_path_to_input_combined = Label(self.image_config_frame, text="path to input combined")
-        self.label_path_to_input_combined.grid(row=4, column=0, sticky="W")
-        self.text_path_to_input_combined = Text(self.image_config_frame, height=1, width=30)
-        self.text_path_to_input_combined.grid(row=4, column=1, sticky="W")
+        self.label_path_to_input_combined = Label(self.input_output_frame, text="path to input combined")
+        self.label_path_to_input_combined.grid(row=5, column=0, sticky="W")
+        self.text_path_to_input_combined = Text(self.input_output_frame, height=1, width=30)
+        self.text_path_to_input_combined.grid(row=5, column=1, sticky="W")
 
+        # choose files
+        self.selection_button = Button(self.input_output_frame, text="Choose file(s)", command=self.select_files)
+        self.selection_button.grid(row=6, column=0, sticky="W")
 
+        self.empty_label_3 = Label(self.input_output_frame, text="")
+        self.empty_label_3.grid(row=7, column=0, sticky="W")
 
-        ######################################################################################
-        # create config frame to place our grid
-        self.image_result_frame = LabelFrame(self.frame, text="Choose a results directory:", labelanchor="n")
-        self.image_result_frame.grid(row=1, column=0, sticky="news", padx=20, pady=20)
 
         # path to result folder
-        self.label_results_directory = Label(self.image_result_frame, text="results directory")
-        self.label_results_directory.grid(row=0, column=0, sticky="W")
-        self.text_results_directory = Text(self.image_result_frame, height=1, width=30)
-        self.text_results_directory.grid(row=0, column=1, sticky="W")
-        self.choose_results_directory_button = Button(self.image_result_frame, text="Choose a results directory",
+        self.label_results_directory = Label(self.input_output_frame, text="results directory")
+        self.label_results_directory.grid(row=8, column=0, sticky="W")
+        self.label_results_directory.config(bg='lightgray')
+        self.text_results_directory = Text(self.input_output_frame, height=1, width=30)
+        self.text_results_directory.grid(row=9, column=0, sticky="W")
+        self.choose_results_directory_button = Button(self.input_output_frame, text="Choose a results directory",
                                                       command=self.choose_results_directory_clicked)
-        self.choose_results_directory_button.grid(row=1, column=0, sticky="W")
+        self.choose_results_directory_button.grid(row=10, column=0, sticky="W")
 
         #####################################################################################
 
         # create Properties of measurement frame to place our grid
         self.properties_of_measurement_frame = LabelFrame(self.frame, text="Properties of measurement:",
                                                           labelanchor="n")
-        self.properties_of_measurement_frame.grid(row=2, column=0, sticky="news", padx=20, pady=20)
+        self.properties_of_measurement_frame.grid(row=1, column=0, sticky="news", padx=20, pady=20)
 
         # microscope
         self.label_microscope_name = Label(self.properties_of_measurement_frame, text="Used microscope:  ")
@@ -358,6 +361,10 @@ class TDarts_GUI():
         self.cancel_button = Button(self.label_control_buttons, text='Cancel', command=self.cancel)
         self.cancel_button.grid(column=1, row=2, sticky="W")
 
+        # cancel button
+        self.reinit_button = Button(self.label_control_buttons, text='Reinitialize', command=None)
+        self.reinit_button.grid(column=1, row=3, sticky="W")
+
     def pick_date(self, event):
         global calendar, date_window
 
@@ -459,6 +466,7 @@ class TDarts_GUI():
     def cancel(self):
         self.window.destroy()
         quit()
+
 
     def update_settings_for_registration(self):
         if self.channel_alignment_in_pipeline.get() == 0:
