@@ -193,11 +193,13 @@ class DartboardGenerator:
         ax.axis("off")
 
         image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
+
         plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)')
+
 
         sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
         sm.set_clim(vmin=vmin, vmax=vmax)
-        plt.colorbar(sm, pad=0.3, label="number of hotspots per frame and area unit; averaged over cells")
+        plt.colorbar(sm, pad=0.3, label="number of hotspots per frame and area unit; \naveraged over cells")
 
 
         ax.annotate('Bead contact',

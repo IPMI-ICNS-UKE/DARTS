@@ -6,7 +6,6 @@ import numpy as np
 import tomli
 from pystackreg import StackReg
 
-
 try:
     import SimpleITK as sitk
 except ImportError:
@@ -18,9 +17,11 @@ class RegistrationBase:
     def __init__(self):
         pass
 
+
 class Registration_SITK(RegistrationBase):
     def __init__(self):
         super().__init__()
+
     def channel_registration(self, channel1, channel2, framebyframe=True):
 
         print("\nRegistration of channel 1 and channel 2: ")
@@ -77,10 +78,10 @@ class Registration_SITK(RegistrationBase):
         return channel2_registered
 
 
-
 class Registration_SR(RegistrationBase):
     def __init__(self):
         super().__init__()
+
     def channel_registration(self, channel1, channel2, framebyframe=False):
         """
         Registration of the two channels based on affine transformation. The first channel is defined as the reference
