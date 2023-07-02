@@ -154,11 +154,11 @@ class HotSpotDetector():
 
                 for dataframe in dataframes_list:
                     if (not dataframe.empty):
-                        sheet_name = filename + "_microdomains, cell No. " + str(index)
-                        dataframe.to_excel(writer, sheet_name="test"+str(index), index=False)
+                        sheet_name = "Microdomains, cell " + str(index)
+                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
                         number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                        sheet_name = filename + "_microdomains per frame, cell No. " + str(index)
-                        number_of_microdomains.to_excel(writer, sheet_name="test"+str(index), index=False)
+                        sheet_name = "Microdomains per frame, cell " + str(index)
+                        number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                         index += 1
 
 
@@ -167,12 +167,10 @@ class HotSpotDetector():
 
                 for dataframe in dataframes_list:
                     if (not dataframe.empty):
-                        sheet_name = filename + "_microdomains, cell No. " + str(index)
-                        dataframe.to_excel(writer, sheet_name="test"+str(index), index=False)
+                        sheet_name = "Microdomains, cell " + str(index)
+                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
                         number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                        sheet_name = filename + "_microdomains per frame, cell No. " + str(index)
-                        number_of_microdomains.to_excel(writer,
-                                                        sheet_name="test"+str(index),
-                                                        index=False)
+                        sheet_name = "Microdomains per frame, cell " + str(index)
+                        number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                         index += 1
 
