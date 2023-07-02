@@ -10,6 +10,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 import ntpath
 import os
+import timeit
 
 from general.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
@@ -24,7 +25,7 @@ from analysis.Bead_Contact_GUI import BeadContactGUI
 from general.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
-logger = logging.getLogger(__name__)
+
 
 
 try:
@@ -32,6 +33,15 @@ try:
 except ImportError:
     print("SimpleITK cannot be loaded")
     sitk = None
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+
+def convert_ms_to_smh(millis):
+    seconds = int(millis / 1000) % 60
+    minutes = int(millis / (1000 * 60)) % 60
+    hours = int(millis / (1000 * 60 * 60)) % 24
+    return seconds, minutes, hours
 
 
 def cut_image_frames(image, start, end):
@@ -50,17 +60,18 @@ def cut_image_frames(image, start, end):
 
 
 class ImageProcessor:
-    def __init__(self, parameter_dict, stardist_model):
+    def __init__(self, filename, parameter_dict, stardist_model, logger):
         self.parameters = parameter_dict
         self.model = stardist_model
+        self.logger = logger
         start = parameter_dict["inputoutput"]["start_frame"]
         end = parameter_dict["inputoutput"]["end_frame"]
 
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
-            self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
+            self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
             self.image = cut_image_frames(self.image, start, end)
-            self.file_name = ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
+            self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -68,6 +79,7 @@ class ImageProcessor:
             elif self.image.ndim == 2:  # for static images
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
                 self.y_max, self.x_max = self.image.shape
+        """
         elif self.parameters["properties"]["channel_format"] == "single":
             self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
             self.channel1 = cut_image_frames(self.channel1, start, end)
@@ -79,6 +91,8 @@ class ImageProcessor:
             elif self.channel1.ndim == 2:
                 self.image = np.concatenate((self.channel1, self.channel2), axis=1)
                 self.y_max, self.x_max = self.image.shape
+        """
+
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
@@ -86,9 +100,11 @@ class ImageProcessor:
         self.cell_type = self.parameters["properties"]["cell_type"]
         self.spotHeight = None
         if self.cell_type == 'primary':
-            self.spotHeight = 112.5
+            self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
         elif self.cell_type == 'jurkat':
             self.spotHeight = 72
+        elif self.cell_type == 'NK':
+            self.spotHeight = 72  # needs to be checked
 
         self.frame_number = len(self.channel1)
 
@@ -96,7 +112,7 @@ class ImageProcessor:
         self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
         self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
-        self.save_path = self.parameters["inputoutput"]["path_to_output"] + '/' + self.measurement_name
+        self.save_path = self.results_folder + '/' + self.measurement_name
 
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
@@ -141,10 +157,12 @@ class ImageProcessor:
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
-
-        self.excel_file_name = self.measurement_name + '_' + self.parameters["inputoutput"]["excel_filename"]
+        self.excel_filename_general = self.parameters["inputoutput"]["excel_filename"]
+        self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-                                                                self.excel_file_name,
+                                                                self.results_folder,
+                                                                self.excel_filename_one_measurement,
+                                                                self.excel_filename_general,
                                                                 self.frames_per_second,
                                                                 self.ratio_converter)
 
@@ -161,7 +179,7 @@ class ImageProcessor:
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
-        self.processing_steps = [self.bleaching]
+        # self.processing_steps = [self.bleaching]
 
     def select_rois(self):
         roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
@@ -341,16 +359,43 @@ class ImageProcessor:
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for cell in self.cell_list:
                 time.sleep(.005)
-                for step in self.processing_steps:
-                    if step is not None:
-                        time.sleep(.005)
-                        step.run(cell, self.parameters, self.model)
+                if self.bleaching is not None:
+                    self.bleaching.run(cell, self.parameters, self.model)
                 bar()
 
     def generate_ratio_images(self):
         for cell in self.cell_list:
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
+
+    def hotspot_detection(self, normalized_cells_dict):
+        with alive_bar(len(normalized_cells_dict), force_tty=True) as bar:
+            for i, cell in enumerate(normalized_cells_dict):
+                try:
+                    hd_start = timeit.default_timer()
+                    normalized_ratio = normalized_cells_dict[cell][0]
+                    mean_ratio_value_list = normalized_cells_dict[cell][1]
+
+                    self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
+                    hd_took = (timeit.default_timer() - hd_start) * 1000.0
+                    hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
+                    self.logger.log_and_print(message=f"Hotspot detection of cell {i + 1} "
+                                          f"took: {hd_hour:02d} h: {hd_min:02d} m: {hd_sec:02d} s :{int(hd_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in Hotspot Detection !",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+
+                try:
+                    self.save_measurements(i)
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in saving measurements",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+                bar()
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         if cell.bead_contact_site != 0:  # if user defined a bead contact site (in the range from 1 to 12)
@@ -387,7 +432,63 @@ class ImageProcessor:
 
 
     def save_measurements(self, i):
-        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
+        self.hotspotdetector.save_dataframes(self.file_name, self.dataframes_microdomains_list, i)
+
+    def dartboard(self, normalized_cells_dict):
+        normalized_dartboard_data_multiple_cells = []
+        with alive_bar(len(normalized_cells_dict), force_tty=True) as bar:
+            for i, cell in enumerate(self.cell_list):
+                try:
+                    db_start = timeit.default_timer()
+                    if cell.bead_contact_site != 0:
+                        centroid_coords_list = normalized_cells_dict[cell][3]
+                        radii_after_normalization = normalized_cells_dict[cell][2]
+
+                        average_dartboard_data_single_cell = self.generate_average_dartboard_data_single_cell(
+                            centroid_coords_list,
+                            cell,
+                            radii_after_normalization,
+                            i)
+                        normalized_dartboard_data_single_cell = self.normalize_average_dartboard_data_one_cell(
+                            average_dartboard_data_single_cell,
+                            cell.bead_contact_site,
+                            2)
+
+                        normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+
+                    db_took = (timeit.default_timer() - db_start) * 1000.0
+                    db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
+                    self.logger.log_and_print(message=f"Dartboard analysis of cell {i + 1} "
+                                          f"took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                    """
+                    else:
+                        log_and_print(message=f"No Dartboard analysis of cell {i + 1} ",
+                                      level=logging.WARNING, logger=logger)
+                    """
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in Dartboard (single cell)",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+                bar()
+
+        try:
+            db_start = timeit.default_timer()
+            average_dartboard_data_multiple_cells, number_of_cells = self.generate_average_and_save_dartboard_multiple_cells(len(normalized_dartboard_data_multiple_cells),
+                                                                         normalized_dartboard_data_multiple_cells)
+            db_took = (timeit.default_timer() - db_start) * 1000.0
+            db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
+            print("\n")
+            self.logger.log_and_print(message=f"Dartboard plot: Done!"
+                                  f" It took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
+                          level=logging.INFO, logger=self.logger)
+            return average_dartboard_data_multiple_cells, number_of_cells
+        except Exception as E:
+            print(E)
+            self.logger.log_and_print(message="Error in Dartboard (average dartboard for multiple cells)",
+                          level=logging.ERROR, logger=self.logger)
+
 
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
@@ -421,13 +522,49 @@ class ImageProcessor:
         average_dartboard_data_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(number_of_cells,
                                                                                                                  dartboard_data_multiple_cells,
                                                                                                                  self.dartboard_number_of_sections,
-                                                                                                                 self.dartboard_number_of_areas_per_section,
-                                                                                                                 save_dartboard_data=True)
+                                                                                                                 self.dartboard_number_of_areas_per_section)
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data_multiple_cells,
                                                      len(dartboard_data_multiple_cells),
                                                      self.dartboard_number_of_sections,
                                                      self.dartboard_number_of_areas_per_section)
+        return average_dartboard_data_multiple_cells, number_of_cells
+
+    def apply_shape_normalization(self):
+        savepath = self.save_path + '/normalization/'
+        os.makedirs(savepath, exist_ok=True)
+
+        normalized_cells_dict = {}
+        print("\n")
+        self.logger.log_and_print(message="Processing now continues with: ", level=logging.INFO, logger=self.logger)
+        with alive_bar(len(self.cell_list), force_tty=True) as bar:
+            for i, cell in enumerate(self.cell_list):
+                time.sleep(.005)
+                ratio = cell.give_ratio_image()
+                try:
+                    sh_start = timeit.default_timer()
+                    normalized_ratio, centroid_coords_list = self.normalize_cell_shape(cell)
+                    mean_ratio_value_list, radii_after_normalization = self.extract_information_for_hotspot_detection(
+                        normalized_ratio)
+                    normalized_cells_dict[cell] = (normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
+
+                    sh_took = (timeit.default_timer() - sh_start) * 1000.0
+                    sh_sec, sh_min, sh_hour = convert_ms_to_smh(int(sh_took))
+                    self.logger.log_and_print(message=f"Shape normalization of cell {i + 1} "
+                                          f"took: {sh_hour:02d} h: {sh_min:02d} m: {sh_sec:02d} s :{int(sh_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in shape normalization",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+
+                io.imsave(savepath + self.measurement_name + "_cellratio_" + str(i + 1) + ".tif", ratio)
+                io.imsave(savepath + self.measurement_name + "_cellratio_normalized_" + str(i + 1) + ".tif",
+                          normalized_ratio)
+                bar()
+        return normalized_cells_dict
+
 
     def normalize_cell_shape(self, cell):
         df = cell.cell_image_data_channel_2
@@ -480,8 +617,7 @@ class ImageProcessor:
 
     def save_image_files(self):
         """
-        Saves the image files within the cells of the celllist in the given path.
-        :param save_path: The target path.
+        Saves the image files within the cells of the cell list
         """
         i = 1
         for cell in self.cell_list:

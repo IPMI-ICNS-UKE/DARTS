@@ -14,6 +14,7 @@ from scipy import ndimage as ndi
 import pims
 
 from postprocessing.membrane_detection import MembraneDetector
+import os
 
 
 class SegmentationSD:

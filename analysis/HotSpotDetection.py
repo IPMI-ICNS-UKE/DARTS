@@ -8,9 +8,11 @@ import numpy as np
 
 
 class HotSpotDetector():
-    def __init__(self, save_path, filename, fps, ratioconverter):
+    def __init__(self, save_path, results_folder, excel_filename_one_measurement, excel_filename_general, fps, ratioconverter):
         self.save_path = save_path
-        self.filename = filename
+        self.results_folder = results_folder
+        self.excel_filename_one_measurement = excel_filename_one_measurement
+        self.excel_filename_general = excel_filename_general
         self.frames_per_second = fps
         self.ratio_converter = ratioconverter
 
@@ -144,18 +146,31 @@ class HotSpotDetector():
         return microdomains_in_each_frame
 
 
-    def save_dataframes(self, dataframes_list, i):
+    def save_dataframes(self, filename, dataframes_list, i):
         # Write to Multiple Sheets
         if(len(dataframes_list)>i and not dataframes_list[i].empty):
-            with pd.ExcelWriter(self.save_path + "/" + self.filename) as writer:
+            with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement) as writer:
                 index = 1
 
                 for dataframe in dataframes_list:
                     if (not dataframe.empty):
-                        dataframe.to_excel(writer, sheet_name="Raw microdomain data, cell number " + str(index), index=False)
-                        # print("dataframe")
-                        # print(dataframe)
+                        sheet_name = "Microdomains, cell " + str(index)
+                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
                         number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                        number_of_microdomains.to_excel(writer, sheet_name="microdomains per frame, cell number " + str(index) + "_Microdomains", index=False)
+                        sheet_name = "Microdomains per frame, cell " + str(index)
+                        number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
+                        index += 1
+
+
+            with pd.ExcelWriter(self.results_folder + "/" + self.excel_filename_general) as writer:
+                index = 1
+
+                for dataframe in dataframes_list:
+                    if (not dataframe.empty):
+                        sheet_name = "Microdomains, cell " + str(index)
+                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
+                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
+                        sheet_name = "Microdomains per frame, cell " + str(index)
+                        number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                         index += 1
 

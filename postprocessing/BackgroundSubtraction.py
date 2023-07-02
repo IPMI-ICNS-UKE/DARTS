@@ -1,5 +1,7 @@
 import skimage.measure
 import numpy as np
+import os
+
 
 class BackgroundSubtractor():
     def __init__(self, segmentation):

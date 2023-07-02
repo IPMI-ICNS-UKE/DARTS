@@ -19,7 +19,7 @@ class BeadContactGUI():
         self.image_width = len(image[0][0])
         self.image_height = len(image[0])
         self.GUI_width, self.GUI_height = round(self.image_width * 2.2), round(self.image_height * 1.2)
-        number_of_frames = len(image)
+        self.number_of_frames = len(image)
         self.root = Tk()
         self.root.resizable(False, False)
         self.root.geometry(str(self.GUI_width) + "x" + str(self.GUI_height))
@@ -38,15 +38,18 @@ class BeadContactGUI():
         self.canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=1)
         self.canvas.mpl_connect('button_press_event', self.mouse_clicked)
 
-        self.slider = Scale(self.root, from_=0, to=number_of_frames - 1, orient=HORIZONTAL,
+        self.slider = Scale(self.root, from_=0, to=self.number_of_frames - 1, orient=HORIZONTAL,
                            command=self.update_image)
 
         self.slider.place(x=self.image_width * 0.2, y=self.image_height * 1.1)
 
-        self.frame_cell_list = Frame(self.root)
-        self.frame_cell_list.place(x=750, y=150)
-        self.cell_list_label = Label(self.root, text="cells")
-        self.cell_list_label.place(x=750, y=100)
+        self.input_frame = Frame(self.root)
+        self.input_frame.place(x=750, y=50)
+        self.cell_list_label = Label(self.input_frame, text="cells")
+        self.cell_list_label.grid(row=0, column=0, sticky="W")
+
+        self.frame_cell_list = Frame(self.input_frame)
+        self.frame_cell_list.grid(row=1, column=0, sticky="W")
         self.cell_listbox = Listbox(self.frame_cell_list, width=30, height=10, font=("Helvetica", 12))
         self.cell_listbox.pack(side="left", fill="y")
         self.cell_listbox.bind("<<ListboxSelect>>", self.cell_selection_changed)
@@ -59,11 +62,11 @@ class BeadContactGUI():
         for cell_index in range(len(cell_list)):
             self.cell_listbox.insert(END, "cell : " + str(cell_index))
 
-        self.bead_contact_list_label = Label(self.root, text="list of bead contacts (location, frame, cell index)")
-        self.bead_contact_list_label.place(x=750, y=320)
+        self.bead_contact_list_label = Label(self.input_frame, text="list of bead contacts (location, frame, cell index)")
+        self.bead_contact_list_label.grid(row=2, column=0, sticky="W")
 
-        self.bead_contact_frame = Frame(self.root)
-        self.bead_contact_frame.place(x=750, y=350)
+        self.bead_contact_frame = Frame(self.input_frame)
+        self.bead_contact_frame.grid(row=3, column=0, sticky="W")
         self.bead_contact_list = Listbox(self.bead_contact_frame, width=30, height=10, font=("Helvetica", 12))
         self.bead_contact_list.pack(side="left", fill="y")
         self.bead_contact_list.bind("<<ListboxSelect>>", self.bead_contact_list_selection_changed)
@@ -74,10 +77,29 @@ class BeadContactGUI():
         self.bead_contact_list.config(yscrollcommand=scrollbar.set)
         self.bead_contacts = []
 
-        self.remove_bead_contact_button = Button(self.root, text="Remove bead contact", command=self.remove_bead_contact)
-        self.remove_bead_contact_button.place(x=750, y=510)
-        self.save_button = Button(self.root,text="Use bead contact info for analysis",command=self.assign_bead_contacts_to_cells)
-        self.save_button.place(x=720,y=550)
+        self.remove_bead_contact_button = Button(self.input_frame, text="Remove bead contact", command=self.remove_bead_contact)
+        self.remove_bead_contact_button.grid(row=4, column=0, sticky="W")
+
+        self.manual_input_frame = Frame(self.input_frame)
+        self.manual_input_frame.grid(row=5, column=0, sticky='W')
+
+
+        self.label_manual_input = Label(self.manual_input_frame, text="Manual input")
+        self.label_manual_input.grid(row=0, column=0, sticky="W")
+        self.label_manual_input.config(bg='lightgray')
+        self.label_frame_input = Label(self.manual_input_frame, text="Frame")
+        self.label_frame_input.grid(row=1, column=0, sticky="W")
+        self.text_frame = Text(self.manual_input_frame, height=1, width=10)
+        self.text_frame.grid(row=1, column=1, sticky="W")
+        self.label_clock_input = Label(self.manual_input_frame, text="clock")
+        self.label_clock_input.grid(row=2, column=0, sticky="W")
+        self.text_time_on_clock = Text(self.manual_input_frame, height=1, width=10)
+        self.text_time_on_clock.grid(row=2, column=1, sticky="W")
+
+        self.add_bead_contact_button = Button(self.manual_input_frame, text="add bead contact", command=self.manual_bead_contact_input)
+        self.add_bead_contact_button.grid(row=3, column=1, sticky="W")
+
+
 
         self.close_button = Button(self.root, text="Continue analysis", command=self.close_gui)
         self.close_button.place(x=950, y=550)
@@ -101,6 +123,20 @@ class BeadContactGUI():
             coords_list_cell_channel_2 = cell.return_coords_list_channel_2()
             coords_list_all_cells.append(coords_list_cell_channel_2)
         return coords_list_all_cells
+
+    def manual_bead_contact_input(self):
+        if self.cell_listbox.curselection() != ():
+            location_on_clock = int(self.text_time_on_clock.get("1.0","end-1c"))
+            frame = int(self.text_frame.get("1.0","end-1c"))
+            cell_index = int(self.cell_listbox.curselection()[0])
+            if frame in range(self.number_of_frames) and location_on_clock in range(1,13):
+                bead_contact = BeadContact(location_on_clock, frame, cell_index)
+                self.bead_contacts.append(bead_contact)
+                self.bead_contact_list.insert(END, bead_contact.to_string())
+                self.text_frame.delete(1.0, END)
+                self.text_time_on_clock.delete(1.0, END)
+                self.update_image(frame, cell_index)
+
 
     def bboxes_for_cell(self, frame, cell_index = None):
         if self.cell_listbox.curselection() != () or self.bead_contact_list.curselection() != ():
@@ -172,6 +208,8 @@ class BeadContactGUI():
         if(self.bead_contact_list.size()>0 and selected_item!= ()):
             self.bead_contact_list.delete(selected_item[0])
             self.bead_contact_list.selection_set(END,END)
+            self.bead_contacts.pop(selected_item[0])
+
 
 
     def mouse_clicked(self, event):
@@ -216,6 +254,7 @@ class BeadContactGUI():
 
 
     def close_gui(self):
+        self.assign_bead_contacts_to_cells()
         self.root.destroy()
 
     def calculate_contact_position(self, contact_site_xpos, contact_site_ypos, cell_centroid_x, cell_centroid_y, number_of_areas):
