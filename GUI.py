@@ -64,7 +64,7 @@ class TDarts_GUI():
         self.text_path_to_input_combined.grid(row=5, column=1, sticky="W")
 
         # choose files
-        self.selection_button = Button(self.input_output_frame, text="Choose file(s)", command=self.select_files)
+        self.selection_button = Button(self.input_output_frame, text="Choose directory", command=self.select_directory)
         self.selection_button.grid(row=6, column=0, sticky="W")
 
         self.empty_label_3 = Label(self.input_output_frame, text="")
@@ -503,20 +503,20 @@ class TDarts_GUI():
         else:
             return None
 
-    def select_files(self):
+    def select_directory(self):
         chosen_image_configuration = self.get_image_configuration()
 
         if (chosen_image_configuration == "single"):
-            filename_channel1 = fd.askopenfilename()
+            filename_channel1 = fd.askdirectory()
             self.text_single_path_to_input_channel1.delete('1.0', END)
             self.text_single_path_to_input_channel1.insert(1.0, filename_channel1)
-            filename_channel2 = fd.askopenfilename()
+            filename_channel2 = fd.askdirectory()
             self.text_single_path_to_input_channel2.delete('1.0', END)
             self.text_single_path_to_input_channel2.insert(1.0, filename_channel2)
             self.text_path_to_input_combined.delete('1.0', END)
 
         elif (chosen_image_configuration == "two-in-one"):
-            filename_combined = fd.askopenfilename()
+            filename_combined = fd.askdirectory()
             self.text_path_to_input_combined.delete('1.0', END)
             self.text_path_to_input_combined.insert(1.0, filename_combined)
             self.text_single_path_to_input_channel1.delete('1.0', END)

@@ -113,32 +113,18 @@ class DartboardGenerator:
 
         return cumulated_dartboard_data
 
-
-    def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, save_dartboard_data=True):
+    def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section):
         if(len(dartboard_area_frequencies)>0):
             number_of_cells = float(number_of_cells)
             average_array = np.zeros_like(dartboard_area_frequencies[0]).astype(float)
             for array in dartboard_area_frequencies:
                 average_array = np.add(average_array, array)
             average_array = np.divide(average_array, number_of_cells)
-            if save_dartboard_data:
-                self.save_dartboard_data_multiple_cells_to_computer(average_array, number_of_cells)
+
             return average_array
         else:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
             return average_array
-
-    def save_dartboard_data_multiple_cells_to_computer(self, average_array, number_of_cells):
-        directory = self.save_path + '/Dartboards/dartboard_data/'
-        os.makedirs(directory, exist_ok=True)
-
-        directory_for_general_dartboard = self.results_folder + '/' + self.experiment_name + '_average_dartboard_data_arrays'
-        os.makedirs(directory_for_general_dartboard, exist_ok=True)
-
-        np.save(directory + self.measurement_name + '_average_dartboard_data_' + str(int(number_of_cells)) + '_cells', average_array)
-
-        np.save(directory_for_general_dartboard + '/' + self.measurement_name + '_average_dartboard_data_' + str(int(number_of_cells)) + '_cells',
-                average_array)
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site, normalized_bead_contact_site):
         difference = real_bead_contact_site - normalized_bead_contact_site
@@ -228,4 +214,3 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
-

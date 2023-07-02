@@ -60,7 +60,7 @@ def cut_image_frames(image, start, end):
 
 
 class ImageProcessor:
-    def __init__(self, parameter_dict, stardist_model, logger):
+    def __init__(self, filename, parameter_dict, stardist_model, logger):
         self.parameters = parameter_dict
         self.model = stardist_model
         self.logger = logger
@@ -69,9 +69,9 @@ class ImageProcessor:
 
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
-            self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"])
+            self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
             self.image = cut_image_frames(self.image, start, end)
-            self.file_name = ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
+            self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -79,6 +79,7 @@ class ImageProcessor:
             elif self.image.ndim == 2:  # for static images
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
                 self.y_max, self.x_max = self.image.shape
+        """
         elif self.parameters["properties"]["channel_format"] == "single":
             self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
             self.channel1 = cut_image_frames(self.channel1, start, end)
@@ -90,6 +91,8 @@ class ImageProcessor:
             elif self.channel1.ndim == 2:
                 self.image = np.concatenate((self.channel1, self.channel2), axis=1)
                 self.y_max, self.x_max = self.image.shape
+        """
+
         self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
@@ -97,7 +100,7 @@ class ImageProcessor:
         self.cell_type = self.parameters["properties"]["cell_type"]
         self.spotHeight = None
         if self.cell_type == 'primary':
-            self.spotHeight = 112.5
+            self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
         elif self.cell_type == 'jurkat':
             self.spotHeight = 72
         elif self.cell_type == 'NK':
@@ -109,7 +112,7 @@ class ImageProcessor:
         self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
         self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
-        self.save_path = self.parameters["inputoutput"]["path_to_output"] + '/' + self.measurement_name
+        self.save_path = self.results_folder + '/' + self.measurement_name
 
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
@@ -154,10 +157,12 @@ class ImageProcessor:
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
-
-        self.excel_file_name = self.measurement_name + '_' + self.parameters["inputoutput"]["excel_filename"]
+        self.excel_filename_general = self.parameters["inputoutput"]["excel_filename"]
+        self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-                                                                self.excel_file_name,
+                                                                self.results_folder,
+                                                                self.excel_filename_one_measurement,
+                                                                self.excel_filename_general,
                                                                 self.frames_per_second,
                                                                 self.ratio_converter)
 
@@ -427,7 +432,7 @@ class ImageProcessor:
 
 
     def save_measurements(self, i):
-        self.hotspotdetector.save_dataframes(self.dataframes_microdomains_list, i)
+        self.hotspotdetector.save_dataframes(self.file_name, self.dataframes_microdomains_list, i)
 
     def dartboard(self, normalized_cells_dict):
         normalized_dartboard_data_multiple_cells = []
@@ -470,7 +475,7 @@ class ImageProcessor:
 
         try:
             db_start = timeit.default_timer()
-            self.generate_average_and_save_dartboard_multiple_cells(len(normalized_dartboard_data_multiple_cells),
+            average_dartboard_data_multiple_cells, number_of_cells = self.generate_average_and_save_dartboard_multiple_cells(len(normalized_dartboard_data_multiple_cells),
                                                                          normalized_dartboard_data_multiple_cells)
             db_took = (timeit.default_timer() - db_start) * 1000.0
             db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
@@ -478,10 +483,12 @@ class ImageProcessor:
             self.logger.log_and_print(message=f"Dartboard plot: Done!"
                                   f" It took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
                           level=logging.INFO, logger=self.logger)
+            return average_dartboard_data_multiple_cells, number_of_cells
         except Exception as E:
             print(E)
             self.logger.log_and_print(message="Error in Dartboard (average dartboard for multiple cells)",
                           level=logging.ERROR, logger=self.logger)
+
 
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
@@ -515,13 +522,13 @@ class ImageProcessor:
         average_dartboard_data_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(number_of_cells,
                                                                                                                  dartboard_data_multiple_cells,
                                                                                                                  self.dartboard_number_of_sections,
-                                                                                                                 self.dartboard_number_of_areas_per_section,
-                                                                                                                 save_dartboard_data=True)
+                                                                                                                 self.dartboard_number_of_areas_per_section)
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data_multiple_cells,
                                                      len(dartboard_data_multiple_cells),
                                                      self.dartboard_number_of_sections,
                                                      self.dartboard_number_of_areas_per_section)
+        return average_dartboard_data_multiple_cells, number_of_cells
 
     def apply_shape_normalization(self):
         savepath = self.save_path + '/normalization/'
