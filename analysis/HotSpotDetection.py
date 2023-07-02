@@ -152,10 +152,10 @@ class HotSpotDetector():
 
                 for dataframe in dataframes_list:
                     if (not dataframe.empty):
-                        dataframe.to_excel(writer, sheet_name="microdomain data, cell # " + str(index), index=False)
+                        dataframe.to_excel(writer, sheet_name="microdomain data, cell No. " + str(index), index=False)
                         # print("dataframe")
                         # print(dataframe)
                         number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                        number_of_microdomains.to_excel(writer, sheet_name="microdomains per frame, cell # " + str(index), index=False)
+                        number_of_microdomains.to_excel(writer, sheet_name="microdomains per frame, cell No. " + str(index), index=False)
                         index += 1
 
