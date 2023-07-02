@@ -32,9 +32,11 @@ def main(gui_enabled):
     model = StarDist2D.from_pretrained('2D_versatile_fluo')
     dartboard_data_list = []
     number_of_cells_with_dartboard = 0
-    for filename in filename_list:
 
-        Processor = ImageProcessor(filename, parameters, model, logger)
+    filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
+
+    for file in filename_list:
+        Processor = ImageProcessor(file, parameters, model, logger)
 
         # Postprocessing pipeline
         Processor.start_postprocessing()
