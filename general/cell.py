@@ -181,6 +181,9 @@ class CellImage:
     def give_image_channel1(self):
         return self.channel1.return_image()
 
+    def set_image_channel1(self,processed_image_series):
+        self.channel1.set_image(processed_image_series)
+
     def give_image_channel2(self):
         return self.channel2.return_image()
 
