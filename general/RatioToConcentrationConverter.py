@@ -43,7 +43,9 @@ class RatioConverter():
             threshold_ratio = aInv * math.e**(bInv*threshold_Calcium) + cInv*math.e**(dInv*threshold_Calcium)
             return corresponding_Ca_value, threshold_Calcium, threshold_ratio
 
-        elif celltype == 'NK 2023':
+
+        elif celltype == 'NK':
+
             a = 8.613*10**(-9)
             b = 6.735
             c = 26.34

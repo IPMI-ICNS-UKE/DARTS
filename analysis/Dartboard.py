@@ -1,15 +1,20 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+
+from matplotlib import colors
 import matplotlib as mpl
 import os
 
 
-
 class DartboardGenerator:
-    def __init__(self, save_path, frame_rate):
+    def __init__(self, save_path, frame_rate, measurement_name, experiment_name, results_folder):
         self.save_path = save_path
         self.frames_per_second = frame_rate
+        self.measurement_name = measurement_name
+        self.experiment_name = experiment_name
+        self.results_folder = results_folder
+
 
     def distance_from_pixel_to_center(self, signal_coords, centroid_coords):
         delta_x = float(centroid_coords[0]) - signal_coords[0]
@@ -111,19 +116,15 @@ class DartboardGenerator:
         return cumulated_dartboard_data
 
 
-    def calculate_mean_dartboard_multiple_cells(self, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section):
+    def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section):
         if(len(dartboard_area_frequencies)>0):
-            """
-            if start_frame is not None and end_frame is not None:
-                sub_list = dartboard_area_frequencies[start_frame:end_frame+1]
-            else:
-                sub_list = dartboard_area_frequencies
-            """
-            number_of_cells = float(len(dartboard_area_frequencies))
+            number_of_cells = float(number_of_cells)
+
             average_array = np.zeros_like(dartboard_area_frequencies[0]).astype(float)
             for array in dartboard_area_frequencies:
                 average_array = np.add(average_array, array)
             average_array = np.divide(average_array, number_of_cells)
+
             return average_array
         else:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
@@ -132,7 +133,8 @@ class DartboardGenerator:
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site, normalized_bead_contact_site):
         difference = real_bead_contact_site - normalized_bead_contact_site
-        return self.rotate_dartboard_data_counterclockwise(average_dartboard_data,difference)
+        return self.rotate_dartboard_data_counterclockwise(average_dartboard_data, difference)
+
 
     def rotate_dartboard_data_counterclockwise(self, dartboard_data, n):
         dartboard_data_copy = dartboard_data.copy()
@@ -147,8 +149,12 @@ class DartboardGenerator:
         dartboard_data_per_second = dartboard_data
         dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 
-        red_sequential_cmap = plt.get_cmap("Reds")
+
+        # red_sequential_cmap = plt.get_cmap("Reds")
         normalized_color = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        white_to_red_cmap = colors.LinearSegmentedColormap.from_list("", ["white","red"])
+
+
 
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
@@ -167,7 +173,9 @@ class DartboardGenerator:
         for i in range(5):
             number_of_signals_in_bulls_eye += np.sum(dartboard_data_per_frame[i])
         normalized_number_of_signals = number_of_signals_in_bulls_eye / area_ratio_bulls_eye_dartboard_area
-        color = red_sequential_cmap(normalized_color(normalized_number_of_signals))
+
+        color = white_to_red_cmap(normalized_color(normalized_number_of_signals))
+
 
         ax.bar(x=0, height=5, width=2 * np.pi,
                bottom=0,
@@ -182,7 +190,9 @@ class DartboardGenerator:
                 if (dartboard_area>4):
                     number_of_signals_in_current_dartboard_area = dartboard_data_per_frame[dartboard_area][i]
 
-                    color = red_sequential_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
+
+                    color = white_to_red_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
+
 
                     ax.bar(x=center_angle, height=height_of_annuli[dartboard_area], width=2 * np.pi / (number_of_sections), bottom=bottom_list[dartboard_area],
                            color=color, edgecolor='white')
@@ -194,12 +204,14 @@ class DartboardGenerator:
         ax.set_yticks([])
         ax.axis("off")
 
-        image_identifier = "Activity map (" + str(number_of_cells) + " cell[s] )" # + " - start frame: " + str(start_frame) + " - end frame: " + str(end_frame)
-        plt.title(image_identifier)
+        image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
 
-        sm = plt.cm.ScalarMappable(cmap=red_sequential_cmap, norm=normalized_color)
+        plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)')
+
+
+        sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
         sm.set_clim(vmin=vmin, vmax=vmax)
-        plt.colorbar(sm, pad=0.3, label="number of hotspots per frame and area unit; averaged over cells")
+        plt.colorbar(sm, pad=0.3, label="number of hotspots per frame and area unit; \naveraged over cells")
 
 
         ax.annotate('Bead contact',
@@ -211,10 +223,9 @@ class DartboardGenerator:
                     verticalalignment='bottom',
                     )
 
+        directory = self.save_path + '/Dartboards/Dartboard_plots/'
 
-        directory = self.save_path + '/Dartboard_plots/cell_number_' + image_identifier + '/'
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
-
