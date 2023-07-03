@@ -8,9 +8,11 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
+
 import ntpath
 import os
 import timeit
+
 
 from general.cell import CellImage, ChannelImage
 from postprocessing.segmentation import SegmentationSD, ATPImageConverter
@@ -26,13 +28,12 @@ from general.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
 
-
-
 try:
     import SimpleITK as sitk
 except ImportError:
     print("SimpleITK cannot be loaded")
     sitk = None
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -60,18 +61,22 @@ def cut_image_frames(image, start, end):
 
 
 class ImageProcessor:
+
     def __init__(self, filename, parameter_dict, stardist_model, logger):
         self.parameters = parameter_dict
         self.model = stardist_model
         self.logger = logger
+
         start = parameter_dict["inputoutput"]["start_frame"]
         end = parameter_dict["inputoutput"]["end_frame"]
 
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
+
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
             self.image = cut_image_frames(self.image, start, end)
             self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
+
             # separate image into 2 channels: left half and right half
             if self.image.ndim == 3:  # for time series
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
@@ -79,6 +84,7 @@ class ImageProcessor:
             elif self.image.ndim == 2:  # for static images
                 self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
                 self.y_max, self.x_max = self.image.shape
+
         """
         elif self.parameters["properties"]["channel_format"] == "single":
             self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
@@ -100,6 +106,7 @@ class ImageProcessor:
         self.cell_type = self.parameters["properties"]["cell_type"]
         self.spotHeight = None
         if self.cell_type == 'primary':
+
             self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
         elif self.cell_type == 'jurkat':
             self.spotHeight = 72
@@ -114,6 +121,7 @@ class ImageProcessor:
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
         self.save_path = self.results_folder + '/' + self.measurement_name
 
+
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.cell_list = []
         self.excluded_cells_list = []
@@ -126,7 +134,6 @@ class ImageProcessor:
         self.segmentation = SegmentationSD(self.model)
         self.ATP_image_converter = ATPImageConverter()
         self.background_subtractor = BackgroundSubtractor(self.segmentation)
-        # ff
         self.deconvolution_parameters = self.parameters["deconvolution"]
         if self.deconvolution_parameters["decon"] == "TDE":
             self.deconvolution = TDEDeconvolution()
@@ -136,6 +143,7 @@ class ImageProcessor:
             self.deconvolution = BaseDecon()
 
         if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
+
             if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv no fit":
                 self.bleaching = BleachingAdditiveNoFit()
             else:
@@ -172,6 +180,9 @@ class ImageProcessor:
                                                       self.measurement_name,
                                                       self.experiment_name,
                                                       self.results_folder)
+
+        self.median_filter_kernel = self.parameters["properties"]["median_filter_kernel"]
+
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
         else:
@@ -179,9 +190,11 @@ class ImageProcessor:
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
+
         # self.processing_steps = [self.bleaching]
 
     def select_rois(self):
+
         roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
         return roi_before_backgroundcor_dict
 
@@ -348,25 +361,35 @@ class ImageProcessor:
         if len(self.cell_list) > 0:
             self.define_bead_contacts()
 
+
         # bleaching correction
         self.bleaching_correction()
 
+        # first median filter
+        self.medianfilter("channels")
+
         # generation of ratio images
         self.generate_ratio_images()
+
+        # second median filter
+        self.medianfilter("ratio")
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for cell in self.cell_list:
                 time.sleep(.005)
+
                 if self.bleaching is not None:
                     self.bleaching.run(cell, self.parameters, self.model)
+
                 bar()
 
     def generate_ratio_images(self):
         for cell in self.cell_list:
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
+
 
     def hotspot_detection(self, normalized_cells_dict):
         with alive_bar(len(normalized_cells_dict), force_tty=True) as bar:
@@ -432,6 +455,7 @@ class ImageProcessor:
 
 
     def save_measurements(self, i):
+
         self.hotspotdetector.save_dataframes(self.file_name, self.dataframes_microdomains_list, i)
 
     def dartboard(self, normalized_cells_dict):
@@ -492,6 +516,7 @@ class ImageProcessor:
 
 
     def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index):
+
         # generate cumualted dartboard data for one cell
         cumulated_dartboard_data_all_frames = self.dartboard_generator.cumulate_dartboard_data_multiple_frames(cell.frame_number,
                                                                                        cell.signal_data,
@@ -500,6 +525,7 @@ class ImageProcessor:
                                                                                        centroid_coords_list,
                                                                                        radii_after_normalization,
                                                                                        cell_index)
+
         # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds
         start_frame = cell.time_of_bead_contact
         frame_number_cell = cell.frame_number
@@ -564,6 +590,7 @@ class ImageProcessor:
                           normalized_ratio)
                 bar()
         return normalized_cells_dict
+
 
 
     def normalize_cell_shape(self, cell):
@@ -637,3 +664,45 @@ class ImageProcessor:
         for cell in self.cell_list:
             io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
             i += 1
+
+        
+    def medianfilter(self, channel):
+       """"
+        Apply a medianfilter on either the channels or the ratio image;
+        Pixelvalues of zeroes are excluded in median calculation
+        """
+       for cell in self.cell_list:
+            if channel == "channel":
+                window = np.ones(self.median_filter_kernel, self.median_filter_kernel)
+                filtered_image_list = []
+                channel_image_list = [cell.give_image_channel1, cell.give_image_channel2]
+                for channel_image in channel_image_list:
+                    filtered_image = np.empty_like(channel_image)
+                    for frame in channel_image.shape[0]:
+                        filtered_image = skimage.filters.median(cell.give_image_channel1, footprint=window)
+                    filtered_image_list.append(filtered_image)
+                cell.set_image_channel1(filtered_image_list[0])
+                cell.set_image_channel2(filtered_image_list[1])
+            elif channel == "ratio":
+                kernel = self.median_filter_kernel
+                half_window = kernel // 2
+                images = [cell.ratio]
+                for image in images:
+                    filtered_image = np.copy(image)
+                    frames, columns, rows = image.shape
+                    for frame in range(frames):
+                        for column in range(columns):
+                            for row in range(rows):
+                                if image[frame, column, row] <= 1e-6 :
+                                    continue
+                                start_row = row - half_window
+                                end_row = start_row + kernel
+                                start_col = column - half_window
+                                end_col = start_col + kernel
+                                window = image[frame, max(0, start_col):min(columns, end_col),
+                                         max(0, start_row):min(rows, end_row)]
+                                nonzero_values = window[window > 1e-6]
+                                filtered_value = np.median(nonzero_values)
+                                filtered_image[frame, column, row] = filtered_value
+                cell.ratio =filtered_image
+

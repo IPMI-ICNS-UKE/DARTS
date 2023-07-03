@@ -35,6 +35,7 @@ def main(gui_enabled):
 
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
 
+
     for file in filename_list:
         Processor = ImageProcessor(file, parameters, model, logger)
 
@@ -69,6 +70,7 @@ def main(gui_enabled):
                                                                                                           dartboard_number_of_sections,
                                                                                                           dartboard_number_of_areas_per_section)
     dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, number_of_cells_with_dartboard, dartboard_number_of_sections, dartboard_number_of_areas_per_section)
+
 
 
     end_time = time.time()

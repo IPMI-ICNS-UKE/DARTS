@@ -236,7 +236,6 @@ class CellImage:
         self.ratio = np.nan_to_num(ratio_image)
         return self.ratio
 
-
 class ChannelImage:
     def __init__(self, roi, wl, original_image=None):
         self.image = roi
