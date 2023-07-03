@@ -679,14 +679,14 @@ class ImageProcessor:
        print("\n Medianfilter " + channel + ": ")
        with alive_bar(len(self.cell_list), force_tty=True) as bar:
            for cell in self.cell_list:
-                if channel == "channel":
-                    window = np.ones(self.median_filter_kernel, self.median_filter_kernel)
+                if channel == "channels":
+                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
-                    channel_image_list = [cell.give_image_channel1, cell.give_image_channel2]
+                    channel_image_list = [cell.give_image_channel1(), cell.give_image_channel2()]
                     for channel_image in channel_image_list:
                         filtered_image = np.empty_like(channel_image)
-                        for frame in channel_image.shape[0]:
-                            filtered_image = skimage.filters.median(cell.give_image_channel1, footprint=window)
+                        for frame in range(channel_image.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
                         filtered_image_list.append(filtered_image)
                     cell.set_image_channel1(filtered_image_list[0])
                     cell.set_image_channel2(filtered_image_list[1])
