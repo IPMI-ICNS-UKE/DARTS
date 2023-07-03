@@ -181,6 +181,9 @@ class CellImage:
     def give_image_channel1(self):
         return self.channel1.return_image()
 
+    def set_image_channel1(self,processed_image_series):
+        self.channel1.set_image(processed_image_series)
+
     def give_image_channel2(self):
         return self.channel2.return_image()
 
@@ -235,7 +238,6 @@ class CellImage:
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = np.nan_to_num(ratio_image)
         return self.ratio
-
 
 class ChannelImage:
     def __init__(self, roi, wl, original_image=None):

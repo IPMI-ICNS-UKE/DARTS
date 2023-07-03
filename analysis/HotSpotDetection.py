@@ -8,11 +8,13 @@ import numpy as np
 
 
 class HotSpotDetector():
+
     def __init__(self, save_path, results_folder, excel_filename_one_measurement, excel_filename_general, fps, ratioconverter):
         self.save_path = save_path
         self.results_folder = results_folder
         self.excel_filename_one_measurement = excel_filename_one_measurement
         self.excel_filename_general = excel_filename_general
+
         self.frames_per_second = fps
         self.ratio_converter = ratioconverter
 
@@ -172,5 +174,6 @@ class HotSpotDetector():
                         number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
                         sheet_name = "Microdomains per frame, cell " + str(index)
                         number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
+
                         index += 1
 
