@@ -348,12 +348,14 @@ class TDarts_GUI():
         # settings from last run
         self.settings_from_last_run = Button(self.label_control_buttons, text="Use settings from last run",
                                              command=self.get_settings_from_last_run)
+
         self.settings_from_last_run.grid(column=1, row=0, sticky="W")
+
 
 
         ################################################################################
 
-        # start button
+
         self.start_button = Button(self.label_control_buttons, text='Start', command=self.start_analysis)
         self.start_button.grid(column=1, row=1, sticky="W")
 
@@ -364,6 +366,8 @@ class TDarts_GUI():
         # cancel button
         self.reinit_button = Button(self.label_control_buttons, text='Reinitialize', command=None)
         self.reinit_button.grid(column=1, row=3, sticky="W")
+
+
 
     def pick_date(self, event):
         global calendar, date_window

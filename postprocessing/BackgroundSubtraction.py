@@ -1,5 +1,6 @@
 import skimage.measure
 import numpy as np
+
 import os
 
 
@@ -7,12 +8,13 @@ class BackgroundSubtractor():
     def __init__(self, segmentation):
         self.segmentation = segmentation
 
-    def clear_outside_of_cells(self, roi_before_backgroundcor_dict):
+    def clear_outside_of_cells(self, roi_before_backgroundcor_dict, cell_list):
 
         roi_cell_list = []
         for particle in roi_before_backgroundcor_dict:
-            [roi1, roi2, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
-
+            [roi1_old, roi2_old, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
+            roi1 = cell_list[particle].give_image_channel1()
+            roi2 = cell_list[particle].give_image_channel2()
             roi1_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi1)
             roi2_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi2)
 
@@ -60,7 +62,3 @@ class BackgroundSubtractor():
             background_subtracted_channel[frame][background_subtracted_channel[frame] > max_value] = 0
 
         return background_subtracted_channel
-
-
-
-
