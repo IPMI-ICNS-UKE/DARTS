@@ -265,6 +265,7 @@ class BeadContactGUI():
             location = bead_contact.return_location()
             self.cell_list[cell_index].time_of_bead_contact = start_frame
             self.cell_list[cell_index].bead_contact_site = location
+            self.cell_list[cell_index].has_bead_contact = True
 
 
 

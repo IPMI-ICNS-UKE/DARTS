@@ -31,6 +31,7 @@ class CellImage:
 
         self.time_of_bead_contact = 0  # start_frame
         self.bead_contact_site = 0  # init value
+        self.has_bead_contact = False
 
         self.is_excluded = False
 
