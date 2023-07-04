@@ -50,7 +50,7 @@ def main(gui_enabled):
             start_frame, end_frame = 0, 0
 
         Processor = ImageProcessor(file, parameters, model, logger, start_frame, end_frame)
-
+        print("Now processing the following file: " + file)
         # Postprocessing pipeline
         Processor.start_postprocessing()
 

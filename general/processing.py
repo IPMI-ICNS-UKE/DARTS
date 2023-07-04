@@ -409,7 +409,7 @@ class ImageProcessor:
                         normalized_ratio = normalized_cells_dict[cell][0]
                         mean_ratio_value_list = normalized_cells_dict[cell][1]
 
-                        self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
+                        number_of_frames = self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
                         hd_took = (timeit.default_timer() - hd_start) * 1000.0
                         hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
                         self.logger.log_and_print(message=f"Hotspot detection of cell {i + 1} "
@@ -422,7 +422,7 @@ class ImageProcessor:
                         continue
 
                     try:
-                        self.save_measurements(i)
+                        self.save_measurements(i, number_of_frames)
                     except Exception as E:
                         print(E)
                         self.logger.log_and_print(message="Exception occurred: Error in saving measurements",
@@ -432,7 +432,7 @@ class ImageProcessor:
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         if cell.has_bead_contact:  # if user defined a bead contact site (in the range from 1 to 12)
-            start_frame = cell.time_of_bead_contact
+            start_frame = cell.time_of_bead_contact - self.start_frame
             frame_number_cell = cell.frame_number
             end_frame = 0
             if start_frame + self.duration_of_measurement > frame_number_cell+1:
@@ -450,6 +450,8 @@ class ImageProcessor:
                                                                                  self.cell_type)
             cell.signal_data = measurement_microdomains
             self.dataframes_microdomains_list.append(measurement_microdomains)
+            number_of_frames = end_frame-start_frame
+            return number_of_frames
 
 
 
@@ -464,9 +466,9 @@ class ImageProcessor:
 
 
 
-    def save_measurements(self, i):
+    def save_measurements(self, i, number_of_frames):
 
-        self.hotspotdetector.save_dataframes(self.file_name, self.dataframes_microdomains_list, i)
+        self.hotspotdetector.save_dataframes(self.file_name, self.dataframes_microdomains_list, i, number_of_frames)
 
     def dartboard(self, normalized_cells_dict):
         normalized_dartboard_data_multiple_cells = []
