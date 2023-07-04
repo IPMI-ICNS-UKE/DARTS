@@ -10,7 +10,7 @@ import math
 import time
 
 class BeadContactGUI():
-    def __init__(self, image, cell_list, number_of_areas_dartboard):
+    def __init__(self, image, cell_list, number_of_areas_dartboard, file_name, start_frame, end_frame):
         self.cell_list = cell_list
         self.bboxes_list_each_cell = self.give_bbox_list_for_each_cell(cell_list)
         self.coords_list_each_cell = self.give_coords_list_for_each_cell(cell_list)
@@ -25,7 +25,7 @@ class BeadContactGUI():
         self.root = Tk()
         self.root.resizable(False, False)
         self.root.geometry(str(self.GUI_width) + "x" + str(self.GUI_height))
-        self.root.title("Definition of bead contact sites")
+        self.root.title("Definition of bead contact sites, " + file_name)
 
         self.figure = Figure()
         self.subplot_image = self.figure.add_subplot(111)
@@ -39,9 +39,10 @@ class BeadContactGUI():
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=1)
         self.canvas.mpl_connect('button_press_event', self.mouse_clicked)
+        self.start_frame = start_frame
+        self.end_frame = end_frame
 
-
-        self.slider = Scale(self.root, from_=0, to=self.number_of_frames - 1, orient=HORIZONTAL,
+        self.slider = Scale(self.root, from_=start_frame, to=end_frame-1, orient=HORIZONTAL,
 
                            command=self.update_image)
 
@@ -195,13 +196,14 @@ class BeadContactGUI():
             self.update_image(frame, cell_index)
 
     def update_image(self, new_frame, cell_index = None):
-        new_image = self.image[int(new_frame)]
+        new_frame_in_short_image = int(new_frame) - self.start_frame
+        new_image = self.image[int(new_frame_in_short_image)]
 
         self.figure.delaxes(self.figure.axes[0])
         self.subplot_image = self.figure.add_subplot(111)
         self.subplot_image.imshow(new_image)
 
-        bboxes_for_frame_and_cell = self.bboxes_for_cell(int(new_frame), cell_index)
+        bboxes_for_frame_and_cell = self.bboxes_for_cell(int(new_frame_in_short_image), cell_index)
         if bboxes_for_frame_and_cell is not None:
             for bbox in bboxes_for_frame_and_cell:
                 minr, minc, maxr, maxc = bbox

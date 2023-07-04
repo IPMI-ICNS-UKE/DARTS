@@ -10,6 +10,7 @@ from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 from general.logger import Logger
 from analysis.Dartboard import DartboardGenerator
+from general.FrameRangeAnalysis import FrameRange
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -35,9 +36,20 @@ def main(gui_enabled):
 
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
 
+    frame_ranges = FrameRange(parameters["inputoutput"]["bead_contact_table_path"])
+    ko_bead_contact_dict = frame_ranges.give_KO_file_bead_contact_dict()
+    wt_bead_contact_dict = frame_ranges.give_WT_file_bead_contact_dict()
+
 
     for file in filename_list:
-        Processor = ImageProcessor(file, parameters, model, logger)
+        if parameters["inputoutput"]["HN1L_condition"] == 'KO':
+            start_frame, end_frame = ko_bead_contact_dict[file]
+        elif parameters["inputoutput"]["HN1L_condition"] == 'WT':
+            start_frame, end_frame = wt_bead_contact_dict[file]
+        else:
+            start_frame, end_frame = 0, 0
+
+        Processor = ImageProcessor(file, parameters, model, logger, start_frame, end_frame)
 
         # Postprocessing pipeline
         Processor.start_postprocessing()
