@@ -5,7 +5,7 @@ path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-dupl
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
 
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/WT OKT3/Test Batchprocessing"
+path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/K2 Klon OKT3"
 
 path_to_output = "results"
 excel_filename = "microdomain_data.xlsx"
@@ -14,6 +14,9 @@ start_frame = 0
 end_frame = 10
 user = "test"
 experiment_name = "WT OKT3"
+
+bead_contact_table_path = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/HN1L Beadkontakte Anfang Ende.xlsx"
+HN1L_condition = 'KO'  # 'KO' or 'WT'
 
 [properties]
 

@@ -62,19 +62,20 @@ def cut_image_frames(image, start, end):
 
 class ImageProcessor:
 
-    def __init__(self, filename, parameter_dict, stardist_model, logger):
+    def __init__(self, filename, parameter_dict, stardist_model, logger, start_frame=0, end_frame=0):
         self.parameters = parameter_dict
         self.model = stardist_model
         self.logger = logger
 
-        start = parameter_dict["inputoutput"]["start_frame"]
-        end = parameter_dict["inputoutput"]["end_frame"]
+        # start = parameter_dict["inputoutput"]["start_frame"]
+        # end = parameter_dict["inputoutput"]["end_frame"]
 
+        self.start_frame, self.end_frame = start_frame, end_frame
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
 
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
-            self.image = cut_image_frames(self.image, start, end)
+            self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
             self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
 
             # separate image into 2 channels: left half and right half
@@ -454,7 +455,7 @@ class ImageProcessor:
         Let user define the bead contacts (time, location) for each cell
         :return:
         """
-        bead_contact_gui = BeadContactGUI(self.image, self.cell_list, self.dartboard_number_of_sections)
+        bead_contact_gui = BeadContactGUI(self.image, self.cell_list, self.dartboard_number_of_sections, self.file_name, self.start_frame, self.end_frame)
         bead_contact_gui.run_main_loop()
 
 
@@ -713,3 +714,4 @@ class ImageProcessor:
                                     filtered_image[frame, column, row] = filtered_value
                     cell.ratio =filtered_image
                 bar()
+#
