@@ -237,16 +237,17 @@ class ImageProcessor:
     def create_cell_images(self, segmentation_result_dict):
         self.nb_rois = len(segmentation_result_dict)
         print("\nCreating cell images: ")
-        with alive_bar(self.nb_rois, force_tty=True) as bar:
+        key_set = segmentation_result_dict.keys()
+        with alive_bar(len(key_set), force_tty=True) as bar:
             time.sleep(.005)
-            for i in range(self.nb_rois):
-
-                self.cell_list.append(CellImage(ChannelImage(segmentation_result_dict[i][0], self.wl1),
-                                                ChannelImage(segmentation_result_dict[i][1], self.wl2),
-                                                self.x_max,
-                                                segmentation_result_dict[i][2],
-                                                segmentation_result_dict[i][3])
-                                      )
+            for i in key_set:
+                if i in segmentation_result_dict:
+                    self.cell_list.append(CellImage(ChannelImage(segmentation_result_dict[i][0], self.wl1),
+                                                    ChannelImage(segmentation_result_dict[i][1], self.wl2),
+                                                    self.x_max,
+                                                    segmentation_result_dict[i][2],
+                                                    segmentation_result_dict[i][3])
+                                          )
                 bar()
 
     def correct_coordinates(self, ymin, ymax, xmin, xmax):
@@ -510,7 +511,7 @@ class ImageProcessor:
         try:
             db_start = timeit.default_timer()
             average_dartboard_data_multiple_cells, number_of_cells = self.generate_average_and_save_dartboard_multiple_cells(len(normalized_dartboard_data_multiple_cells),
-                                                                         normalized_dartboard_data_multiple_cells)
+                                                                         normalized_dartboard_data_multiple_cells,self.file_name)
             db_took = (timeit.default_timer() - db_start) * 1000.0
             db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
             print("\n")
@@ -554,11 +555,12 @@ class ImageProcessor:
                                                                                   real_bead_contact_site,
                                                                                   normalized_bead_contact_site)
 
-    def generate_average_and_save_dartboard_multiple_cells(self, number_of_cells, dartboard_data_multiple_cells):
+    def generate_average_and_save_dartboard_multiple_cells(self, number_of_cells, dartboard_data_multiple_cells, filename):
         average_dartboard_data_multiple_cells = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(number_of_cells,
                                                                                                                  dartboard_data_multiple_cells,
                                                                                                                  self.dartboard_number_of_sections,
-                                                                                                                 self.dartboard_number_of_areas_per_section)
+                                                                                                                 self.dartboard_number_of_areas_per_section,
+                                                                                                                 filename)
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data_multiple_cells,
                                                      len(dartboard_data_multiple_cells),

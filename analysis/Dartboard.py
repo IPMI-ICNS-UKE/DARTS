@@ -116,7 +116,7 @@ class DartboardGenerator:
         return cumulated_dartboard_data
 
 
-    def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section):
+    def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, filename):
         if(len(dartboard_area_frequencies)>0):
             number_of_cells = float(number_of_cells)
 
@@ -124,7 +124,9 @@ class DartboardGenerator:
             for array in dartboard_area_frequencies:
                 average_array = np.add(average_array, array)
             average_array = np.divide(average_array, number_of_cells)
-
+            save_path = self.save_path + '/Dartboards/Dartboard_data/'
+            os.makedirs(save_path, exist_ok=True)
+            np.save(save_path + filename + '_' + str(int(number_of_cells)) + '_cells', average_array)
             return average_array
         else:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))

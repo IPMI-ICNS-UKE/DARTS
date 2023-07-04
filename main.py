@@ -60,6 +60,7 @@ def main(gui_enabled):
         # analysis: hotspot detection and dartboard projection
         Processor.hotspot_detection(normalized_cells_dict)
         average_dartboard_data_multiple_cells, number_of_cells = Processor.dartboard(normalized_cells_dict)
+
         number_of_cells_with_dartboard += number_of_cells
         dartboard_data_list.append(average_dartboard_data_multiple_cells)
 

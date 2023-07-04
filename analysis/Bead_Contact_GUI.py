@@ -140,7 +140,7 @@ class BeadContactGUI():
             location_on_clock = int(self.text_time_on_clock.get("1.0","end-1c"))
             frame = int(self.text_frame.get("1.0","end-1c"))
             cell_index = int(self.cell_listbox.curselection()[0])
-            if frame in range(self.number_of_frames) and location_on_clock in range(1,13):
+            if frame in range(self.start_frame, self.end_frame) and location_on_clock in range(1,13):
                 bead_contact = BeadContact(location_on_clock, frame, cell_index)
                 self.bead_contacts.append(bead_contact)
                 self.bead_contact_list.insert(END, bead_contact.to_string())

@@ -11,10 +11,12 @@ class BackgroundSubtractor():
     def clear_outside_of_cells(self, roi_before_backgroundcor_dict, cell_list):
 
         roi_cell_list = []
-        for particle in roi_before_backgroundcor_dict:
+        for i in range(len(roi_before_backgroundcor_dict)):
+            particle = list(roi_before_backgroundcor_dict.keys())[i]
             [roi1_old, roi2_old, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
-            roi1 = cell_list[particle].give_image_channel1()
-            roi2 = cell_list[particle].give_image_channel2()
+
+            roi1 = cell_list[i].give_image_channel1()
+            roi2 = cell_list[i].give_image_channel2()
             roi1_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi1)
             roi2_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi2)
 
