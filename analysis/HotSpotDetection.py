@@ -133,14 +133,12 @@ class HotSpotDetector():
     #         dataframe.to_excel(self.excelwriter,sheet_name="Cell_image_" + str(sheet_number))
     #         dataframe.to_csv(save_path + "/Cell_image" + str(sheet_number))
 
-    def count_microdomains_in_each_frame(self, dataframe):
-        number_of_frames = len(set(dataframe['time_in_seconds'].tolist()))
-        dataframe_copy = dataframe[['time_in_seconds']].copy()
+    def count_microdomains_in_each_frame(self, dataframe, number_of_frames):
         microdomains_in_each_frame = pd.DataFrame()
 
         for frame in range(number_of_frames):
             current_time_in_seconds = float(frame)/self.frames_per_second
-            number_of_microdomains = len(dataframe_copy[dataframe_copy["time_in_seconds"]==current_time_in_seconds])
+            number_of_microdomains = len(dataframe[dataframe["time_in_seconds"] == current_time_in_seconds])
             microdomains_in_each_frame = microdomains_in_each_frame._append([{'time_in_seconds':
                                                                                   current_time_in_seconds,
                                                                               'number_of_microdomains': number_of_microdomains,
@@ -148,7 +146,7 @@ class HotSpotDetector():
         return microdomains_in_each_frame
 
 
-    def save_dataframes(self, filename, dataframes_list, i):
+    def save_dataframes(self, filename, dataframes_list, i, number_of_frames):
         # Write to Multiple Sheets
         if(len(dataframes_list)>i and not dataframes_list[i].empty):
             with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement) as writer:
@@ -158,12 +156,12 @@ class HotSpotDetector():
                     if (not dataframe.empty):
                         sheet_name = "Microdomains, cell " + str(index)
                         dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
-                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
+                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe, number_of_frames)
                         sheet_name = "Microdomains per frame, cell " + str(index)
                         number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                         index += 1
 
-
+            """
             with pd.ExcelWriter(self.results_folder + "/" + self.excel_filename_general) as writer:
                 index = 1
 
@@ -176,4 +174,5 @@ class HotSpotDetector():
                         number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
 
                         index += 1
+            """
 
