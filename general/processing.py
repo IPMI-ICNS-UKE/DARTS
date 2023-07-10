@@ -76,6 +76,7 @@ class ImageProcessor:
 
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
             self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
+
             self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
 
             # separate image into 2 channels: left half and right half
@@ -227,8 +228,9 @@ class ImageProcessor:
         print("\nBackground subtraction: ")
         with alive_bar(1, force_tty=True) as bar:
             time.sleep(.005)
-            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
-            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
+            background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
+            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1, background_label_first_frame)
+            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2, background_label_first_frame)
             bar()
 
         return channel_1_background_subtracted, channel_2_background_subtracted
@@ -434,7 +436,7 @@ class ImageProcessor:
         if cell.has_bead_contact:  # if user defined a bead contact site (in the range from 1 to 12)
             start_frame = cell.time_of_bead_contact - self.start_frame
             frame_number_cell = cell.frame_number
-            end_frame = 0
+            
             if start_frame + self.duration_of_measurement > frame_number_cell+1:
                 end_frame = frame_number_cell-1
             else:
@@ -539,17 +541,20 @@ class ImageProcessor:
                                                                                        radii_after_normalization,
                                                                                        cell_index)
 
-        # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds
-        start_frame = cell.time_of_bead_contact
+        # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds or by frame number
+        start_frame = cell.time_of_bead_contact - self.start_frame
         frame_number_cell = cell.frame_number
+
         if start_frame + self.duration_of_measurement > frame_number_cell + 1:
             end_frame = frame_number_cell - 1
         else:
             end_frame = start_frame + self.duration_of_measurement
+
         duration_of_measurement_in_seconds = (end_frame-start_frame)/self.frames_per_second  # e.g. 600 Frames, 40fps => 15s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames, duration_of_measurement_in_seconds)
 
         return average_dartboard_data_per_second
+
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
                                                   normalized_bead_contact_site):

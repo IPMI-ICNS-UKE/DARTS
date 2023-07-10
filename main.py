@@ -47,7 +47,10 @@ def main(gui_enabled):
         elif parameters["inputoutput"]["HN1L_condition"] == 'WT':
             start_frame, end_frame = wt_bead_contact_dict[file]
         else:
-            start_frame, end_frame = 0, 0
+            start_frame, end_frame = 0,5000
+
+
+
 
         Processor = ImageProcessor(file, parameters, model, logger, start_frame, end_frame)
         print("Now processing the following file: " + file)
@@ -68,7 +71,7 @@ def main(gui_enabled):
         Processor.save_image_files()
         Processor.save_ratio_image_files()
 
-
+    """
     # create mean dartboard plot for multiple files/cells
     save_path = parameters["inputoutput"]["path_to_output"]
     frame_rate = parameters["properties"]["frames_per_second"]
@@ -83,7 +86,7 @@ def main(gui_enabled):
                                                                                                           dartboard_number_of_sections,
                                                                                                           dartboard_number_of_areas_per_section)
     dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, number_of_cells_with_dartboard, dartboard_number_of_sections, dartboard_number_of_areas_per_section)
-
+    """
 
 
     end_time = time.time()

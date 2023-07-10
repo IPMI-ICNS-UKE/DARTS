@@ -18,7 +18,7 @@ class BeadContactGUI():
         self.image = image
         self.image_width = len(image[0][0])
         self.image_height = len(image[0])
-        self.GUI_width, self.GUI_height = round(self.image_width * 2.2), round(self.image_height * 1.2)
+        self.GUI_width, self.GUI_height = 1200, 900  # round(self.image_width * 2.2), round(self.image_height * 1.2)
 
         self.number_of_frames = len(image)
 
