@@ -5,12 +5,13 @@ import json
 import time
 from stardist.models import StarDist2D
 import argparse
-
+import skimage.io as io
 from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 from general.logger import Logger
 from analysis.Dartboard import DartboardGenerator
 from general.FrameRangeAnalysis import FrameRange
+from analysis.Bead_Contact_GUI import BeadContactGUI
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -36,26 +37,38 @@ def main(gui_enabled):
 
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
 
-    frame_ranges = FrameRange(parameters["inputoutput"]["bead_contact_table_path"])
-    ko_bead_contact_dict = frame_ranges.give_KO_file_bead_contact_dict()
-    wt_bead_contact_dict = frame_ranges.give_WT_file_bead_contact_dict()
+    # frame_ranges = FrameRange(parameters["inputoutput"]["bead_contact_table_path"])
+    # ko_bead_contact_dict = frame_ranges.give_KO_file_bead_contact_dict()
+    # wt_bead_contact_dict = frame_ranges.give_WT_file_bead_contact_dict()
 
+    # definition of bead contacts for each file
+    bead_contact_dict = {}
+    for file in filename_list:
+        file_path = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
+        image = io.imread(file_path)
+        bead_contact_gui = BeadContactGUI(file, image, bead_contact_dict)
+        bead_contact_gui.run_main_loop()
 
     for file in filename_list:
+        """
         if parameters["inputoutput"]["HN1L_condition"] == 'KO':
             start_frame, end_frame = ko_bead_contact_dict[file]
         elif parameters["inputoutput"]["HN1L_condition"] == 'WT':
             start_frame, end_frame = wt_bead_contact_dict[file]
         else:
             start_frame, end_frame = 0,5000
+        """
 
+        # start_frame,end_frame = 0,700
+        list_of_bead_contacts_for_file = bead_contact_dict[file]
 
-
-
-        Processor = ImageProcessor(file, parameters, model, logger, start_frame, end_frame)
+        Processor = ImageProcessor(file, list_of_bead_contacts_for_file, parameters, model, logger)
         print("Now processing the following file: " + file)
         # Postprocessing pipeline
         Processor.start_postprocessing()
+
+        # assignment of bead contacts to the cells
+        Processor.assign_bead_contacts_to_cells()
 
         # shape normalization
         normalized_cells_dict = Processor.apply_shape_normalization()
