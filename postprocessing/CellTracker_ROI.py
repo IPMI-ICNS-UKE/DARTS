@@ -346,6 +346,18 @@ class CellTracker:
         cropped_images_list = []
         for i in range(len(image_series)):
             min_row, min_col, max_row, max_col = bbox_list[i]
+            min_row, min_col, max_row, max_col = min_row, min_col, max_row, max_col
+            t_max, y_max, x_max = image_series.shape
+
+            if min_row < 0:
+                min_row = 0
+            if min_col < 0:
+                min_col = 0
+            if max_row > y_max:
+                max_row = y_max-1
+            if max_col > x_max:
+                max_col = x_max - 1
+
             cropped_image = image_series[i][min_row:max_row, min_col:max_col]
             cropped_images_list.append(cropped_image)
         return cropped_images_list

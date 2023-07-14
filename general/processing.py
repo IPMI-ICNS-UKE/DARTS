@@ -218,9 +218,9 @@ class ImageProcessor:
     def clear_outside_of_cells(self, roi_after_decon_dict):
         roi_list_cell_pairs = self.background_subtractor.clear_outside_of_cells(roi_after_decon_dict, self.cell_list)
         for cell_number in range(len(roi_list_cell_pairs)):  # can be simplified
-            if self.cell_list[cell_number].has_bead_contact:
-                self.cell_list[cell_number].set_image_channel1(roi_list_cell_pairs[cell_number][0])
-                self.cell_list[cell_number].set_image_channel2(roi_list_cell_pairs[cell_number][1])
+            self.cell_list[cell_number].set_image_channel1(roi_list_cell_pairs[cell_number][0])
+            self.cell_list[cell_number].set_image_channel2(roi_list_cell_pairs[cell_number][1])
+            self.cell_list[cell_number].ratio = roi_list_cell_pairs[cell_number][4]
 
     def background_subtraction(self, channel_1, channel_2):
         print("\nBackground subtraction: ")
@@ -344,10 +344,12 @@ class ImageProcessor:
         io.imsave(self.save_path + '/channel_2_frame_1_registered' + '.tif', self.channel2)
 
     def start_postprocessing(self):
+
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
                                                                    "registration_framebyframe"])
+
         # background subtraction
         self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
@@ -366,14 +368,16 @@ class ImageProcessor:
         # first median filter
         self.medianfilter("channels")
 
-        # clear area outside the cells
-        self.clear_outside_of_cells(self.segmentation_result_dict)
-
         # generation of ratio images
         self.generate_ratio_images()
 
         # second median filter
         self.medianfilter("ratio")
+
+        # clear area outside the cells
+        self.clear_outside_of_cells(self.segmentation_result_dict)
+
+
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
@@ -381,7 +385,7 @@ class ImageProcessor:
             for cell in self.cell_list:
                 time.sleep(.005)
 
-                if cell.has_bead_contact and self.bleaching is not None:
+                if self.bleaching is not None:
                     self.bleaching.run(cell, self.parameters, self.model)
 
                 bar()
@@ -590,30 +594,30 @@ class ImageProcessor:
         self.logger.log_and_print(message="Processing now continues with: ", level=logging.INFO, logger=self.logger)
         with alive_bar(len(self.cell_list), force_tty=True) as bar:
             for i, cell in enumerate(self.cell_list):
-                if cell.has_bead_contact:
-                    time.sleep(.005)
-                    ratio = cell.give_ratio_image()
-                    try:
-                        sh_start = timeit.default_timer()
-                        normalized_ratio, centroid_coords_list = self.normalize_cell_shape(cell)
-                        mean_ratio_value_list, radii_after_normalization = self.extract_information_for_hotspot_detection(
-                            normalized_ratio)
-                        normalized_cells_dict[cell] = (normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
 
-                        sh_took = (timeit.default_timer() - sh_start) * 1000.0
-                        sh_sec, sh_min, sh_hour = convert_ms_to_smh(int(sh_took))
-                        self.logger.log_and_print(message=f"Shape normalization of cell {i + 1} "
-                                              f"took: {sh_hour:02d} h: {sh_min:02d} m: {sh_sec:02d} s :{int(sh_took):02d} ms",
-                                      level=logging.INFO, logger=self.logger)
-                    except Exception as E:
-                        print(E)
-                        self.logger.log_and_print(message="Exception occurred: Error in shape normalization",
-                                      level=logging.ERROR, logger=self.logger)
-                        continue
+                time.sleep(.005)
+                ratio = cell.give_ratio_image()
+                try:
+                    sh_start = timeit.default_timer()
+                    normalized_ratio, centroid_coords_list = self.normalize_cell_shape(cell)
+                    mean_ratio_value_list, radii_after_normalization = self.extract_information_for_hotspot_detection(
+                        normalized_ratio)
+                    normalized_cells_dict[cell] = (normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
 
-                    io.imsave(savepath + self.measurement_name + "_cellratio_" + str(i + 1) + ".tif", ratio)
-                    io.imsave(savepath + self.measurement_name + "_cellratio_normalized_" + str(i + 1) + ".tif",
-                              normalized_ratio)
+                    sh_took = (timeit.default_timer() - sh_start) * 1000.0
+                    sh_sec, sh_min, sh_hour = convert_ms_to_smh(int(sh_took))
+                    self.logger.log_and_print(message=f"Shape normalization of cell {i + 1} "
+                                          f"took: {sh_hour:02d} h: {sh_min:02d} m: {sh_sec:02d} s :{int(sh_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in shape normalization",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+
+                io.imsave(savepath + self.measurement_name + "_cellratio_" + str(i + 1) + ".tif", ratio)
+                io.imsave(savepath + self.measurement_name + "_cellratio_normalized_" + str(i + 1) + ".tif",
+                          normalized_ratio)
                 bar()
         return normalized_cells_dict
 
@@ -673,14 +677,14 @@ class ImageProcessor:
         Saves the image files within the cells of the cell list
         """
         for i, cell in enumerate(self.cell_list):
-            if cell.has_bead_contact:
-                save_path = self.save_path + '/cell_image_processed_files/'
-                os.makedirs(save_path, exist_ok=True)
-                io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_1' + '.tif', cell.give_image_channel1(),
-                          check_contrast=False)
 
-                io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_2' + '.tif', cell.give_image_channel2(),
-                          check_contrast=False)
+            save_path = self.save_path + '/cell_image_processed_files/'
+            os.makedirs(save_path, exist_ok=True)
+            io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_1' + '.tif', cell.give_image_channel1(),
+                      check_contrast=False)
+
+            io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_2' + '.tif', cell.give_image_channel2(),
+                      check_contrast=False)
 
 
     def save_ratio_image_files(self):
@@ -688,8 +692,7 @@ class ImageProcessor:
         os.makedirs(save_path, exist_ok=True)
 
         for i, cell in enumerate(self.cell_list):
-            if cell.has_bead_contact:
-                io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
+            io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
 
 
         
@@ -701,39 +704,38 @@ class ImageProcessor:
        print("\n Medianfilter " + channel + ": ")
        with alive_bar(len(self.cell_list), force_tty=True) as bar:
            for cell in self.cell_list:
-                if cell.has_bead_contact:
-                    if channel == "channels":
-                        window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
-                        filtered_image_list = []
-                        channel_image_list = [cell.give_image_channel1(), cell.give_image_channel2()]
-                        for channel_image in channel_image_list:
-                            filtered_image = np.empty_like(channel_image)
-                            for frame in range(channel_image.shape[0]):
-                                filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
-                            filtered_image_list.append(filtered_image)
-                        cell.set_image_channel1(filtered_image_list[0])
-                        cell.set_image_channel2(filtered_image_list[1])
-                    elif channel == "ratio":
-                        kernel = self.median_filter_kernel
-                        half_window = kernel // 2
-                        images = [cell.ratio]
-                        for image in images:
-                            filtered_image = np.copy(image)
-                            frames, columns, rows = image.shape
-                            for frame in range(frames):
-                                for column in range(columns):
-                                    for row in range(rows):
-                                        if image[frame, column, row] <= 1e-6 :
-                                            continue
-                                        start_row = row - half_window
-                                        end_row = start_row + kernel
-                                        start_col = column - half_window
-                                        end_col = start_col + kernel
-                                        window = image[frame, max(0, start_col):min(columns, end_col),
-                                                 max(0, start_row):min(rows, end_row)]
-                                        nonzero_values = window[window > 1e-6]
-                                        filtered_value = np.median(nonzero_values)
-                                        filtered_image[frame, column, row] = filtered_value
-                        cell.ratio =filtered_image
+                if channel == "channels":
+                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
+                    filtered_image_list = []
+                    channel_image_list = [cell.give_image_channel1(), cell.give_image_channel2()]
+                    for channel_image in channel_image_list:
+                        filtered_image = np.empty_like(channel_image)
+                        for frame in range(channel_image.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
+                        filtered_image_list.append(filtered_image)
+                    cell.set_image_channel1(filtered_image_list[0])
+                    cell.set_image_channel2(filtered_image_list[1])
+                elif channel == "ratio":
+                    kernel = self.median_filter_kernel
+                    half_window = kernel // 2
+                    images = [cell.ratio]
+                    for image in images:
+                        filtered_image = np.copy(image)
+                        frames, columns, rows = image.shape
+                        for frame in range(frames):
+                            for column in range(columns):
+                                for row in range(rows):
+                                    if image[frame, column, row] <= 1e-6 :
+                                        continue
+                                    start_row = row - half_window
+                                    end_row = start_row + kernel
+                                    start_col = column - half_window
+                                    end_col = start_col + kernel
+                                    window = image[frame, max(0, start_col):min(columns, end_col),
+                                             max(0, start_row):min(rows, end_row)]
+                                    nonzero_values = window[window > 1e-6]
+                                    filtered_value = np.median(nonzero_values)
+                                    filtered_image[frame, column, row] = filtered_value
+                    cell.ratio =filtered_image
                 bar()
 #
