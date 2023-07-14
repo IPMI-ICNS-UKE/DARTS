@@ -23,7 +23,6 @@ from analysis import HotSpotDetection
 from shapenormalization.shapenormalization import ShapeNormalization
 from analysis.Dartboard import DartboardGenerator
 from postprocessing.Bleaching import BleachingAdditiveNoFit
-from analysis.Bead_Contact_GUI import BeadContactGUI
 from general.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
@@ -62,20 +61,20 @@ def cut_image_frames(image, start, end):
 
 class ImageProcessor:
 
-    def __init__(self, filename, parameter_dict, stardist_model, logger, start_frame=0, end_frame=0):
+    def __init__(self, filename, list_of_bead_contacts, parameter_dict, stardist_model, logger):
         self.parameters = parameter_dict
         self.model = stardist_model
         self.logger = logger
+        self.list_of_bead_contacts = list_of_bead_contacts
 
-        # start = parameter_dict["inputoutput"]["start_frame"]
-        # end = parameter_dict["inputoutput"]["end_frame"]
 
-        self.start_frame, self.end_frame = start_frame, end_frame
+        # self.start_frame, self.end_frame = start_frame, end_frame
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
 
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
-            self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
+            # self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
+
             self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
 
             # separate image into 2 channels: left half and right half
@@ -227,8 +226,9 @@ class ImageProcessor:
         print("\nBackground subtraction: ")
         with alive_bar(1, force_tty=True) as bar:
             time.sleep(.005)
-            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
-            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
+            background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
+            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1, background_label_first_frame)
+            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2, background_label_first_frame)
             bar()
 
         return channel_1_background_subtracted, channel_2_background_subtracted
@@ -357,15 +357,8 @@ class ImageProcessor:
         # deconvolution
         self.segmentation_result_dict = self.deconvolve_cell_images(self.segmentation_result_dict)
 
-
-
         # cell images
         self.create_cell_images(self.segmentation_result_dict)
-
-        # bead contact, user input
-        if len(self.cell_list) > 0:
-            self.define_bead_contacts()
-
 
         # bleaching correction
         self.bleaching_correction()
@@ -395,10 +388,37 @@ class ImageProcessor:
 
     def generate_ratio_images(self):
         for cell in self.cell_list:
-            if cell.has_bead_contact:
-                cell.generate_ratio_image_series()
-                cell.set_ratio_range(self.min_ratio, self.max_ratio)
+            cell.generate_ratio_image_series()
+            cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
+    def assign_bead_contacts_to_cells(self):
+        for bead_contact in self.list_of_bead_contacts:
+            bead_contact_position = bead_contact.return_bead_contact_position()
+            bead_contact_xpos = bead_contact_position[0]
+            bead_contact_ypos = bead_contact_position[1]
+
+            time_of_bead_contact = bead_contact.return_time_of_bead_contact()
+            selected_position_inside_cell = bead_contact.return_selected_position_inside_cell()
+            selected_x_position_inside_cell = selected_position_inside_cell[0]
+            selected_y_position_inside_cell = selected_position_inside_cell[1]
+
+            for cell in self.cell_list:
+                dataframe = cell.cell_image_data_channel_2
+                cell_data_for_frame = dataframe.loc[dataframe['frame'] == time_of_bead_contact]
+                bbox_for_frame = cell_data_for_frame['bbox'].values.tolist()[0]
+                min_row, min_col, max_row, max_col = bbox_for_frame
+
+                if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:
+                    cell.time_of_bead_contact = time_of_bead_contact
+                    centroid_x_coord_cell = cell_data_for_frame['x'].values.tolist()[0]
+                    centroid_y_coord_cell = cell_data_for_frame['y'].values.tolist()[0]
+                    location_on_clock = bead_contact.calculate_contact_position(bead_contact_xpos,
+                                                                                bead_contact_ypos,
+                                                                                centroid_x_coord_cell,
+                                                                                centroid_y_coord_cell,
+                                                                                self.dartboard_number_of_sections)
+                    cell.bead_contact_site = location_on_clock
+                    cell.has_bead_contact = True
 
     def hotspot_detection(self, normalized_cells_dict):
         with alive_bar(len(normalized_cells_dict), force_tty=True) as bar:
@@ -432,9 +452,9 @@ class ImageProcessor:
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         if cell.has_bead_contact:  # if user defined a bead contact site (in the range from 1 to 12)
-            start_frame = cell.time_of_bead_contact - self.start_frame
+            start_frame = cell.time_of_bead_contact
             frame_number_cell = cell.frame_number
-            end_frame = 0
+            
             if start_frame + self.duration_of_measurement > frame_number_cell+1:
                 end_frame = frame_number_cell-1
             else:
@@ -450,20 +470,8 @@ class ImageProcessor:
                                                                                  self.cell_type)
             cell.signal_data = measurement_microdomains
             self.dataframes_microdomains_list.append(measurement_microdomains)
-            number_of_frames = end_frame-start_frame
-            return number_of_frames
-
-
-
-
-    def define_bead_contacts(self):
-        """
-        Let user define the bead contacts (time, location) for each cell
-        :return:
-        """
-        bead_contact_gui = BeadContactGUI(self.image, self.cell_list, self.dartboard_number_of_sections, self.file_name, self.start_frame, self.end_frame)
-        bead_contact_gui.run_main_loop()
-
+            number_of_analyzed_frames = end_frame-start_frame
+            return number_of_analyzed_frames
 
 
     def save_measurements(self, i, number_of_frames):
@@ -539,17 +547,20 @@ class ImageProcessor:
                                                                                        radii_after_normalization,
                                                                                        cell_index)
 
-        # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds
+        # calculate number of seconds of measurement and divide cumulated dartboard data by time in seconds or by frame number
         start_frame = cell.time_of_bead_contact
         frame_number_cell = cell.frame_number
+
         if start_frame + self.duration_of_measurement > frame_number_cell + 1:
             end_frame = frame_number_cell - 1
         else:
             end_frame = start_frame + self.duration_of_measurement
+
         duration_of_measurement_in_seconds = (end_frame-start_frame)/self.frames_per_second  # e.g. 600 Frames, 40fps => 15s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames, duration_of_measurement_in_seconds)
 
         return average_dartboard_data_per_second
+
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
                                                   normalized_bead_contact_site):
@@ -661,8 +672,7 @@ class ImageProcessor:
         """
         Saves the image files within the cells of the cell list
         """
-        i = 1
-        for cell in self.cell_list:
+        for i, cell in enumerate(self.cell_list):
             if cell.has_bead_contact:
                 save_path = self.save_path + '/cell_image_processed_files/'
                 os.makedirs(save_path, exist_ok=True)
@@ -671,16 +681,16 @@ class ImageProcessor:
 
                 io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_2' + '.tif', cell.give_image_channel2(),
                           check_contrast=False)
-                i += 1
+
 
     def save_ratio_image_files(self):
         save_path = self.save_path + '/cell_image_ratio_files/'
         os.makedirs(save_path, exist_ok=True)
-        i = 1
-        for cell in self.cell_list:
+
+        for i, cell in enumerate(self.cell_list):
             if cell.has_bead_contact:
                 io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
-                i += 1
+
 
         
     def medianfilter(self, channel):

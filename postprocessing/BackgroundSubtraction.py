@@ -1,6 +1,7 @@
 import skimage.measure
 import numpy as np
-
+import matplotlib.pyplot as plt
+import skimage.io as io
 import os
 
 
@@ -49,8 +50,8 @@ class BackgroundSubtractor():
             copy[frame][masks[frame]] = 0
         return copy
 
-    def subtract_background(self, channel_image_series):
-        background_label = self.segmentation.stardist_segmentation_in_frame(channel_image_series[0])
+    def subtract_background(self, channel_image_series, background_label):
+
 
         background_label[background_label >= 1] = 1
         background_label = 1 - background_label
@@ -62,5 +63,6 @@ class BackgroundSubtractor():
             max_value = np.max(background_subtracted_channel[frame])
             background_subtracted_channel[frame] -= background_mean_intensity_first_frame
             background_subtracted_channel[frame][background_subtracted_channel[frame] > max_value] = 0
+
 
         return background_subtracted_channel

@@ -5,8 +5,10 @@ from csbdeep.utils import normalize
 import numpy as np
 from scipy.ndimage import shift
 import matplotlib.pyplot as plt
+import skimage.io as io
 from alive_progress import alive_bar
 import time
+
 
 pd.options.mode.chained_assignment = None  # default='warn'
 tp.quiet(suppress=True)
@@ -38,6 +40,8 @@ class CellTracker:
         labels_for_each_frame = []  # segmented image respectively
         details_for_each_frame = []  # segmented image respectively
 
+
+
         print("\nSegmentation of cells: ")
         counter = 1
 
@@ -47,6 +51,7 @@ class CellTracker:
                 time.sleep(.005)
                 # print("Segmentation of frame: ", counter)
                 label_in_frame, details_in_frame = self.stardist_segmentation_in_frame(image_series[frame], model)
+
                 labels_for_each_frame.append(label_in_frame)
                 details_for_each_frame.append(details_in_frame)
                 counter = counter + 1

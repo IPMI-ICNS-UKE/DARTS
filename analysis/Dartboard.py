@@ -173,7 +173,7 @@ class DartboardGenerator:
         # create bull's eye
         number_of_signals_in_bulls_eye = 0
         for i in range(5):
-            number_of_signals_in_bulls_eye += np.sum(dartboard_data_per_frame[i])
+            number_of_signals_in_bulls_eye += np.sum(dartboard_data_per_second[i])
         normalized_number_of_signals = number_of_signals_in_bulls_eye / area_ratio_bulls_eye_dartboard_area
 
         color = white_to_red_cmap(normalized_color(normalized_number_of_signals))
@@ -190,7 +190,7 @@ class DartboardGenerator:
 
             for dartboard_area in range(number_of_areas_in_section):
                 if (dartboard_area>4):
-                    number_of_signals_in_current_dartboard_area = dartboard_data_per_frame[dartboard_area][i]
+                    number_of_signals_in_current_dartboard_area = dartboard_data_per_second[dartboard_area][i]
 
 
                     color = white_to_red_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
@@ -213,7 +213,7 @@ class DartboardGenerator:
 
         sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
         sm.set_clim(vmin=vmin, vmax=vmax)
-        plt.colorbar(sm, pad=0.3, label="number of hotspots per frame and area unit; \naveraged over cells")
+        plt.colorbar(sm, pad=0.3, label="number of hotspots per second and area unit; \naveraged over cells")
 
 
         ax.annotate('Bead contact',
@@ -231,3 +231,4 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
+
