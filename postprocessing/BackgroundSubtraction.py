@@ -20,9 +20,10 @@ class BackgroundSubtractor():
             roi2 = cell_list[i].give_image_channel2()
             roi1_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi1)
             roi2_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi2)
-
+            ratio = cell_list[i].ratio
+            ratio_background_subtracted = self.set_background_to_zero(shifted_frame_masks, ratio)
             roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,
-                                  shifted_frame_masks))
+                                  shifted_frame_masks, ratio_background_subtracted))
         return roi_cell_list
 
     def set_background_to_zero(self, frame_masks, cell_image_series):
