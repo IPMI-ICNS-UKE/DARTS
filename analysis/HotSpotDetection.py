@@ -150,16 +150,14 @@ class HotSpotDetector():
         # Write to Multiple Sheets
         if(len(dataframes_list)>i and not dataframes_list[i].empty):
             with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement) as writer:
-                index = 1
 
                 for dataframe in dataframes_list:
                     if (not dataframe.empty):
-                        sheet_name = "Microdomains, cell " + str(index)
+                        sheet_name = "Microdomains, cell " + str(i)
                         dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
                         number_of_microdomains = self.count_microdomains_in_each_frame(dataframe, number_of_frames)
-                        sheet_name = "Microdomains per frame, cell " + str(index)
+                        sheet_name = "Microdomains per frame, cell " + str(i)
                         number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
-                        index += 1
 
             """
             with pd.ExcelWriter(self.results_folder + "/" + self.excel_filename_general) as writer:

@@ -388,9 +388,8 @@ class ImageProcessor:
 
     def generate_ratio_images(self):
         for cell in self.cell_list:
-            if cell.has_bead_contact:
-                cell.generate_ratio_image_series()
-                cell.set_ratio_range(self.min_ratio, self.max_ratio)
+            cell.generate_ratio_image_series()
+            cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
     def assign_bead_contacts_to_cells(self):
         for bead_contact in self.list_of_bead_contacts:
@@ -409,7 +408,7 @@ class ImageProcessor:
                 bbox_for_frame = cell_data_for_frame['bbox'].values.tolist()[0]
                 min_row, min_col, max_row, max_col = bbox_for_frame
 
-                if min_row <= selected_x_position_inside_cell <= max_row and min_col <= selected_y_position_inside_cell <= max_col:
+                if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:
                     cell.time_of_bead_contact = time_of_bead_contact
                     centroid_x_coord_cell = cell_data_for_frame['x'].values.tolist()[0]
                     centroid_y_coord_cell = cell_data_for_frame['y'].values.tolist()[0]
@@ -673,8 +672,7 @@ class ImageProcessor:
         """
         Saves the image files within the cells of the cell list
         """
-        i = 1
-        for cell in self.cell_list:
+        for i, cell in enumerate(self.cell_list):
             if cell.has_bead_contact:
                 save_path = self.save_path + '/cell_image_processed_files/'
                 os.makedirs(save_path, exist_ok=True)
@@ -683,16 +681,16 @@ class ImageProcessor:
 
                 io.imsave(save_path + '/' + self.measurement_name + '_cell_image_' + str(i) + '_channel_2' + '.tif', cell.give_image_channel2(),
                           check_contrast=False)
-                i += 1
+
 
     def save_ratio_image_files(self):
         save_path = self.save_path + '/cell_image_ratio_files/'
         os.makedirs(save_path, exist_ok=True)
-        i = 1
-        for cell in self.cell_list:
+
+        for i, cell in enumerate(self.cell_list):
             if cell.has_bead_contact:
                 io.imsave(save_path + '/'+ self.measurement_name +'_ratio_image_cell_' + str(i) + '.tif', cell.give_ratio_image(), check_contrast=False)
-                i += 1
+
 
         
     def medianfilter(self, channel):
