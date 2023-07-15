@@ -36,6 +36,9 @@ class CellImage:
         self.is_excluded = False
 
 
+    def to_string(self, index):
+        return "cell_image_" + str(index)+"_time_of_bead_contact_" + str(self.time_of_bead_contact) + "_bead_contact_site_" + str(self.bead_contact_site)
+
     def calculate_mean_value_in_channel_frame(self,frame,channel):
         inverted_frame_mask = ~self.frame_masks[frame]
         image_frame = None

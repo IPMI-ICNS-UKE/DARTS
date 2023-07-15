@@ -12,11 +12,32 @@ from general.logger import Logger
 from analysis.Dartboard import DartboardGenerator
 from general.FrameRangeAnalysis import FrameRange
 from analysis.Bead_Contact_GUI import BeadContactGUI
-
+from analysis.MeanDartboard import MeanDartboardGenerator
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
 
+def save_bead_contact_information(save_path, bead_contact_dict):
+    with open(save_path + 'Bead_contact_information.txt', 'w') as f:
+        for file in bead_contact_dict:
+            f.write("Filename: " + file + "\n")
+            for bead_contact in bead_contact_dict[file]:
+                f.write(" Bead contact: " + bead_contact.to_string() + "\n")
+            f.write("\n")
+
+def save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total, number_of_analyzed_cells_with_hotspots_in_total):
+    with open(save_path + 'Number_of_responding_cells.txt', 'w') as f:
+        f.write("Number of analyzed cells in total: " + str(number_of_analyzed_cells_in_total) + "\n")
+        f.write("Number of analyzed cells with hotspots in total: " + str(number_of_analyzed_cells_with_hotspots_in_total) + "\n")
+        percentage_of_responding_cells = float(number_of_analyzed_cells_with_hotspots_in_total) / number_of_analyzed_cells_in_total * 100
+        f.write("Percentage of responding cells: " + str(percentage_of_responding_cells) + "%")
+
+def create_general_dartboard(save_path, number_of_analyzed_cells, frame_rate, experiment_name, dartboard_sections, dartboard_areas_per_section):
+    source_path = save_path + 'Dartboard_data_all_files'
+    measurement_name = "dartboard_for_all_analyzed_cells"
+
+    mean_dartboard_generator = MeanDartboardGenerator(source_path, save_path, number_of_analyzed_cells, frame_rate, experiment_name, measurement_name, dartboard_sections, dartboard_areas_per_section)
+    mean_dartboard_generator.calculate_dartboard_data_for_all_cells()
 
 def main(gui_enabled):
     if gui_enabled:
@@ -33,13 +54,14 @@ def main(gui_enabled):
 
     model = StarDist2D.from_pretrained('2D_versatile_fluo')
     dartboard_data_list = []
-    number_of_cells_with_dartboard = 0
 
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
 
     # frame_ranges = FrameRange(parameters["inputoutput"]["bead_contact_table_path"])
     # ko_bead_contact_dict = frame_ranges.give_KO_file_bead_contact_dict()
     # wt_bead_contact_dict = frame_ranges.give_WT_file_bead_contact_dict()
+
+
 
     # definition of bead contacts for each file
     bead_contact_dict = {}
@@ -48,6 +70,13 @@ def main(gui_enabled):
         image = io.imread(file_path)
         bead_contact_gui = BeadContactGUI(file, image, bead_contact_dict)
         bead_contact_gui.run_main_loop()
+
+    # save bead contacts on computer
+    save_path = parameters["inputoutput"]["path_to_output"] + '/'
+    save_bead_contact_information(save_path, bead_contact_dict)
+
+    number_of_analyzed_cells_in_total = 0
+    number_of_analyzed_cells_with_hotspots_in_total = 0
 
     for file in filename_list:
         """
@@ -74,32 +103,29 @@ def main(gui_enabled):
         normalized_cells_dict = Processor.apply_shape_normalization()
 
         # analysis: hotspot detection and dartboard projection
-        Processor.hotspot_detection(normalized_cells_dict)
-        average_dartboard_data_multiple_cells, number_of_cells = Processor.dartboard(normalized_cells_dict)
+        number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots = Processor.hotspot_detection(normalized_cells_dict)
+        number_of_analyzed_cells_in_total += number_of_analyzed_cells
+        number_of_analyzed_cells_with_hotspots_in_total += number_of_analyzed_cells_with_hotspots
 
-        number_of_cells_with_dartboard += number_of_cells
+        average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict)
+
         dartboard_data_list.append(average_dartboard_data_multiple_cells)
 
         # save files
         Processor.save_image_files()
         Processor.save_ratio_image_files()
 
-    """
-    # create mean dartboard plot for multiple files/cells
-    save_path = parameters["inputoutput"]["path_to_output"]
-    frame_rate = parameters["properties"]["frames_per_second"]
-    experiment_name = parameters["properties"]["experiment_name"]
-    measurement_name = parameters["properties"]["day_of_measurement"] + '_' + experiment_name
-    results_folder = save_path
-    dartboard_number_of_sections = parameters["properties"]["dartboard_number_of_sections"]
-    dartboard_number_of_areas_per_section = parameters["properties"]["dartboard_number_of_areas_per_section"]
-    dartboard_generator = DartboardGenerator(save_path, frame_rate, measurement_name, experiment_name, results_folder)
-    average_dartboard_data_all_measurements = dartboard_generator.calculate_mean_dartboard_multiple_cells(number_of_cells_with_dartboard,
-                                                                                                          dartboard_data_list,
-                                                                                                          dartboard_number_of_sections,
-                                                                                                          dartboard_number_of_areas_per_section)
-    dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, number_of_cells_with_dartboard, dartboard_number_of_sections, dartboard_number_of_areas_per_section)
-    """
+    # save number of responding cells
+    save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total,
+                                    number_of_analyzed_cells_with_hotspots_in_total)
+
+    #create a general dartboard for all analyzed cells
+    create_general_dartboard(save_path,
+                             number_of_analyzed_cells_in_total,
+                             parameters["properties"]["frames_per_second"],
+                             parameters["inputoutput"]["experiment_name"],
+                             parameters["properties"]["dartboard_number_of_sections"],
+                             parameters["properties"]["dartboard_number_of_areas_per_section"])
 
 
     end_time = time.time()

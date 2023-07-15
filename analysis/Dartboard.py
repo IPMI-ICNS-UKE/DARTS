@@ -99,10 +99,10 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def cumulate_dartboard_data_multiple_frames(self, number_of_frames, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index):
+    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, end_frame):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
 
-        for frame in range(number_of_frames):
+        for frame in range(time_of_bead_contact, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
             dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
                                                                                                          signal_dataframe,
@@ -127,6 +127,11 @@ class DartboardGenerator:
             save_path = self.save_path + '/Dartboards/Dartboard_data/'
             os.makedirs(save_path, exist_ok=True)
             np.save(save_path + filename + '_' + str(int(number_of_cells)) + '_cells', average_array)
+
+            cumulated_data_folder = self.results_folder + '/Dartboard_data_all_files'
+            os.makedirs(cumulated_data_folder, exist_ok=True)
+            np.save(cumulated_data_folder + '/' + filename + '_' + str(int(number_of_cells)) + '_cells', average_array)
+
             return average_array
         else:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
