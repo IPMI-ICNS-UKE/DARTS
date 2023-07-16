@@ -141,9 +141,11 @@ class CellTracker:
             current_label = images_inside_bboxes[frame]
             # io.imshow(current_label)
             # plt.show()
+            x_shift = x_shift_all[frame]
+            y_shift = y_shift_all[frame]
 
             label_container[frame, 0:len(current_label), 0:len(current_label[0])] = current_label
-            label_container[frame] = shift(label_container[frame], shift=(x_shift_all[frame], y_shift_all[frame]))
+            label_container[frame] = shift(label_container[frame], shift=(x_shift, y_shift))
             boolean_mask[frame] = label_container[frame] == 0
 
 
@@ -342,11 +344,12 @@ class CellTracker:
             roi_with_intensity_image[i][0:delta_y,0:delta_x] = intensity_image_series[i]
         return roi_with_intensity_image
 
-    def crop_image_series_with_rois(self,image_series,bbox_list):
+    def crop_image_series_with_rois(self,image_series,bbox_list, delta):
         cropped_images_list = []
+        shift_correction_list = []
         for i in range(len(image_series)):
             min_row, min_col, max_row, max_col = bbox_list[i]
-            min_row, min_col, max_row, max_col = min_row, min_col, max_row, max_col
+            min_row, min_col, max_row, max_col = min_row-delta, min_col-delta, max_row+delta, max_col+delta
             t_max, y_max, x_max = image_series.shape
 
             if min_row < 0:
@@ -358,9 +361,13 @@ class CellTracker:
             if max_col > x_max:
                 max_col = x_max - 1
 
+            min_row_difference = bbox_list[i][0] - min_row
+            min_col_difference = bbox_list[i][1] - min_col
+            shift_correction_list.append((min_col_difference,min_row_difference))  # col = x, row = y
+
             cropped_image = image_series[i][min_row:max_row, min_col:max_col]
             cropped_images_list.append(cropped_image)
-        return cropped_images_list
+        return cropped_images_list, shift_correction_list
 
     def create_roi_image_series(self, empty_rois, intensity_images_in_bbox, shift_x_list, shift_y_list):
         roi_image_series = empty_rois.copy()
@@ -374,14 +381,14 @@ class CellTracker:
             roi_image_series[i] = shift(roi_image_series[i], shift=(x_shift, y_shift))
         return roi_image_series
 
-    def calculate_shift_in_each_frame(self, centroid_bbox_offset_list, max_delta_x, max_delta_y):
+    def calculate_shift_in_each_frame(self, centroid_bbox_offset_list, max_delta_x, max_delta_y, shift_correction_list):
         x_shift_all = []
         y_shift_all = []
         for i in range(len(centroid_bbox_offset_list)):
             centroid_bbox_offset_x = centroid_bbox_offset_list[i][0]
             centroid_bbox_offset_y = centroid_bbox_offset_list[i][1]
-            x_shift = round(0.5 * max_delta_x - centroid_bbox_offset_x)
-            y_shift = round(0.5 * max_delta_y - centroid_bbox_offset_y)
+            x_shift = round(0.5 * max_delta_x - centroid_bbox_offset_x) - shift_correction_list[i][0]
+            y_shift = round(0.5 * max_delta_y - centroid_bbox_offset_y) - shift_correction_list[i][1]
             x_shift_all.append(x_shift)
             y_shift_all.append(y_shift)
         return x_shift_all, y_shift_all
@@ -411,20 +418,20 @@ class CellTracker:
             max_delta_x, max_delta_y = int(max_delta_x*1.4), int(max_delta_y*1.4)
 
             try:
-                # roi_list_particle = self.generate_ROIs_based_on_trajectories(max_delta_x, max_delta_y, coords_list)
                 empty_rois = self.create_roi_template(channel1, max_delta_x, max_delta_y)  # empty rois with maximum bbox size
-                image_series_channel_1_bboxes = self.crop_image_series_with_rois(channel1, bbox_list)
-                image_series_channel_2_bboxes = self.crop_image_series_with_rois(channel2, bbox_list)
-                x_shift_all, y_shift_all = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y)
+                image_series_channel_1_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel1, bbox_list, 10)
+                image_series_channel_2_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel2, bbox_list, 10)
+                x_shift_image, y_shift_image = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y, shift_correction_list)
+                roi1 = self.create_roi_image_series(empty_rois, image_series_channel_1_bboxes, x_shift_image, y_shift_image)
+                roi2 = self.create_roi_image_series(empty_rois, image_series_channel_2_bboxes, x_shift_image, y_shift_image)
 
-                particle_dataframe_subset.loc[:, 'xshift'] = x_shift_all
-                particle_dataframe_subset.loc[:, 'yshift'] = y_shift_all
+                x_shift_bbox, y_shift_bbox = self.correct_shift_list_for_bbox(x_shift_image,y_shift_image,shift_correction_list)
 
-                roi1 = self.create_roi_image_series(empty_rois, image_series_channel_1_bboxes,x_shift_all,y_shift_all)
-                roi2 = self.create_roi_image_series(empty_rois, image_series_channel_2_bboxes,x_shift_all,y_shift_all)
+                particle_dataframe_subset.loc[:, 'xshift'] = x_shift_bbox
+                particle_dataframe_subset.loc[:, 'yshift'] = y_shift_bbox
 
-                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois, dataframe, particle, x_shift_all,
-                                                                        y_shift_all)
+                shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois, dataframe, particle, x_shift_bbox,
+                                                                        y_shift_bbox)
 
                 roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, shifted_frame_masks]
             except Exception as E:
@@ -436,3 +443,15 @@ class CellTracker:
         return roi_before_backgroundcor_dict
 
 
+    def correct_shift_list_for_bbox(self,x_shift_list,y_shift_list,shift_correction_list):
+        x_shift_bbox_list = []
+        y_shift_bbox_list = []
+        for i in range(len(x_shift_list)):
+            x_shift = x_shift_list[i]
+            y_shift = y_shift_list[i]
+            x_shift_bbox = x_shift + shift_correction_list[i][0]
+            y_shift_bbox = y_shift + shift_correction_list[i][1]
+            x_shift_bbox_list.append(x_shift_bbox)
+            y_shift_bbox_list.append(y_shift_bbox)
+
+        return x_shift_bbox_list, y_shift_bbox_list

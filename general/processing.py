@@ -680,20 +680,23 @@ class ImageProcessor:
             # plt.show()
             label = skimage.measure.label(thresholded_image)
             regions = skimage.measure.regionprops(label_image=label, intensity_image=current_frame)
-            mean_ratio_value = 0
-            total_area = 0
-            for i, region in enumerate(regions):  # just in case that there are fragments of the cell... not very clean
-                mean_ratio_value += regions[i].intensity_mean
-                total_area += regions[i].area
-            mean_ratio_value = mean_ratio_value / len(regions)
-            mean_ratio_value_list.append(mean_ratio_value)
+            largest_region, largest_area = self.give_largest_region(regions)
 
-            current_radius = math.sqrt(total_area / math.pi)
+            mean_ratio_value_of_largest_area = largest_region.intensity_mean
+            mean_ratio_value_list.append(mean_ratio_value_of_largest_area)
 
-            # current_radius = regions[0].equivalent_diameter_area / 2
+            current_radius = math.sqrt(largest_area / math.pi)
             radii_list.append(current_radius)
 
         return mean_ratio_value_list, radii_list
+
+    def give_largest_region(self, regions):
+        areas = []
+        for region in regions:
+            area = region.area
+            areas.append(area)
+        index_largest_area = areas.index(max(areas))
+        return regions[index_largest_area], areas[index_largest_area]
 
     def return_ratios(self):
         for cell in self.cell_list:

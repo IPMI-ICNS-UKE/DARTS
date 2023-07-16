@@ -28,7 +28,6 @@ class BeadContactGUI():
         self.figure = Figure()
         self.subplot_image = self.figure.add_subplot(111)
         self.subplot_image.imshow(image[0])
-
         # self.subplot_image.set_axis_off()
         self.canvas_frame = Frame(self.root, width=600, height=600)
         self.canvas_frame.place(x=10, y=10)
@@ -43,7 +42,7 @@ class BeadContactGUI():
         self.slider = Scale(self.root, from_=self.start_frame, to=self.end_frame, orient=HORIZONTAL,
                            command=self.update_image, length=500)
 
-        self.slider.place(x=self.image_width * 0.2, y=self.image_height * 1.1)
+        self.slider.place(x=self.GUI_width * 0.2, y=self.GUI_height * 0.8)
 
 
         self.input_frame = Frame(self.root)
