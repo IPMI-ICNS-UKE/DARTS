@@ -26,7 +26,7 @@ def save_bead_contact_information(save_path, bead_contact_dict):
             f.write("\n")
 
 def save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total, number_of_analyzed_cells_with_hotspots_in_total):
-    with open(save_path + 'Number_of_responding_cells.txt', 'w') as f:
+    with open(save_path + 'Number of responding cells.txt', 'w') as f:
         f.write("Number of analyzed cells in total: " + str(number_of_analyzed_cells_in_total) + "\n")
         f.write("Number of analyzed cells with hotspots in total: " + str(number_of_analyzed_cells_with_hotspots_in_total) + "\n")
         percentage_of_responding_cells = float(number_of_analyzed_cells_with_hotspots_in_total) / number_of_analyzed_cells_in_total * 100
@@ -40,10 +40,14 @@ def create_general_dartboard(save_path, number_of_analyzed_cells, frame_rate, ex
     mean_dartboard_generator.calculate_dartboard_data_for_all_cells()
 
 def save_number_of_signals(save_path, excel_filename_general, number_of_signals_per_frame):
-    with pd.ExcelWriter(save_path + "/" + excel_filename_general) as writer:
+    with pd.ExcelWriter(save_path + excel_filename_general) as writer:
         sheet_name = "Number of signals in each frame"
         number_of_signals_per_frame.to_excel(writer, sheet_name=sheet_name, index=False)
 
+def save_mean_amplitudes(save_path, mean_amplitude_list):
+    with open(save_path + "Mean amplitudes of responding cells.txt", "a") as f:
+        for mean_amplitude in mean_amplitude_list:
+            f.write(str(mean_amplitude) + " nM\n")
 
 def main(gui_enabled):
     if gui_enabled:
@@ -63,12 +67,6 @@ def main(gui_enabled):
 
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
 
-    # frame_ranges = FrameRange(parameters["inputoutput"]["bead_contact_table_path"])
-    # ko_bead_contact_dict = frame_ranges.give_KO_file_bead_contact_dict()
-    # wt_bead_contact_dict = frame_ranges.give_WT_file_bead_contact_dict()
-
-
-
     # definition of bead contacts for each file
     bead_contact_dict = {}
     for file in filename_list:
@@ -85,6 +83,7 @@ def main(gui_enabled):
 
     number_of_analyzed_cells_in_total = 0
     number_of_analyzed_cells_with_hotspots_in_total = 0
+    general_mean_amplitude_list = []
 
     number_of_signals_per_frame = pd.DataFrame()
     frames_per_second = parameters["properties"]["frames_per_second"]
@@ -122,6 +121,9 @@ def main(gui_enabled):
             dataframe_series = microdomains_timelines_dict[filename_cell]
             number_of_signals_per_frame[title_of_microdomains_timeline] = list(dataframe_series[title_of_microdomains_timeline])
 
+
+        general_mean_amplitude_list = general_mean_amplitude_list + Processor.give_mean_amplitude_list()
+
         average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict)
 
         dartboard_data_list.append(average_dartboard_data_multiple_cells)
@@ -147,6 +149,7 @@ def main(gui_enabled):
                              parameters["properties"]["dartboard_number_of_sections"],
                              parameters["properties"]["dartboard_number_of_areas_per_section"])
 
+    save_mean_amplitudes(save_path, general_mean_amplitude_list)
 
     end_time = time.time()
     # execution time

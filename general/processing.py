@@ -121,7 +121,6 @@ class ImageProcessor:
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
         self.save_path = self.results_folder + '/' + self.measurement_name
 
-
         self.ATP_flag = self.parameters["properties"]["ATP"]
         self.segmentation_result_dict = {}
         self.cell_list = []
@@ -712,6 +711,14 @@ class ImageProcessor:
         """
         Adds scale bars to the cell image time series before saving them.
         """
+
+    def give_mean_amplitude_list(self):
+        mean_amplitude_list_of_cells = []
+        for cell in self.cell_list:
+            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals()
+            if cell_mean_signal_amplitude is not None:
+                mean_amplitude_list_of_cells.append(cell_mean_signal_amplitude)
+        return mean_amplitude_list_of_cells
 
     def save_image_files(self):
         """

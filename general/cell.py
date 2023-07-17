@@ -228,8 +228,6 @@ class CellImage:
         thresholded_frame = frame > threshold
         return thresholded_frame
 
-
-
     def calculate_ratio_image(self):
         """
         Calculates the ratio image for each cell image pair (each frame) and returns the ratio image
@@ -242,6 +240,12 @@ class CellImage:
             ratio_image[frame] = self.calculate_ratio(frame)
         self.ratio = np.nan_to_num(ratio_image)
         return self.ratio
+
+    def calculate_mean_amplitude_of_signals(self):
+        if self.signal_data is None or self.signal_data.empty:
+            return None
+        else:
+            return self.signal_data['max calcium concentration in nM'].to_numpy().mean()
 
 class ChannelImage:
     def __init__(self, roi, wl, original_image=None):
