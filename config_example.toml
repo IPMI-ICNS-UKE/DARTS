@@ -5,15 +5,15 @@ path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-dupl
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
 
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/K2 Klon OKT3"
+path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/WT OKT3"
 
-path_to_output = "results"
-excel_filename = "microdomain_data.xlsx"
+path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/Test Batchprocessing Robustheit"
+excel_filename_all_cells = "microdomain_data.xlsx"
 
 start_frame = 0
 end_frame = 10
-user = "test"
-experiment_name = "WT OKT3"
+user = "dejan"
+experiment_name = "HN1L C2 OKT3"
 
 bead_contact_table_path = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/HN1L Beadkontakte Anfang Ende.xlsx"
 HN1L_condition = 'KO'  # 'KO' or 'WT'
@@ -22,9 +22,9 @@ HN1L_condition = 'KO'  # 'KO' or 'WT'
 
 # can either be "two-in-one" or "single"
 # (where in the latter, the two input channels are in separate files)
-experiment_name = "WT OKT3"
+experiment_name = "test experiment"
 used_microscope = "test microscope"
-day_of_measurement = "2017-04-24"
+day_of_measurement = "2023-07-17"
 
 channel_format = "two-in-one"
 wavelength_1 = 488
