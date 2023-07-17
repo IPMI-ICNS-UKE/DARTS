@@ -9,10 +9,10 @@ import skimage.io as io
 from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 from general.logger import Logger
-from analysis.Dartboard import DartboardGenerator
-from general.FrameRangeAnalysis import FrameRange
 from analysis.Bead_Contact_GUI import BeadContactGUI
 from analysis.MeanDartboard import MeanDartboardGenerator
+import pandas as pd
+import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
@@ -38,6 +38,12 @@ def create_general_dartboard(save_path, number_of_analyzed_cells, frame_rate, ex
 
     mean_dartboard_generator = MeanDartboardGenerator(source_path, save_path, number_of_analyzed_cells, frame_rate, experiment_name, measurement_name, dartboard_sections, dartboard_areas_per_section)
     mean_dartboard_generator.calculate_dartboard_data_for_all_cells()
+
+def save_number_of_signals(save_path, excel_filename_general, number_of_signals_per_frame):
+    with pd.ExcelWriter(save_path + "/" + excel_filename_general) as writer:
+        sheet_name = "Number of signals in each frame"
+        number_of_signals_per_frame.to_excel(writer, sheet_name=sheet_name, index=False)
+
 
 def main(gui_enabled):
     if gui_enabled:
@@ -71,6 +77,8 @@ def main(gui_enabled):
         bead_contact_gui = BeadContactGUI(file, image, bead_contact_dict)
         bead_contact_gui.run_main_loop()
 
+    image = None  # removes image to save RAM
+
     # save bead contacts on computer
     save_path = parameters["inputoutput"]["path_to_output"] + '/'
     save_bead_contact_information(save_path, bead_contact_dict)
@@ -78,17 +86,17 @@ def main(gui_enabled):
     number_of_analyzed_cells_in_total = 0
     number_of_analyzed_cells_with_hotspots_in_total = 0
 
-    for file in filename_list:
-        """
-        if parameters["inputoutput"]["HN1L_condition"] == 'KO':
-            start_frame, end_frame = ko_bead_contact_dict[file]
-        elif parameters["inputoutput"]["HN1L_condition"] == 'WT':
-            start_frame, end_frame = wt_bead_contact_dict[file]
-        else:
-            start_frame, end_frame = 0,5000
-        """
+    number_of_signals_per_frame = pd.DataFrame()
+    frames_per_second = parameters["properties"]["frames_per_second"]
+    duration_of_measurement_in_frames = int(16 * frames_per_second)  # from 1s before bead contact to 15s after bead contact
+    list_of_time_points = []
+    for frame in range(duration_of_measurement_in_frames):
+        time_point = (frame - frames_per_second)/frames_per_second
+        list_of_time_points.append(time_point)
 
-        # start_frame,end_frame = 0,700
+    number_of_signals_per_frame['time_in_seconds'] = list_of_time_points
+
+    for file in filename_list:
         list_of_bead_contacts_for_file = bead_contact_dict[file]
 
         Processor = ImageProcessor(file, list_of_bead_contacts_for_file, parameters, model, logger)
@@ -103,9 +111,16 @@ def main(gui_enabled):
         normalized_cells_dict = Processor.apply_shape_normalization()
 
         # analysis: hotspot detection and dartboard projection
-        number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots = Processor.hotspot_detection(normalized_cells_dict)
+        number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
         number_of_analyzed_cells_in_total += number_of_analyzed_cells
         number_of_analyzed_cells_with_hotspots_in_total += number_of_analyzed_cells_with_hotspots
+        for filename_cell in microdomains_timelines_dict.keys():
+            filename = filename_cell[0]
+            cell_index = filename_cell[1]
+            title_of_microdomains_timeline = filename + "_cell_" + str(cell_index)
+
+            dataframe_series = microdomains_timelines_dict[filename_cell]
+            number_of_signals_per_frame[title_of_microdomains_timeline] = list(dataframe_series[title_of_microdomains_timeline])
 
         average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict)
 
@@ -114,6 +129,11 @@ def main(gui_enabled):
         # save files
         Processor.save_image_files()
         Processor.save_ratio_image_files()
+
+
+    # save number of signals per confocal sublayer/frame for all files and cells
+    excel_filename_general = parameters["inputoutput"]["excel_filename_all_cells"]
+    save_number_of_signals(save_path, excel_filename_general, number_of_signals_per_frame)
 
     # save number of responding cells
     save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total,

@@ -14,11 +14,9 @@ class BeadContactGUI():
     def __init__(self, file, image, bead_contact_dict):
         self.file = file
         self.image = image
-        self.image_width = len(image[0][0])
-        self.image_height = len(image[0])
+        self.number_of_frames, self.image_height, self.image_width = image.shape
         self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
 
-        self.number_of_frames = len(image)
         self.bead_contact_dict = bead_contact_dict
         self.root = Tk()
         self.root.resizable(False, False)

@@ -8,7 +8,7 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
-
+import pandas as pd
 import ntpath
 import os
 import timeit
@@ -114,7 +114,7 @@ class ImageProcessor:
             self.spotHeight = 72  # needs to be checked
 
         self.frame_number = len(self.channel1)
-
+        self.microdomains_timelines_dict = {}
         self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
         self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
@@ -152,7 +152,6 @@ class ImageProcessor:
         else:
             self.bleaching = None
 
-        self.dataframes_microdomains_list = []
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
             "dartboard_number_of_areas_per_section"]
@@ -166,14 +165,15 @@ class ImageProcessor:
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
-        self.excel_filename_general = self.parameters["inputoutput"]["excel_filename"]
+        self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
         self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.results_folder,
                                                                 self.excel_filename_one_measurement,
                                                                 self.excel_filename_general,
                                                                 self.frames_per_second,
-                                                                self.ratio_converter)
+                                                                self.ratio_converter,
+                                                                self.file_name)
 
 
         self.dartboard_generator = DartboardGenerator(self.save_path,
@@ -437,8 +437,8 @@ class ImageProcessor:
                         normalized_ratio = normalized_cells_dict[cell][0]
                         mean_ratio_value_list = normalized_cells_dict[cell][1]
 
-                        number_of_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots = self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
-                        if cell_has_hotspots:
+                        number_of_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact = self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
+                        if cell_has_hotspots_after_bead_contact:
                             number_of_cells_with_hotspots += 1
                         hd_took = (timeit.default_timer() - hd_start) * 1000.0
                         hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
@@ -452,14 +452,16 @@ class ImageProcessor:
                         continue
 
                     try:
-                        self.save_measurements(i, number_of_frames, time_before_bead_contact)
+                        microdomains_timeline_for_cell = self.save_measurements(i, cell.signal_data, number_of_frames, time_before_bead_contact)
+                        self.microdomains_timelines_dict[(self.file_name, i)] = microdomains_timeline_for_cell
+
                     except Exception as E:
                         print(E)
                         self.logger.log_and_print(message="Exception occurred: Error in saving measurements",
                                       level=logging.ERROR, logger=self.logger)
                         continue
                 bar()
-        return number_of_analyzed_cells, number_of_cells_with_hotspots
+        return number_of_analyzed_cells, number_of_cells_with_hotspots, self.microdomains_timelines_dict
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         if cell.has_bead_contact:  # if user defined a bead contact site (in the range from 1 to 12)
@@ -486,15 +488,18 @@ class ImageProcessor:
                                                                                  self.cell_type,
                                                                                  time_before_bead_contact)
             cell.signal_data = measurement_microdomains
-            self.dataframes_microdomains_list.append(measurement_microdomains)
             number_of_analyzed_frames = end_frame-start_frame
-            cell_has_hotspots = not cell.signal_data.empty
-            return number_of_analyzed_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots
+            if not measurement_microdomains.empty:
+                dataframe_after_bead_contact = measurement_microdomains.loc[measurement_microdomains['frame'] > 0].copy()
+            else:
+                dataframe_after_bead_contact = pd.DataFrame()
+            cell_has_hotspots_after_bead_contact = not dataframe_after_bead_contact.empty
+            return number_of_analyzed_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact
 
 
-    def save_measurements(self, i, number_of_frames, time_before_bead_contact):
-
-        self.hotspotdetector.save_dataframes(self.file_name, self.dataframes_microdomains_list, i, number_of_frames, time_before_bead_contact)
+    def save_measurements(self, i, cell_signal_data, number_of_frames, time_before_bead_contact):
+        microdomains_timeline_for_cell = self.hotspotdetector.save_dataframes(self.file_name, i, cell_signal_data, number_of_frames, time_before_bead_contact)
+        return microdomains_timeline_for_cell
 
     def dartboard(self, normalized_cells_dict):
         normalized_dartboard_data_multiple_cells = []
@@ -751,6 +756,18 @@ class ImageProcessor:
                         filtered_image_list.append(filtered_image)
                     cell.set_image_channel1(filtered_image_list[0])
                     cell.set_image_channel2(filtered_image_list[1])
+
+                elif channel == 'ratio':
+                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
+                    filtered_image_list = []
+                    ratio_image_list = [cell.ratio]
+                    for ratio_image in ratio_image_list:
+                        filtered_image = np.empty_like(ratio_image)
+                        for frame in range(ratio_image.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
+                        filtered_image_list.append(filtered_image)
+                    cell.ratio = filtered_image_list[0]
+                """
                 elif channel == "ratio":
                     kernel = self.median_filter_kernel
                     half_window = kernel // 2
@@ -772,6 +789,7 @@ class ImageProcessor:
                                     nonzero_values = window[window > 1e-6]
                                     filtered_value = np.median(nonzero_values)
                                     filtered_image[frame, column, row] = filtered_value
-                    cell.ratio =filtered_image
+                    cell.ratio = filtered_image
+                """
+
                 bar()
-#
