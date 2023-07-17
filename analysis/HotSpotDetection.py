@@ -59,7 +59,7 @@ class HotSpotDetector():
         return threshold_list
 
 
-    def measure_microdomains(self, image_series, start_frame, end_frame, mean_ratio_value_list, spotHeight, lower_limit_area, upper_limit_area, cell_type):
+    def measure_microdomains(self, image_series, start_frame, end_frame, mean_ratio_value_list, spotHeight, lower_limit_area, upper_limit_area, cell_type, time_before_bead_contact):
         """
         Measures the number and the intensites of microdomains in each frame of the ratio image and returns a dataframe
         :return:
@@ -76,8 +76,8 @@ class HotSpotDetector():
                 if lower_limit_area <= region.area <= upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
-                                                  'frame': num,
-                                                  'time_in_seconds': float(num)/self.frames_per_second,
+                                                  'frame': num - time_before_bead_contact,
+                                                  'time_in_seconds': float(num-time_before_bead_contact)/self.frames_per_second,
                                                   'area': region.area,
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
@@ -88,6 +88,7 @@ class HotSpotDetector():
 
                                                   }, ])
         return features
+
 
     def track_hotspots(self, image_series, threshold, lower_limit_area, upper_limit_area):
 
@@ -133,11 +134,11 @@ class HotSpotDetector():
     #         dataframe.to_excel(self.excelwriter,sheet_name="Cell_image_" + str(sheet_number))
     #         dataframe.to_csv(save_path + "/Cell_image" + str(sheet_number))
 
-    def count_microdomains_in_each_frame(self, dataframe, number_of_frames):
+    def count_microdomains_in_each_frame(self, dataframe, number_of_frames, time_before_bead_contact):
         microdomains_in_each_frame = pd.DataFrame()
 
         for frame in range(number_of_frames):
-            current_time_in_seconds = float(frame)/self.frames_per_second
+            current_time_in_seconds = float(frame-time_before_bead_contact)/self.frames_per_second
             number_of_microdomains = len(dataframe[dataframe["time_in_seconds"] == current_time_in_seconds])
             microdomains_in_each_frame = microdomains_in_each_frame._append([{'time_in_seconds':
                                                                                   current_time_in_seconds,
@@ -146,7 +147,7 @@ class HotSpotDetector():
         return microdomains_in_each_frame
 
 
-    def save_dataframes(self, filename, dataframes_list, i, number_of_frames):
+    def save_dataframes(self, filename, dataframes_list, i, number_of_frames, time_before_bead_contact):
         # Write to Multiple Sheets
         if(len(dataframes_list)>i and not dataframes_list[i].empty):
             with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement) as writer:
@@ -155,7 +156,7 @@ class HotSpotDetector():
                     if (not dataframe.empty):
                         sheet_name = "Microdomains, cell " + str(i)
                         dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
-                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe, number_of_frames)
+                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe, number_of_frames, time_before_bead_contact)
                         sheet_name = "Microdomains per frame, cell " + str(i)
                         number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
 
