@@ -409,7 +409,7 @@ class TDarts_GUI():
             self.text_user.insert(1.0, config["inputoutput"]["user"])
 
             self.text_experiment_name.delete(1.0, END)
-            self.text_experiment_name.insert(1.0, config["properties"]["experiment_name"])
+            self.text_experiment_name.insert(1.0, config["inputoutput"]["experiment_name"])
 
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["inputoutput"]["path_to_output"])
@@ -566,7 +566,7 @@ class TDarts_GUI():
             config["inputoutput"]["path_to_output"] = self.text_results_directory.get("1.0", "end-1c")
 
             config["inputoutput"]["user"] = str(self.text_user.get("1.0", "end-1c"))
-            config["properties"]["experiment_name"] = str(self.text_experiment_name.get("1.0", "end-1c"))
+            config["inputoutput"]["experiment_name"] = str(self.text_experiment_name.get("1.0", "end-1c"))
 
             config["properties"]["used_microscope"] = str(self.text_microscope.get("1.0", "end-1c"))
             config["properties"]["day_of_measurement"] = str(self.entry_time.get())

@@ -22,7 +22,7 @@ HN1L_condition = 'KO'  # 'KO' or 'WT'
 
 # can either be "two-in-one" or "single"
 # (where in the latter, the two input channels are in separate files)
-experiment_name = "test experiment"
+
 used_microscope = "test microscope"
 day_of_measurement = "2023-07-17"
 

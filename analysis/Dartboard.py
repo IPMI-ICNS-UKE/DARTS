@@ -206,10 +206,10 @@ class DartboardGenerator:
 
         plt.ylim(0, 9.85)
 
-        ax.grid(False)
+        ax.grid(True) # test
 
         ax.set_yticks([])
-        ax.axis("off")
+        ax.axis("off")  # test
 
         image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
 
