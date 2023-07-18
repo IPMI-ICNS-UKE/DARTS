@@ -9,10 +9,10 @@ import skimage.io as io
 from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 from general.logger import Logger
-from analysis.Dartboard import DartboardGenerator
-from general.FrameRangeAnalysis import FrameRange
 from analysis.Bead_Contact_GUI import BeadContactGUI
 from analysis.MeanDartboard import MeanDartboardGenerator
+import pandas as pd
+import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
@@ -26,7 +26,7 @@ def save_bead_contact_information(save_path, bead_contact_dict):
             f.write("\n")
 
 def save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total, number_of_analyzed_cells_with_hotspots_in_total):
-    with open(save_path + 'Number_of_responding_cells.txt', 'w') as f:
+    with open(save_path + 'Number of responding cells.txt', 'w') as f:
         f.write("Number of analyzed cells in total: " + str(number_of_analyzed_cells_in_total) + "\n")
         f.write("Number of analyzed cells with hotspots in total: " + str(number_of_analyzed_cells_with_hotspots_in_total) + "\n")
         percentage_of_responding_cells = float(number_of_analyzed_cells_with_hotspots_in_total) / number_of_analyzed_cells_in_total * 100
@@ -38,6 +38,16 @@ def create_general_dartboard(save_path, number_of_analyzed_cells, frame_rate, ex
 
     mean_dartboard_generator = MeanDartboardGenerator(source_path, save_path, number_of_analyzed_cells, frame_rate, experiment_name, measurement_name, dartboard_sections, dartboard_areas_per_section)
     mean_dartboard_generator.calculate_dartboard_data_for_all_cells()
+
+def save_number_of_signals(save_path, excel_filename_general, number_of_signals_per_frame):
+    with pd.ExcelWriter(save_path + excel_filename_general) as writer:
+        sheet_name = "Number of signals in each frame"
+        number_of_signals_per_frame.to_excel(writer, sheet_name=sheet_name, index=False)
+
+def save_mean_amplitudes(save_path, mean_amplitude_list):
+    with open(save_path + "Mean amplitudes of responding cells.txt", "a") as f:
+        for mean_amplitude in mean_amplitude_list:
+            f.write(str(mean_amplitude) + " nM\n")
 
 def main(gui_enabled):
     if gui_enabled:
@@ -57,12 +67,6 @@ def main(gui_enabled):
 
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
 
-    # frame_ranges = FrameRange(parameters["inputoutput"]["bead_contact_table_path"])
-    # ko_bead_contact_dict = frame_ranges.give_KO_file_bead_contact_dict()
-    # wt_bead_contact_dict = frame_ranges.give_WT_file_bead_contact_dict()
-
-
-
     # definition of bead contacts for each file
     bead_contact_dict = {}
     for file in filename_list:
@@ -71,24 +75,27 @@ def main(gui_enabled):
         bead_contact_gui = BeadContactGUI(file, image, bead_contact_dict)
         bead_contact_gui.run_main_loop()
 
+    image = None  # removes image to save RAM
+
     # save bead contacts on computer
     save_path = parameters["inputoutput"]["path_to_output"] + '/'
     save_bead_contact_information(save_path, bead_contact_dict)
 
     number_of_analyzed_cells_in_total = 0
     number_of_analyzed_cells_with_hotspots_in_total = 0
+    general_mean_amplitude_list = []
+
+    number_of_signals_per_frame = pd.DataFrame()
+    frames_per_second = parameters["properties"]["frames_per_second"]
+    duration_of_measurement_in_frames = int(16 * frames_per_second)  # from 1s before bead contact to 15s after bead contact
+    list_of_time_points = []
+    for frame in range(duration_of_measurement_in_frames):
+        time_point = (frame - frames_per_second)/frames_per_second
+        list_of_time_points.append(time_point)
+
+    number_of_signals_per_frame['time_in_seconds'] = list_of_time_points
 
     for file in filename_list:
-        """
-        if parameters["inputoutput"]["HN1L_condition"] == 'KO':
-            start_frame, end_frame = ko_bead_contact_dict[file]
-        elif parameters["inputoutput"]["HN1L_condition"] == 'WT':
-            start_frame, end_frame = wt_bead_contact_dict[file]
-        else:
-            start_frame, end_frame = 0,5000
-        """
-
-        # start_frame,end_frame = 0,700
         list_of_bead_contacts_for_file = bead_contact_dict[file]
 
         Processor = ImageProcessor(file, list_of_bead_contacts_for_file, parameters, model, logger)
@@ -103,9 +110,19 @@ def main(gui_enabled):
         normalized_cells_dict = Processor.apply_shape_normalization()
 
         # analysis: hotspot detection and dartboard projection
-        number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots = Processor.hotspot_detection(normalized_cells_dict)
+        number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
         number_of_analyzed_cells_in_total += number_of_analyzed_cells
         number_of_analyzed_cells_with_hotspots_in_total += number_of_analyzed_cells_with_hotspots
+        for filename_cell in microdomains_timelines_dict.keys():
+            filename = filename_cell[0]
+            cell_index = filename_cell[1]
+            title_of_microdomains_timeline = filename + "_cell_" + str(cell_index)
+
+            dataframe_series = microdomains_timelines_dict[filename_cell]
+            number_of_signals_per_frame[title_of_microdomains_timeline] = list(dataframe_series[title_of_microdomains_timeline])
+
+
+        general_mean_amplitude_list = general_mean_amplitude_list + Processor.give_mean_amplitude_list()
 
         average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict)
 
@@ -114,6 +131,11 @@ def main(gui_enabled):
         # save files
         Processor.save_image_files()
         Processor.save_ratio_image_files()
+
+
+    # save number of signals per confocal sublayer/frame for all files and cells
+    excel_filename_general = parameters["inputoutput"]["excel_filename_all_cells"]
+    save_number_of_signals(save_path, excel_filename_general, number_of_signals_per_frame)
 
     # save number of responding cells
     save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total,
@@ -127,6 +149,7 @@ def main(gui_enabled):
                              parameters["properties"]["dartboard_number_of_sections"],
                              parameters["properties"]["dartboard_number_of_areas_per_section"])
 
+    save_mean_amplitudes(save_path, general_mean_amplitude_list)
 
     end_time = time.time()
     # execution time

@@ -9,7 +9,7 @@ import numpy as np
 
 class HotSpotDetector():
 
-    def __init__(self, save_path, results_folder, excel_filename_one_measurement, excel_filename_general, fps, ratioconverter):
+    def __init__(self, save_path, results_folder, excel_filename_one_measurement, excel_filename_general, fps, ratioconverter, filename):
         self.save_path = save_path
         self.results_folder = results_folder
         self.excel_filename_one_measurement = excel_filename_one_measurement
@@ -17,6 +17,7 @@ class HotSpotDetector():
 
         self.frames_per_second = fps
         self.ratio_converter = ratioconverter
+        self.file_name = filename
 
     def threshold_image_frame(self, threshold, image_series, frame):
         thresholded_frame = image_series[frame] > threshold
@@ -134,8 +135,9 @@ class HotSpotDetector():
     #         dataframe.to_excel(self.excelwriter,sheet_name="Cell_image_" + str(sheet_number))
     #         dataframe.to_csv(save_path + "/Cell_image" + str(sheet_number))
 
-    def count_microdomains_in_each_frame(self, dataframe, number_of_frames, time_before_bead_contact):
+    def count_microdomains_in_each_frame(self, i, dataframe, number_of_frames, time_before_bead_contact):
         microdomains_in_each_frame = pd.DataFrame()
+        microdomains_timeline_for_cell = pd.DataFrame()
 
         for frame in range(number_of_frames):
             current_time_in_seconds = float(frame-time_before_bead_contact)/self.frames_per_second
@@ -144,34 +146,23 @@ class HotSpotDetector():
                                                                                   current_time_in_seconds,
                                                                               'number_of_microdomains': number_of_microdomains,
                                                                             }, ])
-        return microdomains_in_each_frame
+            microdomains_timeline_for_cell = microdomains_timeline_for_cell._append([{self.file_name + "_cell_" + str(i): number_of_microdomains,
+                                                                            }, ])
+        return microdomains_in_each_frame, microdomains_timeline_for_cell
+# filename + "_cell_" + str(cell_index)
 
-
-    def save_dataframes(self, filename, dataframes_list, i, number_of_frames, time_before_bead_contact):
+    def save_dataframes(self, file_name, i, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact):
         # Write to Multiple Sheets
-        if(len(dataframes_list)>i and not dataframes_list[i].empty):
+        if not cell_signal_data.empty:
             with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement) as writer:
 
-                for dataframe in dataframes_list:
-                    if (not dataframe.empty):
-                        sheet_name = "Microdomains, cell " + str(i)
-                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
-                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe, number_of_frames, time_before_bead_contact)
-                        sheet_name = "Microdomains per frame, cell " + str(i)
-                        number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
-
-            """
-            with pd.ExcelWriter(self.results_folder + "/" + self.excel_filename_general) as writer:
-                index = 1
-
-                for dataframe in dataframes_list:
-                    if (not dataframe.empty):
-                        sheet_name = "Microdomains, cell " + str(index)
-                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
-                        number_of_microdomains = self.count_microdomains_in_each_frame(dataframe)
-                        sheet_name = "Microdomains per frame, cell " + str(index)
-                        number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
-
-                        index += 1
-            """
+                sheet_name = "Microdomains, cell " + str(i)
+                cell_signal_data.to_excel(writer, sheet_name=sheet_name, index=False)
+                number_of_microdomains,microdomains_timeline_for_cell = self.count_microdomains_in_each_frame(i, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact)
+                sheet_name = "Microdomains per frame, cell " + str(i)
+                number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
+                return microdomains_timeline_for_cell
+        else:
+            dataframe_with_zeros = pd.DataFrame(np.zeros((number_of_analyzed_frames, 1)))
+            return dataframe_with_zeros
 
