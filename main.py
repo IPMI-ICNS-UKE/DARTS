@@ -113,14 +113,13 @@ def main(gui_enabled):
         number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
         number_of_analyzed_cells_in_total += number_of_analyzed_cells
         number_of_analyzed_cells_with_hotspots_in_total += number_of_analyzed_cells_with_hotspots
-        for filename_cell in microdomains_timelines_dict.keys():
+        for filename_cell in microdomains_timelines_dict:
             filename = filename_cell[0]
             cell_index = filename_cell[1]
             title_of_microdomains_timeline = filename + "_cell_" + str(cell_index)
 
             dataframe_series = microdomains_timelines_dict[filename_cell]
-            number_of_signals_per_frame[title_of_microdomains_timeline] = list(dataframe_series[title_of_microdomains_timeline])
-
+            number_of_signals_per_frame[title_of_microdomains_timeline] = dataframe_series[title_of_microdomains_timeline].tolist()
 
         general_mean_amplitude_list = general_mean_amplitude_list + Processor.give_mean_amplitude_list()
 

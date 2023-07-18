@@ -99,7 +99,7 @@ class ImageProcessor:
                 self.y_max, self.x_max = self.image.shape
         """
 
-        self.scale_microns_per_pixel = self.parameters["properties"]["scale_microns_per_pixel"]
+        self.scale_pixels_per_micron = self.parameters["properties"]["scale_pixels_per_micron"]
         self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
 
         self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
@@ -130,7 +130,7 @@ class ImageProcessor:
         self.roi_minmax_list = []
         # self.roi_coord_list = []
         self.roi_bounding_boxes = []
-        self.cell_tracker = CellTracker()
+        self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
         self.segmentation = SegmentationSD(self.model)
         self.ATP_image_converter = ATPImageConverter()
         self.background_subtractor = BackgroundSubtractor(self.segmentation)
@@ -172,7 +172,8 @@ class ImageProcessor:
                                                                 self.excel_filename_general,
                                                                 self.frames_per_second,
                                                                 self.ratio_converter,
-                                                                self.file_name)
+                                                                self.file_name,
+                                                                self.scale_pixels_per_micron)
 
 
         self.dartboard_generator = DartboardGenerator(self.save_path,
@@ -482,8 +483,8 @@ class ImageProcessor:
                                                                                  end_frame,
                                                                                  mean_ratio_value_list_short,
                                                                                  self.spotHeight,
-                                                                                 self.minimum_spotsize,   # lower area limit
-                                                                                 20,  # upper area limit
+                                                                                 self.minimum_spotsize,   # lower area limit in pixels
+                                                                                 20,  # upper area limit in pixels
                                                                                  self.cell_type,
                                                                                  time_before_bead_contact)
             cell.signal_data = measurement_microdomains
@@ -684,7 +685,7 @@ class ImageProcessor:
             # plt.show()
             label = skimage.measure.label(thresholded_image)
             regions = skimage.measure.regionprops(label_image=label, intensity_image=current_frame)
-            largest_region, largest_area = self.give_largest_region(regions)
+            largest_region, largest_area = self.give_largest_region(regions)  # largest area in pixels
 
             mean_ratio_value_of_largest_area = largest_region.intensity_mean
             mean_ratio_value_list.append(mean_ratio_value_of_largest_area)
