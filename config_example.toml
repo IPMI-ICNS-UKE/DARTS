@@ -18,6 +18,7 @@ experiment_name = "test_skript"
 bead_contact_table_path = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/HN1L Beadkontakte Anfang Ende.xlsx"
 HN1L_condition = 'KO'  # 'KO' or 'WT'
 
+
 [properties]
 
 # can either be "two-in-one" or "single"
