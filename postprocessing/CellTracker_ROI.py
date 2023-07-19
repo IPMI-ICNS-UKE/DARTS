@@ -14,9 +14,10 @@ pd.options.mode.chained_assignment = None  # default='warn'
 tp.quiet(suppress=True)
 
 class CellTracker:
-    def __init__(self):
+    def __init__(self, scale_pixels_per_micron):
         pass
         # self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
+        self.scale_pixels_per_micron = scale_pixels_per_micron
 
     def stardist_segmentation_in_frame(self, image_frame, model):
         """
@@ -70,7 +71,7 @@ class CellTracker:
                                                         'x_centroid_minus_bbox': region.centroid[1]-region.bbox[1],
                                                         'frame': num,
                                                         'bbox': region.bbox,
-                                                        'area': region.area,
+                                                        'area in (µm)^2': region.area / (self.scale_pixels_per_micron ** 2),
                                                         # Q: diameter could be relevant to check cell size
                                                         'equivalent_diameter_area': region.equivalent_diameter_area,
                                                         'mean_intensity': region.intensity_mean,

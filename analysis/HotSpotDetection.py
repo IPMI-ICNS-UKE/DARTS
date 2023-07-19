@@ -9,7 +9,7 @@ import numpy as np
 
 class HotSpotDetector():
 
-    def __init__(self, save_path, results_folder, excel_filename_one_measurement, excel_filename_general, fps, ratioconverter, filename):
+    def __init__(self, save_path, results_folder, excel_filename_one_measurement, excel_filename_general, fps, ratioconverter, filename, scale_pixels_per_micron):
         self.save_path = save_path
         self.results_folder = results_folder
         self.excel_filename_one_measurement = excel_filename_one_measurement
@@ -18,6 +18,7 @@ class HotSpotDetector():
         self.frames_per_second = fps
         self.ratio_converter = ratioconverter
         self.file_name = filename
+        self.scale_pixels_per_micron = scale_pixels_per_micron
 
     def threshold_image_frame(self, threshold, image_series, frame):
         thresholded_frame = image_series[frame] > threshold
@@ -79,7 +80,7 @@ class HotSpotDetector():
                                                   'x': region.centroid_weighted[1],
                                                   'frame': num - time_before_bead_contact,
                                                   'time_in_seconds': float(num-time_before_bead_contact)/self.frames_per_second,
-                                                  'area': region.area,
+                                                  'area in (µm)^2': region.area / (self.scale_pixels_per_micron**2),
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
                                                   'mean_intensity': region.intensity_mean,
@@ -105,7 +106,7 @@ class HotSpotDetector():
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
                                                   'time_in_seconds': float(num)/self.frames_per_second,
-                                                  'area': region.area,
+                                                  'area in (µm)^2': region.area / (self.scale_pixels_per_micron ** 2),
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
                                                   'mean_intensity': region.intensity_mean,
@@ -163,6 +164,10 @@ class HotSpotDetector():
                 number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                 return microdomains_timeline_for_cell
         else:
-            dataframe_with_zeros = pd.DataFrame(np.zeros((number_of_analyzed_frames, 1)))
+            dataframe_with_zeros = pd.DataFrame()
+            for i in range(number_of_analyzed_frames):
+                dataframe_with_zeros = dataframe_with_zeros._append(
+                    [{self.file_name + "_cell_" + str(i): 0,
+                      }, ])
             return dataframe_with_zeros
 

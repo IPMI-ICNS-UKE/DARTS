@@ -94,7 +94,7 @@ class TDarts_GUI():
         self.text_microscope = Text(self.properties_of_measurement_frame, height=1, width=30)
         self.text_microscope.grid(row=0, column=1, sticky="W")
         # scale
-        self.label_scale = Label(self.properties_of_measurement_frame, text="Scale (microns per pixel):  ")
+        self.label_scale = Label(self.properties_of_measurement_frame, text="Scale (Pixels per micron):  ")
         self.label_scale.grid(row=1, column=0, sticky="W")
         self.text_scale = Text(self.properties_of_measurement_frame, height=1, width=30)
         self.text_scale.insert(INSERT, "0")
@@ -409,7 +409,7 @@ class TDarts_GUI():
             self.text_user.insert(1.0, config["inputoutput"]["user"])
 
             self.text_experiment_name.delete(1.0, END)
-            self.text_experiment_name.insert(1.0, config["properties"]["experiment_name"])
+            self.text_experiment_name.insert(1.0, config["inputoutput"]["experiment_name"])
 
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["inputoutput"]["path_to_output"])
@@ -418,7 +418,7 @@ class TDarts_GUI():
             self.text_microscope.insert(1.0, config["properties"]["used_microscope"])
 
             self.text_scale.delete(1.0, END)
-            self.text_scale.insert(1.0, config["properties"]["scale_microns_per_pixel"])
+            self.text_scale.insert(1.0, config["properties"]["scale_pixels_per_micron"])
 
             self.text_fps.delete(1.0, END)
             self.text_fps.insert(1.0, config["properties"]["frames_per_second"])
@@ -566,12 +566,12 @@ class TDarts_GUI():
             config["inputoutput"]["path_to_output"] = self.text_results_directory.get("1.0", "end-1c")
 
             config["inputoutput"]["user"] = str(self.text_user.get("1.0", "end-1c"))
-            config["properties"]["experiment_name"] = str(self.text_experiment_name.get("1.0", "end-1c"))
+            config["inputoutput"]["experiment_name"] = str(self.text_experiment_name.get("1.0", "end-1c"))
 
             config["properties"]["used_microscope"] = str(self.text_microscope.get("1.0", "end-1c"))
             config["properties"]["day_of_measurement"] = str(self.entry_time.get())
 
-            config["properties"]["scale_microns_per_pixel"] = float(self.text_scale.get("1.0", END))
+            config["properties"]["scale_pixels_per_micron"] = float(self.text_scale.get("1.0", END))
             config["properties"]["frames_per_second"] = float(self.text_fps.get("1.0", END))
             config["properties"]["spatial_resolution"] = int(self.text_resolution.get("1.0", END))
 
