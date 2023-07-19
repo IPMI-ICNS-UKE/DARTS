@@ -104,12 +104,13 @@ class DartboardGenerator:
 
         for frame in range(time_of_bead_contact, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
+            current_radius = radii_after_normalization[frame] + 1  # 1 as correction term; rather have to large radius than lose information. Sometime, the circle does not contain all the pixels.
             dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
                                                                                                          signal_dataframe,
                                                                                                          centroid_coords,
                                                                                                          number_of_dartboard_sections,
                                                                                                          number_of_dartboard_areas_per_section,
-                                                                                                         radii_after_normalization[frame])
+                                                                                                         current_radius)
 
             cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)
 
