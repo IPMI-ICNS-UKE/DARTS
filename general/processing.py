@@ -690,7 +690,7 @@ class ImageProcessor:
             mean_ratio_value_of_largest_area = largest_region.intensity_mean
             mean_ratio_value_list.append(mean_ratio_value_of_largest_area)
 
-            current_radius = math.sqrt(largest_area / math.pi)
+            current_radius = math.sqrt(largest_area / math.pi)  # Area = r**2 * math.pi
             radii_list.append(current_radius)
 
         return mean_ratio_value_list, radii_list

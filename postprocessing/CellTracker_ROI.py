@@ -85,7 +85,7 @@ class CellTracker:
                 bar()
 
         if not features.empty:
-            tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
+            # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
             search_range = 50  # TO DO: needs to be optimised, adaptation to estimated cell diameter/area
             t = tp.link_df(features, search_range, memory=0)
@@ -140,8 +140,7 @@ class CellTracker:
 
         for frame in range(frame_number):
             current_label = images_inside_bboxes[frame]
-            # io.imshow(current_label)
-            # plt.show()
+
             x_shift = x_shift_all[frame]
             y_shift = y_shift_all[frame]
 

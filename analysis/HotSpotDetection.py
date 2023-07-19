@@ -152,22 +152,23 @@ class HotSpotDetector():
         return microdomains_in_each_frame, microdomains_timeline_for_cell
 # filename + "_cell_" + str(cell_index)
 
-    def save_dataframes(self, file_name, i, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact):
+    def save_dataframes(self, file_name, index, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact):
         # Write to Multiple Sheets
         if not cell_signal_data.empty:
             with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement) as writer:
 
-                sheet_name = "Microdomains, cell " + str(i)
+                sheet_name = "Microdomains, cell " + str(index)
                 cell_signal_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                number_of_microdomains,microdomains_timeline_for_cell = self.count_microdomains_in_each_frame(i, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact)
-                sheet_name = "Microdomains per frame, cell " + str(i)
+                number_of_microdomains,microdomains_timeline_for_cell = self.count_microdomains_in_each_frame(index, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact)
+                sheet_name = "Microdomains per frame, cell " + str(index)
                 number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                 return microdomains_timeline_for_cell
         else:
             dataframe_with_zeros = pd.DataFrame()
+            column_name = self.file_name + "_cell_" + str(index)
             for i in range(number_of_analyzed_frames):
                 dataframe_with_zeros = dataframe_with_zeros._append(
-                    [{self.file_name + "_cell_" + str(i): 0,
+                    [{column_name: 0,
                       }, ])
             return dataframe_with_zeros
 
