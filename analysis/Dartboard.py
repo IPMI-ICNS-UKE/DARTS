@@ -104,12 +104,13 @@ class DartboardGenerator:
 
         for frame in range(time_of_bead_contact, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
+            current_radius = radii_after_normalization[frame] + 1  # 1 as correction term; rather have to large radius than lose information. Sometime, the circle does not contain all the pixels.
             dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
                                                                                                          signal_dataframe,
                                                                                                          centroid_coords,
                                                                                                          number_of_dartboard_sections,
                                                                                                          number_of_dartboard_areas_per_section,
-                                                                                                         radii_after_normalization[frame])
+                                                                                                         current_radius)
 
             cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)
 
@@ -206,14 +207,15 @@ class DartboardGenerator:
 
         plt.ylim(0, 9.85)
 
-        ax.grid(True) # test
+        ax.grid(False) # test
 
         ax.set_yticks([])
-        ax.axis("off")  # test
+        ax.axis("on")  # test
+        ax.set_xticks([])
 
         image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
 
-        plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)')
+        plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)', x=0.5, y=1.15)
 
 
         sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
@@ -236,4 +238,3 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
-

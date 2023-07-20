@@ -14,7 +14,7 @@ class TDarts_GUI():
 
         self.window = Tk()
         # self.window.resizable(False, False)
-        width = 1200
+        width = 1300
         height = 900
         self.window.geometry(str(width) + "x" + str(height))
 
@@ -48,19 +48,19 @@ class TDarts_GUI():
         # path to input channel 1
         self.label_single_path_to_input_channel1 = Label(self.input_output_frame, text="path to input channel 1")
         self.label_single_path_to_input_channel1.grid(row=2, column=0, sticky="W")
-        self.text_single_path_to_input_channel1 = Text(self.input_output_frame, height=1, width=30)
+        self.text_single_path_to_input_channel1 = Text(self.input_output_frame, height=1, width=20)
         self.text_single_path_to_input_channel1.grid(row=2, column=1, sticky="W")
         # path to input channel 2
         self.label_single_path_to_input_channel2 = Label(self.input_output_frame, text="path to input channel 2")
         self.label_single_path_to_input_channel2.grid(row=3, column=0, sticky="W")
-        self.text_single_path_to_input_channel2 = Text(self.input_output_frame, height=1, width=30)
+        self.text_single_path_to_input_channel2 = Text(self.input_output_frame, height=1, width=20)
         self.text_single_path_to_input_channel2.grid(row=3, column=1, sticky="W")
 
         # path for "two in one"
         # path to combined
         self.label_path_to_input_combined = Label(self.input_output_frame, text="path to input combined")
         self.label_path_to_input_combined.grid(row=5, column=0, sticky="W")
-        self.text_path_to_input_combined = Text(self.input_output_frame, height=1, width=30)
+        self.text_path_to_input_combined = Text(self.input_output_frame, height=1, width=20)
         self.text_path_to_input_combined.grid(row=5, column=1, sticky="W")
 
         # choose files
@@ -75,7 +75,7 @@ class TDarts_GUI():
         self.label_results_directory = Label(self.input_output_frame, text="results directory")
         self.label_results_directory.grid(row=8, column=0, sticky="W")
         self.label_results_directory.config(bg='lightgray')
-        self.text_results_directory = Text(self.input_output_frame, height=1, width=30)
+        self.text_results_directory = Text(self.input_output_frame, height=1, width=20)
         self.text_results_directory.grid(row=9, column=0, sticky="W")
         self.choose_results_directory_button = Button(self.input_output_frame, text="Choose a results directory",
                                                       command=self.choose_results_directory_clicked)
@@ -91,24 +91,24 @@ class TDarts_GUI():
         # microscope
         self.label_microscope_name = Label(self.properties_of_measurement_frame, text="Used microscope:  ")
         self.label_microscope_name.grid(row=0, column=0, sticky="W")
-        self.text_microscope = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_microscope = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_microscope.grid(row=0, column=1, sticky="W")
         # scale
         self.label_scale = Label(self.properties_of_measurement_frame, text="Scale (Pixels per micron):  ")
         self.label_scale.grid(row=1, column=0, sticky="W")
-        self.text_scale = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_scale = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_scale.insert(INSERT, "0")
         self.text_scale.grid(row=1, column=1, sticky="W")
         # fps
         self.label_fps = Label(self.properties_of_measurement_frame, text="frame rate (fps):  ")
         self.label_fps.grid(row=2, column=0, sticky="W")
-        self.text_fps = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_fps = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_fps.insert(INSERT, "3.0")
         self.text_fps.grid(row=2, column=1, sticky="W")
         # resolution
         self.label_resolution = Label(self.properties_of_measurement_frame, text="Spatial resolution in pixels:  ")
         self.label_resolution.grid(row=3, column=0, sticky="W")
-        self.text_resolution = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_resolution = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_resolution.insert(INSERT, "3")
         self.text_resolution.grid(row=3, column=1, sticky="W")
 
@@ -128,7 +128,7 @@ class TDarts_GUI():
         # time
         self.label_time = Label(self.properties_of_measurement_frame, text="day of measurement :  ")
         self.label_time.grid(row=5, column=0, sticky="W")
-        self.entry_time = Entry(self.properties_of_measurement_frame)
+        self.entry_time = Entry(self.properties_of_measurement_frame, width=10)
         self.entry_time.grid(row=5, column=1, sticky="W")
         self.entry_time.insert(0, "yyyy-mm-dd")
         self.entry_time.bind("<1>", self.pick_date)
@@ -136,13 +136,13 @@ class TDarts_GUI():
         # user
         self.label_user = Label(self.properties_of_measurement_frame, text="User:  ")
         self.label_user.grid(column=0, row=6, sticky="W")
-        self.text_user = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_user = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_user.grid(column=1, row=6, sticky="W")
 
         # name of experiment
         self.label_experiment_name = Label(self.properties_of_measurement_frame, text="Name of experiment:  ")
         self.label_experiment_name.grid(column=0, row=7, sticky="W")
-        self.text_experiment_name = Text(self.properties_of_measurement_frame, height=1, width=30)
+        self.text_experiment_name = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_experiment_name.grid(column=1, row=7, sticky="W")
 
         ###################################################################################
@@ -166,7 +166,7 @@ class TDarts_GUI():
         self.check_box_channel_alignment.config(state=DISABLED)
 
         self.label_frame_by_frame_registration = Label(self.label_processing_pipeline,
-                                                       text="Frame-by-Frame registration:  ")
+                                                       text="align each frame?:  ")
         self.label_frame_by_frame_registration.grid(column=3, row=13, sticky="W")
         self.frame_by_frame_registration = IntVar()
         self.check_box_frame_by_frame_registration = Checkbutton(self.label_processing_pipeline,
@@ -218,38 +218,104 @@ class TDarts_GUI():
         ]
         self.deconvolution_algorithm = StringVar(self.label_processing_pipeline)
         self.deconvolution_algorithm.set(deconvolution_algorithms[0])
-        self.option_menu_deconvolution = OptionMenu(self.label_processing_pipeline, self.deconvolution_algorithm, *deconvolution_algorithms)
+        self.option_menu_deconvolution = OptionMenu(self.label_processing_pipeline, self.deconvolution_algorithm, *deconvolution_algorithms, command=self.decon_selection_changed)
         # self.option_menu_deconvolution.config(state=DISABLED)
         self.option_menu_deconvolution.grid(column=3, row=16, sticky="W")
 
+        self.label_TDE_lambda = Label(self.label_processing_pipeline, text="lambda (TDE)")
+        self.label_TDE_lambda.grid(column=3, row=17, sticky="W")
+        self.text_TDE_lambda = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_TDE_lambda.grid(column=4, row=17, sticky="W")
+        self.text_TDE_lambda.config(state=DISABLED)
+
+        self.label_TDE_lambda_t = Label(self.label_processing_pipeline, text="lambda t (TDE)")
+        self.label_TDE_lambda_t.grid(column=5, row=17, sticky="W")
+        self.text_TDE_lambda_t = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_TDE_lambda_t.grid(column=6, row=17, sticky="W")
+        self.text_TDE_lambda_t.config(state=DISABLED)
+
+        self.label_psf_type = Label(self.label_processing_pipeline, text="psf: type")
+        self.label_psf_type.grid(column=7, row=17, sticky="W")
+        self.text_psf_type = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_type.grid(column=8, row=17, sticky="W")
+
+
+        self.label_psf_lambdaEx_ch1 = Label(self.label_processing_pipeline, text="psf: lambdaEx_ch1")
+        self.label_psf_lambdaEx_ch1.grid(column=3, row=18, sticky="W")
+        self.text_psf_lambdaEx_ch1 = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_lambdaEx_ch1.grid(column=4, row=18, sticky="W")
+
+        self.label_psf_lambdaEm_ch1 = Label(self.label_processing_pipeline, text="psf: lambdaEm_ch1")
+        self.label_psf_lambdaEm_ch1.grid(column=5, row=18, sticky="W")
+        self.text_psf_lambdaEm_ch1 = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_lambdaEm_ch1.grid(column=6, row=18, sticky="W")
+
+        self.label_psf_lambdaEx_ch2 = Label(self.label_processing_pipeline, text="psf: lambdaEx_ch2")
+        self.label_psf_lambdaEx_ch2.grid(column=7, row=18, sticky="W")
+        self.text_psf_lambdaEx_ch2 = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_lambdaEx_ch2.grid(column=8, row=18, sticky="W")
+
+        self.label_psf_lambdaEm_ch2 = Label(self.label_processing_pipeline, text="psf: lambdaEm_ch2")
+        self.label_psf_lambdaEm_ch2.grid(column=3, row=19, sticky="W")
+        self.text_psf_lambdaEm_ch2 = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_lambdaEm_ch2.grid(column=4, row=19, sticky="W")
+
+
+        self.label_psf_numAper = Label(self.label_processing_pipeline, text="psf: numAper")
+        self.label_psf_numAper.grid(column=5, row=19, sticky="W")
+        self.text_psf_numAper= Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_numAper.grid(column=6, row=19, sticky="W")
+
+        self.label_psf_magObj = Label(self.label_processing_pipeline, text="psf: magObj")
+        self.label_psf_magObj.grid(column=7, row=19, sticky="W")
+        self.text_psf_magObj = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_magObj.grid(column=8, row=19, sticky="W")
+
+        self.label_psf_rindexObj = Label(self.label_processing_pipeline, text="psf: rindexObj")
+        self.label_psf_rindexObj.grid(column=3, row=20, sticky="W")
+        self.text_psf_rindexObj = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_rindexObj.grid(column=4, row=20, sticky="W")
+
+        self.label_psf_rindexSp = Label(self.label_processing_pipeline, text="psf: rindexSp")
+        self.label_psf_rindexSp.grid(column=5, row=20, sticky="W")
+        self.text_psf_rindexSp = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_rindexSp.grid(column=6, row=20, sticky="W")
+
+        self.label_psf_ccdSize = Label(self.label_processing_pipeline, text="psf: ccdSize")
+        self.label_psf_ccdSize.grid(column=7, row=20, sticky="W")
+        self.text_psf_ccdSize = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_psf_ccdSize.grid(column=8, row=20, sticky="W")
+
+
+
         #
         self.label_bead_contact_sites = Label(self.label_processing_pipeline, text="Bead contact:  ")
-        self.label_bead_contact_sites.grid(column=1, row=17, sticky="W")
+        self.label_bead_contact_sites.grid(column=1, row=21, sticky="W")
         self.bead_contacts_in_pipeline = IntVar()
         self.check_box_bead_contacts = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.bead_contacts_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=None)
-        self.check_box_bead_contacts.grid(column=2, row=17, sticky="W")
+        self.check_box_bead_contacts.grid(column=2, row=21, sticky="W")
         self.check_box_bead_contacts.select()
         self.check_box_bead_contacts.config(state=DISABLED)
         #
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
-        self.label_bleaching_correction.grid(column=1, row=18, sticky="W")
+        self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
         self.bleaching_correction_in_pipeline = IntVar()
         self.check_box_bleaching_correction = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.bleaching_correction_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=self.update_bleaching_correction)
-        self.check_box_bleaching_correction.grid(column=2, row=18, sticky="W")
+        self.check_box_bleaching_correction.grid(column=2, row=22, sticky="W")
         self.check_box_bleaching_correction.select()
         self.check_box_bleaching_correction.config(state=DISABLED)
 
         bleaching_correction_algorithms = [
-            "additiv no fit"
+            "additive, no fit"
         ]
 
         self.bleaching_correction_algorithm = StringVar(self.label_processing_pipeline)
@@ -257,25 +323,25 @@ class TDarts_GUI():
         self.option_menu_bleaching_correction = OptionMenu(self.label_processing_pipeline, self.bleaching_correction_algorithm,
                                                     *bleaching_correction_algorithms)
         # self.option_menu_bleaching_correction.config(state=DISABLED)
-        self.option_menu_bleaching_correction.grid(column=3, row=18, sticky="W")
+        self.option_menu_bleaching_correction.grid(column=3, row=22, sticky="W")
         #
         self.label_ratio_generation = Label(self.label_processing_pipeline, text="Ratio images:  ")
-        self.label_ratio_generation.grid(column=1, row=19, sticky="W")
+        self.label_ratio_generation.grid(column=1, row=23, sticky="W")
         self.ratio_generation_in_pipeline = IntVar()
         self.check_box_ratio_generation = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.ratio_generation_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=None)
-        self.check_box_ratio_generation.grid(column=2, row=19, sticky="W")
+        self.check_box_ratio_generation.grid(column=2, row=23, sticky="W")
         self.check_box_ratio_generation.select()
         self.check_box_ratio_generation.config(state=DISABLED)
 
         self.empty_label = Label(self.label_processing_pipeline, text="")
-        self.empty_label.grid(column=1, row=20, sticky="W")
+        self.empty_label.grid(column=1, row=24, sticky="W")
 
         self.label_shape_normalization = Label(self.label_processing_pipeline, text="Shape Normalization")
-        self.label_shape_normalization.grid(column=1, row=21, sticky="W")
+        self.label_shape_normalization.grid(column=1, row=25, sticky="W")
         self.label_shape_normalization.config(bg='lightgray')
 
 
@@ -285,47 +351,47 @@ class TDarts_GUI():
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=None)
-        self.check_box_shape_normalization.grid(column=2, row=21, sticky="W")
+        self.check_box_shape_normalization.grid(column=2, row=25, sticky="W")
         self.check_box_shape_normalization.select()
         self.check_box_shape_normalization.config(state=DISABLED)
 
         self.empty_label_2 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_2.grid(column=1, row=22, sticky="W")
+        self.empty_label_2.grid(column=1, row=26, sticky="W")
 
         self.label_analysis = Label(self.label_processing_pipeline, text="Analysis")
-        self.label_analysis.grid(column=1, row=23, sticky="W")
+        self.label_analysis.grid(column=1, row=27, sticky="W")
         self.label_analysis.config(bg='lightgray')
 
         self.label_hotspot_detection = Label(self.label_processing_pipeline, text="Hotspot detection:  ")
-        self.label_hotspot_detection.grid(column=1, row=24, sticky="W")
+        self.label_hotspot_detection.grid(column=1, row=28, sticky="W")
         self.hotspot_detection_in_pipeline = IntVar()
         self.check_box_hotspot_detection= Checkbutton(self.label_processing_pipeline,
                                                       variable=self.hotspot_detection_in_pipeline,
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=None)
-        self.check_box_hotspot_detection.grid(column=2, row=24, sticky="W")
+        self.check_box_hotspot_detection.grid(column=2, row=28, sticky="W")
         self.check_box_hotspot_detection.select()
         self.check_box_hotspot_detection.config(state=DISABLED)
 
         self.label_dartboard_projection = Label(self.label_processing_pipeline, text="Dartboard projection:  ")
-        self.label_dartboard_projection.grid(column=1, row=25, sticky="W")
+        self.label_dartboard_projection.grid(column=1, row=29, sticky="W")
         self.dartboard_projection_in_pipeline = IntVar()
         self.check_box_dartboard_projection = Checkbutton(self.label_processing_pipeline,
                                                        variable=self.dartboard_projection_in_pipeline,
                                                        onvalue=1,
                                                        offvalue=0,
                                                        command=None)
-        self.check_box_dartboard_projection.grid(column=2, row=25, sticky="W")
+        self.check_box_dartboard_projection.grid(column=2, row=29, sticky="W")
         self.check_box_dartboard_projection.select()
         self.check_box_dartboard_projection.config(state=DISABLED)
 
         self.empty_label_3 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_3.grid(column=1, row=26, sticky="W")
+        self.empty_label_3.grid(column=1, row=30, sticky="W")
 
         # select all/default settings button
         self.default_settings_button = Button(self.label_processing_pipeline, text='Default settings', command=self.default_processing_settings)
-        self.default_settings_button.grid(column=1, row=27, sticky="W")
+        self.default_settings_button.grid(column=1, row=31, sticky="W")
 
         ##################################################################################
         """
@@ -366,8 +432,6 @@ class TDarts_GUI():
         # cancel button
         self.reinit_button = Button(self.label_control_buttons, text='Reinitialize', command=None)
         self.reinit_button.grid(column=1, row=3, sticky="W")
-
-
 
     def pick_date(self, event):
         global calendar, date_window
@@ -440,6 +504,37 @@ class TDarts_GUI():
                 self.check_box_deconvolution_in_pipeline.select()
                 self.deconvolution_algorithm.set(config["deconvolution"]["decon"])
                 self.option_menu_deconvolution.config(state=NORMAL)
+                if self.deconvolution_algorithm.get() == "TDE":
+                    self.text_TDE_lambda.config(state=NORMAL)
+                    self.text_TDE_lambda_t.config(state=NORMAL)
+                    self.text_TDE_lambda.delete(1.0, END)
+                    self.text_TDE_lambda.insert(1.0, config["deconvolution"]["lambda"])
+                    self.text_TDE_lambda_t.delete(1.0, END)
+                    self.text_TDE_lambda_t.insert(1.0, config["deconvolution"]["lambda_t"])
+                self.text_psf_type.delete(1.0, END)
+                self.text_psf_type.insert(1.0, config["psf"]["type"])
+                self.text_psf_lambdaEx_ch1.delete(1.0, END)
+                self.text_psf_lambdaEx_ch1.insert(1.0, config["psf"]["lambdaEx_ch1"])
+                self.text_psf_lambdaEm_ch1.delete(1.0, END)
+                self.text_psf_lambdaEm_ch1.insert(1.0, config["psf"]["lambdaEm_ch1"])
+                self.text_psf_lambdaEx_ch2.delete(1.0, END)
+                self.text_psf_lambdaEx_ch2.insert(1.0, config["psf"]["lambdaEx_ch2"])
+                self.text_psf_lambdaEm_ch2.delete(1.0, END)
+                self.text_psf_lambdaEm_ch2.insert(1.0, config["psf"]["lambdaEm_ch2"])
+                self.text_psf_numAper.delete(1.0, END)
+                self.text_psf_numAper.insert(1.0, config["psf"]["numAper"])
+                self.text_psf_magObj.delete(1.0, END)
+                self.text_psf_magObj.insert(1.0, config["psf"]["magObj"])
+                self.text_psf_rindexObj.delete(1.0, END)
+                self.text_psf_rindexObj.insert(1.0, config["psf"]["rindexObj"])
+                self.text_psf_rindexSp.delete(1.0, END)
+                self.text_psf_rindexSp.insert(1.0, config["psf"]["rindexSp"])
+                self.text_psf_ccdSize.delete(1.0, END)
+                self.text_psf_ccdSize.insert(1.0, config["psf"]["ccdSize"])
+
+
+
+
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
 
@@ -507,6 +602,17 @@ class TDarts_GUI():
         else:
             return None
 
+    def decon_selection_changed(self, event):
+        chosen_decon_algorithm = self.deconvolution_algorithm.get()
+        if chosen_decon_algorithm == "TDE":
+            self.text_TDE_lambda.config(state=NORMAL)
+            self.text_TDE_lambda_t.config(state=NORMAL)
+        elif chosen_decon_algorithm =="LR":
+            self.text_TDE_lambda.delete(1.0, END)
+            self.text_TDE_lambda.config(state=DISABLED)
+            self.text_TDE_lambda_t.delete(1.0, END)
+            self.text_TDE_lambda_t.config(state=DISABLED)
+
     def select_directory(self):
         chosen_image_configuration = self.get_image_configuration()
 
@@ -539,7 +645,30 @@ class TDarts_GUI():
     def default_processing_settings(self):
         self.check_box_frame_by_frame_registration.deselect()
         self.deconvolution_algorithm.set('LR')
-        self.bleaching_correction_algorithm.set('additiv no fit')
+        self.bleaching_correction_algorithm.set('additive, no fit')
+
+
+        self.text_psf_type.delete(1.0, END)
+        self.text_psf_type.insert(1.0, "confocal")
+        self.text_psf_lambdaEx_ch1.delete(1.0, END)
+        self.text_psf_lambdaEx_ch1.insert(1.0, "488")
+        self.text_psf_lambdaEm_ch1.delete(1.0, END)
+        self.text_psf_lambdaEm_ch1.insert(1.0, "520")
+        self.text_psf_lambdaEx_ch2.delete(1.0, END)
+        self.text_psf_lambdaEx_ch2.insert(1.0, "488")
+        self.text_psf_lambdaEm_ch2.delete(1.0, END)
+        self.text_psf_lambdaEm_ch2.insert(1.0, "600")
+        self.text_psf_numAper.delete(1.0, END)
+        self.text_psf_numAper.insert(1.0, "1.4")
+        self.text_psf_magObj.delete(1.0, END)
+        self.text_psf_magObj.insert(1.0, "100")
+        self.text_psf_rindexObj.delete(1.0, END)
+        self.text_psf_rindexObj.insert(1.0, "1.518")
+        self.text_psf_rindexSp.delete(1.0, END)
+        self.text_psf_rindexSp.insert(1.0, "1.518")
+        self.text_psf_ccdSize.delete(1.0, END)
+        self.text_psf_ccdSize.insert(1.0, "6450")
+
 
     def choose_results_directory_clicked(self):
         self.select_results_directory()
@@ -580,11 +709,25 @@ class TDarts_GUI():
 
             config["deconvolution"]["deconvolution_in_pipeline"] = self.deconvolution_in_pipeline.get() == 1
             config["deconvolution"]["decon"] = str(self.deconvolution_algorithm.get())
+            if self.deconvolution_algorithm.get() == "TDE":
+                config["deconvolution"]["lambda"] = self.text_TDE_lambda.get("1.0", "end-1c")
+                config["deconvolution"]["lambda_t"] = self.text_TDE_lambda_t.get("1.0", "end-1c")
 
             config["properties"]["bleaching_correction_algorithm"] = self.bleaching_correction_algorithm.get()
             config["properties"]["bleaching_correction_in_pipeline"] = self.bleaching_correction_in_pipeline.get() == 1
 
             config["properties"]["cell_type"] = self.cell_type.get()
+
+            config["psf"]["type"] = str(self.text_psf_type.get("1.0", "end-1c"))
+            config["psf"]["lambdaEx_ch1"] = int(self.text_psf_lambdaEx_ch1.get("1.0", END))
+            config["psf"]["lambdaEm_ch1"] = int(self.text_psf_lambdaEm_ch1.get("1.0", END))
+            config["psf"]["lambdaEx_ch2"] = int(self.text_psf_lambdaEx_ch2.get("1.0", END))
+            config["psf"]["lambdaEm_ch2"] = int(self.text_psf_lambdaEm_ch2.get("1.0", END))
+            config["psf"]["numAper"] = float(self.text_psf_numAper.get("1.0", END))
+            config["psf"]["magObj"] = int(self.text_psf_magObj.get("1.0", END))
+            config["psf"]["rindexObj"] = float(self.text_psf_rindexObj.get("1.0", END))
+            config["psf"]["rindexSp"] = float(self.text_psf_rindexSp.get("1.0", END))
+            config["psf"]["ccdSize"] = int(self.text_psf_ccdSize.get("1.0", END))
 
 
             # write back
