@@ -207,14 +207,15 @@ class DartboardGenerator:
 
         plt.ylim(0, 9.85)
 
-        ax.grid(True) # test
+        ax.grid(False) # test
 
         ax.set_yticks([])
-        ax.axis("off")  # test
+        ax.axis("on")  # test
+        ax.set_xticks([])
 
         image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
 
-        plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)')
+        plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)', x=0.5, y=1.15)
 
 
         sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
@@ -237,4 +238,3 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
-
