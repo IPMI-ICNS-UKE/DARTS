@@ -59,143 +59,15 @@ def cut_image_frames(image, start, end):
 
 class ImageProcessor:
 
-    # def __init__(self, filename, list_of_bead_contacts, parameter_dict, stardist_model, logger):
-    #     self.parameters = parameter_dict
-    #     self.model = stardist_model
-    #     self.logger = logger
-    #     self.list_of_bead_contacts = list_of_bead_contacts
-    #
-    #
-    #     # self.start_frame, self.end_frame = start_frame, end_frame
-    #     # handle different input formats: either two channels in one image or one image per channel
-    #     if self.parameters["properties"]["channel_format"] == "two-in-one":
-    #
-    #         self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
-    #         # self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
-    #
-    #         self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
-    #
-    #         # separate image into 2 channels: left half and right half
-    #         if self.image.ndim == 3:  # for time series
-    #             self.channel1, self.channel2 = np.split(self.image, 2, axis=2)
-    #             self.t_max, self.y_max, self.x_max = self.image.shape
-    #         elif self.image.ndim == 2:  # for static images
-    #             self.channel1, self.channel2 = np.split(self.image, 2, axis=1)
-    #             self.y_max, self.x_max = self.image.shape
-    #
-    #     """
-    #     elif self.parameters["properties"]["channel_format"] == "single":
-    #         self.channel1 = io.imread(self.parameters["inputoutput"]["path_to_input_channel1"])
-    #         self.channel1 = cut_image_frames(self.channel1, start, end)
-    #         self.channel2 = io.imread(self.parameters["inputoutput"]["path_to_input_channel2"])
-    #         self.channel2 = cut_image_frames(self.channel2, start, end)
-    #         if self.channel1.ndim == 3:  # for time series
-    #             self.image = np.concatenate((self.channel1, self.channel2), axis=2)
-    #             self.t_max, self.y_max, self.x_max = self.image.shape
-    #         elif self.channel1.ndim == 2:
-    #             self.image = np.concatenate((self.channel1, self.channel2), axis=1)
-    #             self.y_max, self.x_max = self.image.shape
-    #     """
-    #
-    #     self.scale_pixels_per_micron = self.parameters["properties"]["scale_pixels_per_micron"]
-    #     self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
-    #
-    #     self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
-    #     self.cell_type = self.parameters["properties"]["cell_type"]
-    #     self.spotHeight = None
-    #     if self.cell_type == 'primary':
-    #
-    #         self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
-    #     elif self.cell_type == 'jurkat':
-    #         self.spotHeight = 72
-    #     elif self.cell_type == 'NK':
-    #         self.spotHeight = 72  # needs to be checked
-    #
-    #     self.frame_number = len(self.channel1)
-    #     self.microdomains_timelines_dict = {}
-    #     self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
-    #     self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
-    #     self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
-    #     self.results_folder = self.parameters["inputoutput"]["path_to_output"]
-    #     self.save_path = self.results_folder + '/' + self.measurement_name
-    #
-    #     self.ATP_flag = self.parameters["properties"]["ATP"]
-    #     self.segmentation_result_dict = {}
-    #     self.cell_list = []
-    #     self.excluded_cells_list = []
-    #     self.ratio_list = []
-    #     self.nb_rois = None
-    #     self.roi_minmax_list = []
-    #     # self.roi_coord_list = []
-    #     self.roi_bounding_boxes = []
-    #     self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
-    #     self.segmentation = SegmentationSD(self.model)
-    #     self.ATP_image_converter = ATPImageConverter()
-    #     self.background_subtractor = BackgroundSubtractor(self.segmentation)
-    #     self.deconvolution_parameters = self.parameters["deconvolution"]
-    #     if self.deconvolution_parameters["decon"] == "TDE":
-    #         self.deconvolution = TDEDeconvolution()
-    #     elif self.deconvolution_parameters["decon"] == "LR":
-    #         self.deconvolution = LRDeconvolution()
-    #     else:
-    #         self.deconvolution = BaseDecon()
-    #
-    #     if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
-    #
-    #         if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv no fit":
-    #             self.bleaching = BleachingAdditiveNoFit()
-    #         else:
-    #             self.bleaching = None
-    #     else:
-    #         self.bleaching = None
-    #
-    #     self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
-    #     self.dartboard_number_of_areas_per_section = self.parameters["properties"][
-    #         "dartboard_number_of_areas_per_section"]
-    #
-    #     self.ratio_preactivation_threshold = self.parameters["properties"]["ratio_preactivation_threshold"]
-    #     self.frames_per_second = self.parameters["properties"]["frames_per_second"]
-    #     # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
-    #     self.ratio_converter = RatioConverter()
-    #     self.minimum_spotsize = 4
-    #     self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
-    #     self.min_ratio = 0.1
-    #     self.max_ratio = 2.0
-    #     # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
-    #     self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
-    #     self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
-    #     self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
-    #                                                             self.results_folder,
-    #                                                             self.excel_filename_one_measurement,
-    #                                                             self.excel_filename_general,
-    #                                                             self.frames_per_second,
-    #                                                             self.ratio_converter,
-    #                                                             self.file_name,
-    #                                                             self.scale_pixels_per_micron)
-    #
-    #
-    #     self.dartboard_generator = DartboardGenerator(self.save_path,
-    #                                                   self.frames_per_second,
-    #                                                   self.measurement_name,
-    #                                                   self.experiment_name,
-    #                                                   self.results_folder)
-    #
-    #     self.median_filter_kernel = self.parameters["properties"]["median_filter_kernel"]
-    #
-    #     if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
-    #         self.registration = Registration_SITK()
-    #     else:
-    #         self.registration = Registration_SR()
-    #
-    #     self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
-    #     self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
 
-    # self.processing_steps = [self.bleaching]
 
-    def __init__(self, image_ch1, image_ch2, parameterdict):
+# ------------------------------------- initialization ----------------------------------
+
+    def __init__(self, image_ch1, image_ch2, parameterdict, logger=None):
         self.parameters = parameterdict
         self.channel1 = image_ch1
         self.channel2 = image_ch2
+        self.logger = logger
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -206,8 +78,10 @@ class ImageProcessor:
 
         self.cell_list = []
         self.segmentation_result_dict = {}
+        self.ratio_list = []
+        self.nb_rois = None
 
-        # ------------------------ setup methods ----------------------------
+        # ------------------------ setup methods postprocessing ----------------------------
         # registration
         if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
             self.registration = Registration_SITK()
@@ -238,10 +112,59 @@ class ImageProcessor:
             self.bleaching = None
         # ratio converter
         self.ratio_converter = RatioConverter()
+        self.median_filter_kernel = self.parameters["properties"]["median_filter_kernel"]
 
+        # ------------------------ setup methods hotspots & dartboard ----------------------------
+
+        self.microdomains_timelines_dict = {}
+        self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
+        self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
+        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        self.results_folder = self.parameters["inputoutput"]["path_to_output"]
+        self.save_path = self.results_folder + '/' + self.measurement_name
+        self.frame_number = len(self.channel1)
+        self.cell_type = self.parameters["properties"]["cell_type"]
+        self.spotHeight = None
+        if self.cell_type == 'primary':
+            self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
+        elif self.cell_type == 'jurkat':
+            self.spotHeight = 72
+        elif self.cell_type == 'NK':
+            self.spotHeight = 72  # needs to be checked
+        self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
+
+        self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
+        self.dartboard_number_of_areas_per_section = self.parameters["properties"][
+            "dartboard_number_of_areas_per_section"]
+
+        self.frames_per_second = self.parameters["properties"]["frames_per_second"]
+        self.ratio_converter = RatioConverter()
+        self.minimum_spotsize = 4
+        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        self.min_ratio = 0.1
+        self.max_ratio = 2.0
+        # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
+        self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
+        self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
+
+        self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
+                                                                self.results_folder,
+                                                                self.excel_filename_one_measurement,
+                                                                self.excel_filename_general,
+                                                                self.frames_per_second,
+                                                                self.ratio_converter,
+                                                                self.file_name,
+                                                                self.scale_pixels_per_micron)
+
+        self.dartboard_generator = DartboardGenerator(self.save_path,
+                                                      self.frames_per_second,
+                                                      self.measurement_name,
+                                                      self.experiment_name,
+                                                      self.results_folder)
+# ------------------------ alternative constructors --------------------------------
     # alternative constructor to define image processor with filename
     @classmethod
-    def fromfilename(cls, filename, parameterdict):
+    def fromfilename(cls, filename, parameterdict, logger=None):
         start = parameterdict["inputoutput"]["start_frame"]
         end = parameterdict["inputoutput"]["end_frame"]
         image = cut_image_frames(io.imread(filename), start, end)
@@ -252,12 +175,15 @@ class ImageProcessor:
             channel1, channel2 = np.split(image, 2, axis=2)
         elif image.ndim == 2:  # for static images
             channel1, channel2 = np.split(image, 2, axis=1)
-        return cls(channel1, channel2, parameterdict)
+        return cls(channel1, channel2, parameterdict, logger)
 
     # alternative constructor to define image processor with image object
     @classmethod
-    def fromimage(cls, image_ch1, image_ch2, parameterdict):
-        return cls(image_ch1, image_ch2, parameterdict)
+    def fromimage(cls, image_ch1, image_ch2, parameterdict, logger=None):
+        return cls(image_ch1, image_ch2, parameterdict, logger)
+
+
+#------------------------------------- post processing methods ----------------------------------
 
     def select_rois(self):
         roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
@@ -276,7 +202,6 @@ class ImageProcessor:
                 roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
                                                          particle_dataframe_subset, shifted_frame_masks]
                 bar()
-
         return roi_after_decon_dict
 
     def clear_outside_of_cells(self, roi_after_decon_dict):
@@ -294,7 +219,6 @@ class ImageProcessor:
             channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
             channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
             bar()
-
         return channel_1_background_subtracted, channel_2_background_subtracted
 
     def create_cell_images(self, segmentation_result_dict):
@@ -378,6 +302,50 @@ class ImageProcessor:
         for cell in self.cell_list:
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
+
+
+    def medianfilter(self, channel):
+        """"
+        Apply a medianfilter on either the channels or the ratio image;
+        Pixelvalues of zeroes are excluded in median calculation
+        """
+        print("\n Medianfilter " + channel + ": ")
+        with alive_bar(len(self.cell_list), force_tty=True) as bar:
+            for cell in self.cell_list:
+                if channel == "channels":
+                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
+                    filtered_image_list = []
+                    channel_image_list = [cell.give_image_channel1(), cell.give_image_channel2()]
+                    for channel_image in channel_image_list:
+                        filtered_image = np.empty_like(channel_image)
+                        for frame in range(channel_image.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
+                        filtered_image_list.append(filtered_image)
+                    cell.set_image_channel1(filtered_image_list[0])
+                    cell.set_image_channel2(filtered_image_list[1])
+
+                elif channel == 'ratio':
+                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
+                    filtered_image_list = []
+                    ratio_image_list = [cell.ratio]
+                    for ratio_image in ratio_image_list:
+                        filtered_image = np.empty_like(ratio_image)
+                        for frame in range(ratio_image.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
+                        filtered_image_list.append(filtered_image)
+                    cell.ratio = filtered_image_list[0]
+                bar()
+
+
+
+    def return_ratios(self):
+        for cell in self.cell_list:
+            self.ratio_list.append(cell.calculate_ratio())
+        return self.ratio_list
+
+
+#----------------------------- Hotspots & Dartboard -------------------------
+
 
     def assign_bead_contacts_to_cells(self):
         for bead_contact in self.list_of_bead_contacts:
@@ -612,6 +580,9 @@ class ImageProcessor:
                                                      self.dartboard_number_of_areas_per_section)
         return average_dartboard_data_multiple_cells
 
+
+# ------------------------------------------ Shape Normalization ------------------------------------
+
     def apply_shape_normalization(self):
         savepath = self.save_path + '/normalization/'
         os.makedirs(savepath, exist_ok=True)
@@ -699,16 +670,6 @@ class ImageProcessor:
         index_largest_area = areas.index(max(areas))
         return regions[index_largest_area], areas[index_largest_area]
 
-    def return_ratios(self):
-        for cell in self.cell_list:
-            self.ratio_list.append(cell.calculate_ratio())
-        return self.ratio_list
-
-    def add_scale_bars(self):
-        """
-        Adds scale bars to the cell image time series before saving them.
-        """
-
     def give_mean_amplitude_list(self):
         mean_amplitude_list_of_cells = []
         for cell in self.cell_list:
@@ -716,6 +677,10 @@ class ImageProcessor:
             if cell_mean_signal_amplitude is not None:
                 mean_amplitude_list_of_cells.append(cell_mean_signal_amplitude)
         return mean_amplitude_list_of_cells
+
+
+
+# --------------------------- saving results -----------------------------------------
 
     def save_image_files(self):
         """
@@ -740,59 +705,3 @@ class ImageProcessor:
             io.imsave(save_path + '/' + self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif',
                       cell.give_ratio_image(), check_contrast=False)
 
-    def medianfilter(self, channel):
-        """"
-        Apply a medianfilter on either the channels or the ratio image;
-        Pixelvalues of zeroes are excluded in median calculation
-        """
-        print("\n Medianfilter " + channel + ": ")
-        with alive_bar(len(self.cell_list), force_tty=True) as bar:
-            for cell in self.cell_list:
-                if channel == "channels":
-                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
-                    filtered_image_list = []
-                    channel_image_list = [cell.give_image_channel1(), cell.give_image_channel2()]
-                    for channel_image in channel_image_list:
-                        filtered_image = np.empty_like(channel_image)
-                        for frame in range(channel_image.shape[0]):
-                            filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
-                        filtered_image_list.append(filtered_image)
-                    cell.set_image_channel1(filtered_image_list[0])
-                    cell.set_image_channel2(filtered_image_list[1])
-
-                elif channel == 'ratio':
-                    window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
-                    filtered_image_list = []
-                    ratio_image_list = [cell.ratio]
-                    for ratio_image in ratio_image_list:
-                        filtered_image = np.empty_like(ratio_image)
-                        for frame in range(ratio_image.shape[0]):
-                            filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
-                        filtered_image_list.append(filtered_image)
-                    cell.ratio = filtered_image_list[0]
-                """
-                elif channel == "ratio":
-                    kernel = self.median_filter_kernel
-                    half_window = kernel // 2
-                    images = [cell.ratio]
-                    for image in images:
-                        filtered_image = np.copy(image)
-                        frames, columns, rows = image.shape
-                        for frame in range(frames):
-                            for column in range(columns):
-                                for row in range(rows):
-                                    if image[frame, column, row] <= 1e-6 :
-                                        continue
-                                    start_row = row - half_window
-                                    end_row = start_row + kernel
-                                    start_col = column - half_window
-                                    end_col = start_col + kernel
-                                    window = image[frame, max(0, start_col):min(columns, end_col),
-                                             max(0, start_row):min(rows, end_row)]
-                                    nonzero_values = window[window > 1e-6]
-                                    filtered_value = np.median(nonzero_values)
-                                    filtered_image[frame, column, row] = filtered_value
-                    cell.ratio = filtered_image
-                """
-
-                bar()
