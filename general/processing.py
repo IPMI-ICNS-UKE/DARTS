@@ -366,13 +366,15 @@ class ImageProcessor:
         self.bleaching_correction()
 
         # first median filter
-        self.medianfilter("channels")
+        if self.deconvolution.give_name() != "TDE Deconvolution":
+            self.medianfilter("channels")
 
         # generation of ratio images
         self.generate_ratio_images()
 
         # second median filter
-        self.medianfilter("ratio")
+        if self.deconvolution.give_name() != "TDE Deconvolution":
+            self.medianfilter("ratio")
 
         # clear area outside the cells
         self.clear_outside_of_cells(self.segmentation_result_dict)
@@ -754,6 +756,7 @@ class ImageProcessor:
         Apply a medianfilter on either the channels or the ratio image;
         Pixelvalues of zeroes are excluded in median calculation
         """
+
        print("\n Medianfilter " + channel + ": ")
        with alive_bar(len(self.cell_list), force_tty=True) as bar:
            for cell in self.cell_list:
