@@ -34,6 +34,9 @@ wt_data_path = "/Users/lwoelk/ICNScloud/PythonPipeline_Testfiles/HN1L/WT OKT3"
 #%%
 parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
 
+parameters["inputoutput"]["start_frame"] = bead_contact_times_KO.loc[0, 'von_min']
+parameters["inputoutput"]["end_frame"] = bead_contact_times_KO.loc[0, 'end']
+
 filename = ko_data_path + '/' + bead_contact_times_KO.loc[0, 'fname'] + '.tif'
 #%%
 
@@ -50,7 +53,9 @@ Processor.channel1, Processor.channel2 = Processor.background_subtraction(Proces
 # segmentation of cells, tracking
 Processor.segmentation_result_dict = Processor.select_rois()
 
+#%%
 
+print(Processor.segmentation_result_dict)
 
 #%%
 

@@ -242,7 +242,9 @@ class ImageProcessor:
     # alternative constructor to define image processor with filename
     @classmethod
     def fromfilename(cls, filename, parameterdict):
-        image = io.imread(filename)
+        start = parameterdict["inputoutput"]["start_frame"]
+        end = parameterdict["inputoutput"]["end_frame"]
+        image = cut_image_frames(io.imread(filename), start, end)
         # separate image into 2 channels: left half and right half
         channel1 = None
         channel2 = None
