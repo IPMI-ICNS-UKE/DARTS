@@ -40,7 +40,7 @@ class BeadContactGUI():
         self.slider = Scale(self.root, from_=self.start_frame, to=self.end_frame, orient=HORIZONTAL,
                            command=self.update_image, length=500)
 
-        self.slider.place(x=self.GUI_width * 0.2, y=self.GUI_height * 0.8)
+        self.slider.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.65)
 
 
         self.input_frame = Frame(self.root)
@@ -97,7 +97,7 @@ class BeadContactGUI():
 
 
         self.close_button = Button(self.root, text="Continue with next image or processing, respectively", command=self.close_gui)
-        self.close_button.place(x=800, y=550)
+        self.close_button.place(x=self.GUI_width * 0.7, y=self.GUI_height * 0.65)
         self.user_info_given = False
 
 

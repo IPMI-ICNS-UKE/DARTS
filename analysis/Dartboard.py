@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib as mpl
 import os
+import pandas as pd
 
 
 class DartboardGenerator:
@@ -137,6 +138,12 @@ class DartboardGenerator:
         else:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
             return average_array
+
+    def save_dartboard_data_for_single_cell(self, dartboard_data_filename, dartboard_data):
+        save_path = self.save_path + '/Dartboards/Dartboard_data/'
+        os.makedirs(save_path, exist_ok=True)
+        np.save(save_path + dartboard_data_filename, dartboard_data)
+
 
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site, normalized_bead_contact_site):

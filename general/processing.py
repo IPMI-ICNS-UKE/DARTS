@@ -290,11 +290,9 @@ class ImageProcessor:
         print("\nBackground subtraction: ")
         with alive_bar(1, force_tty=True) as bar:
             time.sleep(.005)
-            background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
-            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1,
-                                                                                             background_label_first_frame)
-            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2,
-                                                                                             background_label_first_frame)
+            # background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
+            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
+            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
             bar()
 
         return channel_1_background_subtracted, channel_2_background_subtracted
@@ -527,6 +525,8 @@ class ImageProcessor:
                             cell.bead_contact_site,
                             2)
 
+                        self.save_dartboard_data_single_cell(normalized_dartboard_data_single_cell, i)
+
                         normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
 
                         db_took = (timeit.default_timer() - db_start) * 1000.0
@@ -563,8 +563,11 @@ class ImageProcessor:
             self.logger.log_and_print(message="Error in Dartboard (average dartboard for multiple cells)",
                                       level=logging.ERROR, logger=self.logger)
 
-    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization,
-                                                    cell_index, time_of_bead_contact, end_frame):
+    def save_dartboard_data_single_cell(self, dartboard_data, cell_index):
+        dartboard_data_filename = self.file_name + '_dartboard_data_cell_' + str(cell_index)
+        self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data)
+
+    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, end_frame):
         if not cell.signal_data.empty:
             signal_data_for_cell = cell.signal_data.loc[cell.signal_data['frame'] >= 0]  # only data after bead contact
         else:

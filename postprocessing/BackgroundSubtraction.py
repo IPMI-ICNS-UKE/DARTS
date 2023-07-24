@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import skimage.io as io
 import os
+from skimage.filters import threshold_triangle, threshold_mean, threshold_otsu
 
 
 class BackgroundSubtractor():
@@ -51,19 +52,34 @@ class BackgroundSubtractor():
             copy[frame][masks[frame]] = 0
         return copy
 
-    def subtract_background(self, channel_image_series, background_label):
+    def measure_mean_background_intensity(self, image_frame):
+        threshold = round(threshold_mean(image_frame))
+        not_background_label = skimage.measure.label(image_frame > threshold)
+        not_background_label[not_background_label > 1] = 1
+        background_label = 1 - not_background_label
+        region = skimage.measure.regionprops(label_image=background_label,
+                                                         intensity_image=image_frame)
+        background_mean_intensity = round(region[0].intensity_mean)
+        return background_mean_intensity
 
+    def subtract_background(self, channel_image_series):
 
-        background_label[background_label >= 1] = 1
-        background_label = 1 - background_label
-        regions = skimage.measure.regionprops(label_image=background_label, intensity_image=channel_image_series[0])
-        background_mean_intensity_first_frame = int(regions[0].intensity_mean)
+        # mean intensity of background in first frame
+        mean_background_first_frame = self.measure_mean_background_intensity(channel_image_series[0])
+
+        # mean intensity of background in last frame
+        mean_background_last_frame = self.measure_mean_background_intensity(channel_image_series[len(channel_image_series)-1])
+
+        # linear interpolation data
+        frames = [0, len(channel_image_series)-1]
+        subtrahends = [mean_background_first_frame, mean_background_last_frame]
+        # plt.plot(frames, thresholds)
 
         background_subtracted_channel = channel_image_series.copy()
         for frame in range(len(channel_image_series)):
+            subtrahend = round(np.interp(frame, frames, subtrahends))
             max_value = np.max(background_subtracted_channel[frame])
-            background_subtracted_channel[frame] -= background_mean_intensity_first_frame
+            background_subtracted_channel[frame] -= subtrahend
             background_subtracted_channel[frame][background_subtracted_channel[frame] > max_value] = 0
-
 
         return background_subtracted_channel
