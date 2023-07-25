@@ -242,7 +242,7 @@ class CellImage:
         return self.ratio
 
     def calculate_mean_amplitude_of_signals_after_bead_contact(self):
-        if self.signal_data is None:
+        if self.signal_data is None or self.signal_data.empty:
             return None
         else:
             signal_data_after_bead_contact = self.signal_data.loc[self.signal_data['frame'] > 0].copy()

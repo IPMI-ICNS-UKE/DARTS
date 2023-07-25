@@ -782,29 +782,5 @@ class ImageProcessor:
                             filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
                         filtered_image_list.append(filtered_image)
                     cell.ratio = filtered_image_list[0]
-                """
-                elif channel == "ratio":
-                    kernel = self.median_filter_kernel
-                    half_window = kernel // 2
-                    images = [cell.ratio]
-                    for image in images:
-                        filtered_image = np.copy(image)
-                        frames, columns, rows = image.shape
-                        for frame in range(frames):
-                            for column in range(columns):
-                                for row in range(rows):
-                                    if image[frame, column, row] <= 1e-6 :
-                                        continue
-                                    start_row = row - half_window
-                                    end_row = start_row + kernel
-                                    start_col = column - half_window
-                                    end_col = start_col + kernel
-                                    window = image[frame, max(0, start_col):min(columns, end_col),
-                                             max(0, start_row):min(rows, end_row)]
-                                    nonzero_values = window[window > 1e-6]
-                                    filtered_value = np.median(nonzero_values)
-                                    filtered_image[frame, column, row] = filtered_value
-                    cell.ratio = filtered_image
-                """
 
                 bar()

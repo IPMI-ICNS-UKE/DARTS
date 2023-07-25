@@ -81,8 +81,7 @@ def main(gui_enabled):
         bead_contact_gui = BeadContactGUI(file, image, bead_contact_dict)
         bead_contact_gui.run_main_loop()
     del bead_contact_gui
-
-    image = None  # removes image to save RAM
+    del image
 
     # save bead contacts on computer
     save_path = parameters["inputoutput"]["path_to_output"] + '/'
