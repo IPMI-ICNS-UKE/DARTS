@@ -722,7 +722,7 @@ class ImageProcessor:
     def give_mean_amplitude_list(self):
         mean_amplitude_list_of_cells = []
         for cell in self.cell_list:
-            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals()
+            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals_after_bead_contact()
             if cell_mean_signal_amplitude is not None:
                 mean_amplitude_list_of_cells.append(cell_mean_signal_amplitude)
         return mean_amplitude_list_of_cells

@@ -13,6 +13,7 @@ from analysis.Bead_Contact_GUI import BeadContactGUI
 from analysis.MeanDartboard import MeanDartboardGenerator
 import pandas as pd
 import numpy as np
+import gc
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
@@ -29,7 +30,11 @@ def save_number_of_responding_cells(save_path, number_of_analyzed_cells_in_total
     with open(save_path + 'Number of responding cells.txt', 'w') as f:
         f.write("Number of analyzed cells in total: " + str(number_of_analyzed_cells_in_total) + "\n")
         f.write("Number of analyzed cells with hotspots in total: " + str(number_of_analyzed_cells_with_hotspots_in_total) + "\n")
-        percentage_of_responding_cells = float(number_of_analyzed_cells_with_hotspots_in_total) / number_of_analyzed_cells_in_total * 100
+        if number_of_analyzed_cells_in_total != 0:
+            percentage_of_responding_cells = float(
+                number_of_analyzed_cells_with_hotspots_in_total) / number_of_analyzed_cells_in_total * 100
+        else:
+            percentage_of_responding_cells = 0
         f.write("Percentage of responding cells: " + str(percentage_of_responding_cells) + "%")
 
 def create_general_dartboard(save_path, number_of_analyzed_cells, frame_rate, experiment_name, dartboard_sections, dartboard_areas_per_section):
@@ -53,6 +58,7 @@ def main(gui_enabled):
     if gui_enabled:
         gui = TDarts_GUI()
         gui.run_main_loop()
+    del gui
 
     start_time = time.time()
 
@@ -74,6 +80,7 @@ def main(gui_enabled):
         image = io.imread(file_path)
         bead_contact_gui = BeadContactGUI(file, image, bead_contact_dict)
         bead_contact_gui.run_main_loop()
+    del bead_contact_gui
 
     image = None  # removes image to save RAM
 
@@ -130,6 +137,8 @@ def main(gui_enabled):
         # save files
         Processor.save_image_files()
         Processor.save_ratio_image_files()
+        del Processor
+        gc.collect()
 
 
     # save number of signals per confocal sublayer/frame for all files and cells

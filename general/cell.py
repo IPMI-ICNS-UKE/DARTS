@@ -241,11 +241,15 @@ class CellImage:
         self.ratio = np.nan_to_num(ratio_image)
         return self.ratio
 
-    def calculate_mean_amplitude_of_signals(self):
-        if self.signal_data is None or self.signal_data.empty:
+    def calculate_mean_amplitude_of_signals_after_bead_contact(self):
+        if self.signal_data is None:
             return None
         else:
-            return self.signal_data['max calcium concentration in nM'].to_numpy().mean()
+            signal_data_after_bead_contact = self.signal_data.loc[self.signal_data['frame'] > 0].copy()
+            if signal_data_after_bead_contact.empty:
+                return None
+            else:
+                return signal_data_after_bead_contact['max calcium concentration in nM'].to_numpy().mean()
 
 class ChannelImage:
     def __init__(self, roi, wl, original_image=None):
