@@ -59,6 +59,7 @@ def cut_image_frames(image, start, end):
         return image
 
 
+
 class ImageProcessor:
 
     def __init__(self, filename, list_of_bead_contacts, parameter_dict, stardist_model, logger):
@@ -67,13 +68,17 @@ class ImageProcessor:
         self.logger = logger
         self.list_of_bead_contacts = list_of_bead_contacts
 
+        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in self.list_of_bead_contacts])
+        end_frame = latest_time_of_bead_contact + self.duration_of_measurement  + 1  # not all frames need to be processed
 
-        # self.start_frame, self.end_frame = start_frame, end_frame
+
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
 
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
-            # self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
+
+            self.image = cut_image_frames(self.image, 0, end_frame)
 
             self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
 
@@ -160,7 +165,6 @@ class ImageProcessor:
         # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
         self.ratio_converter = RatioConverter()
         self.minimum_spotsize = 4
-        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
