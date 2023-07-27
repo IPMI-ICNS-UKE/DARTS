@@ -59,8 +59,6 @@ def cut_image_frames(image, start, end):
 
 class ImageProcessor:
 
-
-
 # ------------------------------------- initialization ----------------------------------
 
     def __init__(self, image_ch1, image_ch2, parameterdict, logger=None):
@@ -78,6 +76,7 @@ class ImageProcessor:
 
         self.cell_list = []
         self.segmentation_result_dict = {}
+        self.deconvolution_result_dict = {}
         self.ratio_list = []
         self.nb_rois = None
 
@@ -119,7 +118,8 @@ class ImageProcessor:
         self.microdomains_timelines_dict = {}
         self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
-        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
+        #self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
         self.save_path = self.results_folder + '/' + self.measurement_name
         self.frame_number = len(self.channel1)
@@ -146,7 +146,7 @@ class ImageProcessor:
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
         self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
         self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
-
+        self.file_name = None
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.results_folder,
                                                                 self.excel_filename_one_measurement,
