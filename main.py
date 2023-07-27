@@ -102,9 +102,9 @@ def main(gui_enabled):
     number_of_signals_per_frame['time_in_seconds'] = list_of_time_points
 
     for file in filename_list:
-        list_of_bead_contacts_for_file = bead_contact_dict[file]
-
-        Processor = ImageProcessor(file, list_of_bead_contacts_for_file, parameters, model, logger)
+        parameters["properties"]["list_of_bead_contacts"] = bead_contact_dict[file]
+        filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
+        Processor = ImageProcessor.fromfilename(filename, parameters, logger)
         print("Now processing the following file: " + file)
         # Postprocessing pipeline
         Processor.start_postprocessing()

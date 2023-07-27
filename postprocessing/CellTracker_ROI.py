@@ -41,8 +41,6 @@ class CellTracker:
         labels_for_each_frame = []  # segmented image respectively
         details_for_each_frame = []  # segmented image respectively
 
-
-
         print("\nSegmentation of cells: ")
         counter = 1
 
