@@ -18,8 +18,8 @@ class RatioConverter():
         concentration = None
 
         if celltype == 'jurkat':
-            a = 15.48
-            b = 1.644
+            a = 15.48  # a = 15.48
+            b = 2.0  # b = 1.644
 
 
             corresponding_Ca_value = a * math.e**(b*ratio_mean_value)

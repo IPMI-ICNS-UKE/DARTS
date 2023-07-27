@@ -59,6 +59,7 @@ def cut_image_frames(image, start, end):
         return image
 
 
+
 class ImageProcessor:
 
     def __init__(self, filename, list_of_bead_contacts, parameter_dict, stardist_model, logger):
@@ -67,13 +68,17 @@ class ImageProcessor:
         self.logger = logger
         self.list_of_bead_contacts = list_of_bead_contacts
 
+        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in self.list_of_bead_contacts])
+        end_frame = latest_time_of_bead_contact + self.duration_of_measurement  + 1  # not all frames need to be processed
 
-        # self.start_frame, self.end_frame = start_frame, end_frame
+
         # handle different input formats: either two channels in one image or one image per channel
         if self.parameters["properties"]["channel_format"] == "two-in-one":
 
             self.image = io.imread(self.parameters["inputoutput"]["path_to_input_combined"] + '/' + filename)
-            # self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
+
+            self.image = cut_image_frames(self.image, 0, end_frame)
 
             self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"])
 
@@ -160,7 +165,6 @@ class ImageProcessor:
         # self.number_of_frames_to_analyse = self.parameters["properties"]["number_of_frames_to_analyse"]
         self.ratio_converter = RatioConverter()
         self.minimum_spotsize = 4
-        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
@@ -366,13 +370,15 @@ class ImageProcessor:
         self.bleaching_correction()
 
         # first median filter
-        self.medianfilter("channels")
+        if self.deconvolution.give_name() != "TDE Deconvolution":
+            self.medianfilter("channels")
 
         # generation of ratio images
         self.generate_ratio_images()
 
         # second median filter
-        self.medianfilter("ratio")
+        if self.deconvolution.give_name() != "TDE Deconvolution":
+            self.medianfilter("ratio")
 
         # clear area outside the cells
         self.clear_outside_of_cells(self.segmentation_result_dict)
@@ -720,7 +726,7 @@ class ImageProcessor:
     def give_mean_amplitude_list(self):
         mean_amplitude_list_of_cells = []
         for cell in self.cell_list:
-            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals()
+            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals_after_bead_contact()
             if cell_mean_signal_amplitude is not None:
                 mean_amplitude_list_of_cells.append(cell_mean_signal_amplitude)
         return mean_amplitude_list_of_cells
@@ -754,6 +760,7 @@ class ImageProcessor:
         Apply a medianfilter on either the channels or the ratio image;
         Pixelvalues of zeroes are excluded in median calculation
         """
+
        print("\n Medianfilter " + channel + ": ")
        with alive_bar(len(self.cell_list), force_tty=True) as bar:
            for cell in self.cell_list:
@@ -779,29 +786,5 @@ class ImageProcessor:
                             filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
                         filtered_image_list.append(filtered_image)
                     cell.ratio = filtered_image_list[0]
-                """
-                elif channel == "ratio":
-                    kernel = self.median_filter_kernel
-                    half_window = kernel // 2
-                    images = [cell.ratio]
-                    for image in images:
-                        filtered_image = np.copy(image)
-                        frames, columns, rows = image.shape
-                        for frame in range(frames):
-                            for column in range(columns):
-                                for row in range(rows):
-                                    if image[frame, column, row] <= 1e-6 :
-                                        continue
-                                    start_row = row - half_window
-                                    end_row = start_row + kernel
-                                    start_col = column - half_window
-                                    end_col = start_col + kernel
-                                    window = image[frame, max(0, start_col):min(columns, end_col),
-                                             max(0, start_row):min(rows, end_row)]
-                                    nonzero_values = window[window > 1e-6]
-                                    filtered_value = np.median(nonzero_values)
-                                    filtered_image[frame, column, row] = filtered_value
-                    cell.ratio = filtered_image
-                """
 
                 bar()
