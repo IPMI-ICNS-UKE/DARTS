@@ -100,8 +100,9 @@ def main(gui_enabled):
         list_of_time_points.append(time_point)
 
     number_of_signals_per_frame['time_in_seconds'] = list_of_time_points
+    files_with_bead_contact = [file for file in filename_list if bead_contact_dict[file]]
 
-    for file in filename_list:
+    for file in files_with_bead_contact:
         list_of_bead_contacts_for_file = bead_contact_dict[file]
 
         Processor = ImageProcessor(file, list_of_bead_contacts_for_file, parameters, model, logger)
