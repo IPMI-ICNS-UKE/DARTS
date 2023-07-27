@@ -1,6 +1,5 @@
 # calibration based on MATLAB-script "CalciumSignaling/basics/convertRatioToCalcium.m" in
 import math
-import numpy as np
 
 class RatioConverter():
     def __init__(self):

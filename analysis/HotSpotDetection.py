@@ -3,7 +3,6 @@ import pandas as pd
 import trackpy as tp
 import skimage
 from tqdm import tqdm
-import skimage.io as io
 import numpy as np
 
 

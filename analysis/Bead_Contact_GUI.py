@@ -2,19 +2,17 @@ import tkinter
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from tkinter import (Tk, ttk, Label, Scale, Listbox, Scrollbar, Frame, Button, LabelFrame, INSERT, OptionMenu,
-                     Checkbutton, Radiobutton, IntVar,StringVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton,
-                     messagebox)
+from tkinter import (Tk, Label, Scale, Listbox, Scrollbar, Frame, Button, Radiobutton, IntVar, Text, HORIZONTAL, END)
 
-import matplotlib.patches as mpatches
 import math
-import time
+import skimage.io as io
+
 
 class BeadContactGUI():
-    def __init__(self, file, image, bead_contact_dict):
+    def __init__(self, file, filepath, bead_contact_dict):
         self.file = file
-        self.image = image
-        self.number_of_frames, self.image_height, self.image_width = image.shape
+        self.image = io.imread(filepath)
+        self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
 
         self.bead_contact_dict = bead_contact_dict
@@ -25,7 +23,7 @@ class BeadContactGUI():
 
         self.figure = Figure()
         self.subplot_image = self.figure.add_subplot(111)
-        self.subplot_image.imshow(image[0])
+        self.subplot_image.imshow(self.image[0])
         # self.subplot_image.set_axis_off()
         self.canvas_frame = Frame(self.root, width=600, height=600)
         self.canvas_frame.place(x=10, y=10)
@@ -35,7 +33,7 @@ class BeadContactGUI():
         self.canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=1)
         self.canvas.mpl_connect('button_press_event', self.mouse_clicked)
         self.start_frame = 0
-        self.end_frame = len(image)-1
+        self.end_frame = len(self.image)-1
 
         self.slider = Scale(self.root, from_=self.start_frame, to=self.end_frame, orient=HORIZONTAL,
                            command=self.update_image, length=500)

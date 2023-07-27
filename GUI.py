@@ -1,6 +1,5 @@
-import tkinter
-from tkinter import (Tk, ttk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
-                     Checkbutton, Radiobutton, IntVar,StringVar, Text, HORIZONTAL, END, Entry, Toplevel, Checkbutton,
+from tkinter import (Tk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
+                    Radiobutton, IntVar,StringVar, Text, END, Entry, Toplevel, Checkbutton,
                      DISABLED, NORMAL)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar

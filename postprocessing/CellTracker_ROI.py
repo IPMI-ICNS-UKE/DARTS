@@ -4,8 +4,6 @@ import skimage
 from csbdeep.utils import normalize
 import numpy as np
 from scipy.ndimage import shift
-import matplotlib.pyplot as plt
-import skimage.io as io
 from alive_progress import alive_bar
 import time
 

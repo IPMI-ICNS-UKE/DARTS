@@ -3,10 +3,8 @@ import pandas as pd
 import trackpy as tp
 import skimage
 from scipy.ndimage import shift
-import skimage.io as io
-import matplotlib.pyplot as plt
 from skimage import measure
-from statistics import mean
+
 
 
 
