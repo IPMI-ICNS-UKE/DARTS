@@ -66,6 +66,11 @@ class ImageProcessor:
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
+        self.list_of_bead_contacts = list_of_bead_contacts
+
+        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in self.list_of_bead_contacts])
+        end_frame = latest_time_of_bead_contact + self.duration_of_measurement  + 1  # not all frames need to be processed
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -276,13 +281,15 @@ class ImageProcessor:
         self.bleaching_correction()
 
         # first median filter
-        self.medianfilter("channels")
+        if self.deconvolution.give_name() != "TDE Deconvolution":
+            self.medianfilter("channels")
 
         # generation of ratio images
         self.generate_ratio_images()
 
         # second median filter
-        self.medianfilter("ratio")
+        if self.deconvolution.give_name() != "TDE Deconvolution":
+            self.medianfilter("ratio")
 
         # clear area outside the cells
         self.clear_outside_of_cells(self.segmentation_result_dict)
@@ -673,7 +680,7 @@ class ImageProcessor:
     def give_mean_amplitude_list(self):
         mean_amplitude_list_of_cells = []
         for cell in self.cell_list:
-            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals()
+            cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals_after_bead_contact()
             if cell_mean_signal_amplitude is not None:
                 mean_amplitude_list_of_cells.append(cell_mean_signal_amplitude)
         return mean_amplitude_list_of_cells

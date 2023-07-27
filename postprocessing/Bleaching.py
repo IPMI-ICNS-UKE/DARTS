@@ -35,7 +35,7 @@ class BleachingAdditiveNoFit(BaseBleaching):
         copy = image.copy()
         for y in range(len(copy)):
             for x in range(len(copy[0])):
-                if copy[y][x] > 0.1:
+                if copy[y][x] > 0.05:
                     copy[y][x] += value
 
         return copy
