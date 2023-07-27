@@ -66,7 +66,7 @@ class ImageProcessor:
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
-        self.list_of_bead_contacts = list_of_bead_contacts
+        self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
 
         self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in self.list_of_bead_contacts])
