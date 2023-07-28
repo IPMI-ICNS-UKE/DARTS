@@ -1,9 +1,7 @@
-import matplotlib.pyplot as plt
-from pathlib import Path
+
 from alive_progress import alive_bar
 import time
 import numpy as np
-import tomli
 from pystackreg import StackReg
 
 try:

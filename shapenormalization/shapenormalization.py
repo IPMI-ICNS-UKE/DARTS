@@ -1,9 +1,6 @@
-import math
-
 import numpy as np
 from scipy import interpolate
 from scipy.ndimage import shift
-# from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 from skimage import measure
 

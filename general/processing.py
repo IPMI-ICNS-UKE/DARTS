@@ -9,13 +9,12 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 import pandas as pd
-import ntpath
 import os
 import timeit
 from stardist.models import StarDist2D
 
 from general.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD, ATPImageConverter
+from postprocessing.segmentation import SegmentationSD
 from postprocessing.CellTracker_ROI import CellTracker
 from postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
 from postprocessing.registration import Registration_SITK, Registration_SR
@@ -78,10 +77,15 @@ class ImageProcessor:
             self.t_max, self.y_max, self.x_max = self.channel1.shape
         elif self.channel1.ndim == 2:
             self.y_max, self.x_max = self.channel1.shape
+          
+       # self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"
 
         self.cell_list = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
+        self.cells_with_bead_contact = None
+        self.excluded_cells_list = []
+
         self.ratio_list = []
         self.nb_rois = None
 
@@ -96,6 +100,7 @@ class ImageProcessor:
         self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
         self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
         self.segmentation = SegmentationSD(self.model)
+
         # background subtraction
         self.background_subtractor = BackgroundSubtractor(self.segmentation)
         # deconvolution
@@ -128,6 +133,8 @@ class ImageProcessor:
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
         self.save_path = self.results_folder + '/' + self.measurement_name
         self.frame_number = len(self.channel1)
+        self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
+        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
         self.cell_type = self.parameters["properties"]["cell_type"]
         self.spotHeight = None
         if self.cell_type == 'primary':
@@ -172,7 +179,8 @@ class ImageProcessor:
     def fromfilename(cls, filename, parameterdict, logger=None):
         start = parameterdict["inputoutput"]["start_frame"]
         end = parameterdict["inputoutput"]["end_frame"]
-        image = cut_image_frames(io.imread(filename), start, end)
+        # !! for now, images need to start at 0 because of bleaching correction !!
+        image = cut_image_frames(io.imread(filename), 0, end)
         # separate image into 2 channels: left half and right half
         channel1 = None
         channel2 = None
@@ -194,27 +202,26 @@ class ImageProcessor:
         roi_before_backgroundcor_dict = self.cell_tracker.give_rois(self.channel1, self.channel2, self.model)
         return roi_before_backgroundcor_dict
 
-    def deconvolve_cell_images(self, roi_before_backgroundcor_dict):
-        roi_after_decon_dict = {}
-        print("\n" + self.deconvolution.give_name() + ": ")
-        with alive_bar(len(roi_before_backgroundcor_dict), force_tty=True) as bar:
-            time.sleep(.005)
-            for cells_for_decon in roi_before_backgroundcor_dict:
-                [roi_channel1, roi_channel2, particle_dataframe_subset,
-                 shifted_frame_masks] = roi_before_backgroundcor_dict[cells_for_decon]
-                roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
-                                                                                    self.parameters)
-                roi_after_decon_dict[cells_for_decon] = [roi_channel1_decon, roi_channel2_decon,
-                                                         particle_dataframe_subset, shifted_frame_masks]
-                bar()
-        return roi_after_decon_dict
 
-    def clear_outside_of_cells(self, roi_after_decon_dict):
-        roi_list_cell_pairs = self.background_subtractor.clear_outside_of_cells(roi_after_decon_dict, self.cell_list)
-        for cell_number in range(len(roi_list_cell_pairs)):  # can be simplified
-            self.cell_list[cell_number].set_image_channel1(roi_list_cell_pairs[cell_number][0])
-            self.cell_list[cell_number].set_image_channel2(roi_list_cell_pairs[cell_number][1])
-            self.cell_list[cell_number].ratio = roi_list_cell_pairs[cell_number][4]
+    def deconvolve_cell_images(self):
+
+            print("\n"+ self.deconvolution.give_name() + ": ")
+            with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+                time.sleep(.005)
+                for cell in self.cells_with_bead_contact:
+                    roi_channel1, roi_channel2 = cell.channel1.image, cell.channel2.image
+
+                    roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
+                                                                                        self.parameters)
+
+                    cell.set_image_channel1(roi_channel1_decon)
+                    cell.set_image_channel2(roi_channel2_decon)
+
+                    bar()
+
+
+    def clear_outside_of_cells(self):
+        self.background_subtractor.clear_outside_of_cells(self.cells_with_bead_contact)
 
     def background_subtraction(self, channel_1, channel_2):
         print("\nBackground subtraction: ")
@@ -259,7 +266,7 @@ class ImageProcessor:
         return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
     def start_postprocessing(self):
-
+        # -- PROCESSING OF WHOLE IMAGE CHANNELS --
         # channel registration
         self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                self.parameters["properties"][
@@ -271,11 +278,15 @@ class ImageProcessor:
         # segmentation of cells, tracking
         self.segmentation_result_dict = self.select_rois()
 
-        # deconvolution
-        self.segmentation_result_dict = self.deconvolve_cell_images(self.segmentation_result_dict)
-
         # cell images
         self.create_cell_images(self.segmentation_result_dict)
+
+        # -- PROCESSING OF CELL IMAGES --
+        # assign bead contacts to cells
+        self.assign_bead_contacts_to_cells()
+
+        # deconvolution
+        self.deconvolve_cell_images()
 
         # bleaching correction
         self.bleaching_correction()
@@ -292,12 +303,12 @@ class ImageProcessor:
             self.medianfilter("ratio")
 
         # clear area outside the cells
-        self.clear_outside_of_cells(self.segmentation_result_dict)
+        self.clear_outside_of_cells()
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
-        with alive_bar(len(self.cell_list), force_tty=True) as bar:
-            for cell in self.cell_list:
+        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+            for cell in self.cells_with_bead_contact:
                 time.sleep(.005)
 
                 if self.bleaching is not None:
@@ -306,19 +317,18 @@ class ImageProcessor:
                 bar()
 
     def generate_ratio_images(self):
-        for cell in self.cell_list:
+        for cell in self.cells_with_bead_contact:
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
-
     def medianfilter(self, channel):
-        """"
+       """"
         Apply a medianfilter on either the channels or the ratio image;
         Pixelvalues of zeroes are excluded in median calculation
         """
-        print("\n Medianfilter " + channel + ": ")
-        with alive_bar(len(self.cell_list), force_tty=True) as bar:
-            for cell in self.cell_list:
+       print("\n Medianfilter " + channel + ": ")
+       with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+           for cell in self.cells_with_bead_contact:
                 if channel == "channels":
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -330,7 +340,6 @@ class ImageProcessor:
                         filtered_image_list.append(filtered_image)
                     cell.set_image_channel1(filtered_image_list[0])
                     cell.set_image_channel2(filtered_image_list[1])
-
                 elif channel == 'ratio':
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -342,7 +351,6 @@ class ImageProcessor:
                         filtered_image_list.append(filtered_image)
                     cell.ratio = filtered_image_list[0]
                 bar()
-
 
 
     def return_ratios(self):
@@ -383,44 +391,44 @@ class ImageProcessor:
                     cell.bead_contact_site = location_on_clock
                     cell.has_bead_contact = True
 
+        self.cells_with_bead_contact = [cell for cell in self.cell_list if cell.has_bead_contact]
+
     def hotspot_detection(self, normalized_cells_dict):
         number_of_analyzed_cells = 0
         number_of_cells_with_hotspots = 0
-        with alive_bar(len(normalized_cells_dict), force_tty=True) as bar:
-            for i, cell in enumerate(normalized_cells_dict):
-                if cell.has_bead_contact:
 
-                    try:
-                        number_of_analyzed_cells += 1
-                        hd_start = timeit.default_timer()
-                        normalized_ratio = normalized_cells_dict[cell][0]
-                        mean_ratio_value_list = normalized_cells_dict[cell][1]
+        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+            for i, cell in enumerate(self.cells_with_bead_contact):
+                try:
+                    number_of_analyzed_cells += 1
+                    hd_start = timeit.default_timer()
+                    normalized_ratio = normalized_cells_dict[cell][0]
+                    mean_ratio_value_list = normalized_cells_dict[cell][1]
 
-                        number_of_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact = self.detect_hotspots(
-                            normalized_ratio, mean_ratio_value_list, cell, i)
-                        if cell_has_hotspots_after_bead_contact:
-                            number_of_cells_with_hotspots += 1
-                        hd_took = (timeit.default_timer() - hd_start) * 1000.0
-                        hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
-                        self.logger.log_and_print(message=f"Hotspot detection of cell {i + 1} "
-                                                          f"took: {hd_hour:02d} h: {hd_min:02d} m: {hd_sec:02d} s :{int(hd_took):02d} ms",
-                                                  level=logging.INFO, logger=self.logger)
-                    except Exception as E:
-                        print(E)
-                        self.logger.log_and_print(message="Exception occurred: Error in Hotspot Detection !",
-                                                  level=logging.ERROR, logger=self.logger)
-                        continue
+                    number_of_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact = self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
+                    if cell_has_hotspots_after_bead_contact:
+                        number_of_cells_with_hotspots += 1
+                    hd_took = (timeit.default_timer() - hd_start) * 1000.0
+                    hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
+                    self.logger.log_and_print(message=f"Hotspot detection of cell {i} "
+                                          f"took: {hd_hour:02d} h: {hd_min:02d} m: {hd_sec:02d} s :{int(hd_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in Hotspot Detection !",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
 
-                    try:
-                        microdomains_timeline_for_cell = self.save_measurements(i, cell.signal_data, number_of_frames,
-                                                                                time_before_bead_contact)
-                        self.microdomains_timelines_dict[(self.file_name, i)] = microdomains_timeline_for_cell
+                try:
+                    microdomains_timeline_for_cell = self.save_measurements(i, cell.signal_data, number_of_frames, time_before_bead_contact)
+                    self.microdomains_timelines_dict[(self.file_name, i)] = microdomains_timeline_for_cell
 
-                    except Exception as E:
-                        print(E)
-                        self.logger.log_and_print(message="Exception occurred: Error in saving measurements",
-                                                  level=logging.ERROR, logger=self.logger)
-                        continue
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in saving measurements",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+
                 bar()
         return number_of_analyzed_cells, number_of_cells_with_hotspots, self.microdomains_timelines_dict
 
@@ -467,58 +475,58 @@ class ImageProcessor:
 
     def dartboard(self, normalized_cells_dict):
         normalized_dartboard_data_multiple_cells = []
-        with alive_bar(len(normalized_cells_dict), force_tty=True) as bar:
-            for i, cell in enumerate(self.cell_list):
-                if cell.has_bead_contact:
-                    try:
-                        db_start = timeit.default_timer()
 
-                        centroid_coords_list = normalized_cells_dict[cell][3]
-                        radii_after_normalization = normalized_cells_dict[cell][2]
+        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+            for i, cell in enumerate(self.cells_with_bead_contact):
+                try:
+                    db_start = timeit.default_timer()
 
-                        start_frame = int(
-                            cell.time_of_bead_contact - self.frames_per_second)  # also measure hotspots before bead contacts, if 40fps then 40 frames
-                        if start_frame < 0:
-                            start_frame = 0
-                        time_before_bead_contact = cell.time_of_bead_contact - start_frame
-                        frame_number_cell = cell.frame_number
+                    centroid_coords_list = normalized_cells_dict[cell][3]
+                    radii_after_normalization = normalized_cells_dict[cell][2]
 
-                        if start_frame + time_before_bead_contact + self.duration_of_measurement >= frame_number_cell:
-                            end_frame = frame_number_cell - 1
-                        else:
-                            end_frame = start_frame + time_before_bead_contact + self.duration_of_measurement
+                    start_frame = int(cell.time_of_bead_contact - self.frames_per_second)  # also measure hotspots before bead contacts, if 40fps then 40 frames
+                    if start_frame < 0:
+                        start_frame = 0
+                    time_before_bead_contact = cell.time_of_bead_contact - start_frame
+                    frame_number_cell = cell.frame_number
 
-                        average_dartboard_data_single_cell = self.generate_average_dartboard_data_single_cell(
-                            centroid_coords_list,
-                            cell,
-                            radii_after_normalization,
-                            i,
-                            cell.time_of_bead_contact,
-                            end_frame)
-                        normalized_dartboard_data_single_cell = self.normalize_average_dartboard_data_one_cell(
-                            average_dartboard_data_single_cell,
-                            cell.bead_contact_site,
-                            2)
+                    if start_frame + time_before_bead_contact + self.duration_of_measurement >= frame_number_cell:
+                        end_frame = frame_number_cell - 1
+                    else:
+                        end_frame = start_frame + time_before_bead_contact + self.duration_of_measurement
 
-                        self.save_dartboard_data_single_cell(normalized_dartboard_data_single_cell, i)
+                    average_dartboard_data_single_cell = self.generate_average_dartboard_data_single_cell(
+                        centroid_coords_list,
+                        cell,
+                        radii_after_normalization,
+                        i,
+                        cell.time_of_bead_contact,
+                        end_frame)
+                    normalized_dartboard_data_single_cell = self.normalize_average_dartboard_data_one_cell(
+                        average_dartboard_data_single_cell,
+                        cell.bead_contact_site,
+                        2)
 
-                        normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+                    self.save_dartboard_data_single_cell(normalized_dartboard_data_single_cell, i)
 
-                        db_took = (timeit.default_timer() - db_start) * 1000.0
-                        db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
-                        self.logger.log_and_print(message=f"Dartboard analysis of cell {i + 1} "
-                                                          f"took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
-                                                  level=logging.INFO, logger=self.logger)
-                        """
-                        else:
-                            log_and_print(message=f"No Dartboard analysis of cell {i + 1} ",
-                                          level=logging.WARNING, logger=logger)
-                        """
-                    except Exception as E:
-                        print(E)
-                        self.logger.log_and_print(message="Exception occurred: Error in Dartboard (single cell)",
-                                                  level=logging.ERROR, logger=self.logger)
-                        continue
+                    normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+
+                    db_took = (timeit.default_timer() - db_start) * 1000.0
+                    db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
+                    self.logger.log_and_print(message=f"Dartboard analysis of cell {i} "
+                                          f"took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                    """
+                    else:
+                        log_and_print(message=f"No Dartboard analysis of cell {i} ",
+                                      level=logging.WARNING, logger=logger)
+                    """
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in Dartboard (single cell)",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
+
                 bar()
 
         try:
@@ -595,35 +603,35 @@ class ImageProcessor:
         os.makedirs(savepath, exist_ok=True)
 
         normalized_cells_dict = {}
+
         print("\n")
         self.logger.log_and_print(message="Processing now continues with: ", level=logging.INFO, logger=self.logger)
-        with alive_bar(len(self.cell_list), force_tty=True) as bar:
-            for i, cell in enumerate(self.cell_list):
-                if cell.has_bead_contact:
-                    time.sleep(.005)
-                    ratio = cell.give_ratio_image()
-                    try:
-                        sh_start = timeit.default_timer()
-                        normalized_ratio, centroid_coords_list = self.normalize_cell_shape(cell)
-                        mean_ratio_value_list, radii_after_normalization = self.extract_information_for_hotspot_detection(
-                            normalized_ratio)
-                        normalized_cells_dict[cell] = (
-                        normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
+        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+            for i, cell in enumerate(self.cells_with_bead_contact):
+                time.sleep(.005)
+                ratio = cell.give_ratio_image()
+                try:
+                    sh_start = timeit.default_timer()
+                    normalized_ratio, centroid_coords_list = self.normalize_cell_shape(cell)
+                    mean_ratio_value_list, radii_after_normalization = self.extract_information_for_hotspot_detection(
+                        normalized_ratio)
+                    normalized_cells_dict[cell] = (normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
 
-                        sh_took = (timeit.default_timer() - sh_start) * 1000.0
-                        sh_sec, sh_min, sh_hour = convert_ms_to_smh(int(sh_took))
-                        self.logger.log_and_print(message=f"Shape normalization of cell {i + 1} "
-                                                          f"took: {sh_hour:02d} h: {sh_min:02d} m: {sh_sec:02d} s :{int(sh_took):02d} ms",
-                                                  level=logging.INFO, logger=self.logger)
-                    except Exception as E:
-                        print(E)
-                        self.logger.log_and_print(message="Exception occurred: Error in shape normalization",
-                                                  level=logging.ERROR, logger=self.logger)
-                        continue
+                    sh_took = (timeit.default_timer() - sh_start) * 1000.0
+                    sh_sec, sh_min, sh_hour = convert_ms_to_smh(int(sh_took))
+                    self.logger.log_and_print(message=f"Shape normalization of cell {i} "
+                                          f"took: {sh_hour:02d} h: {sh_min:02d} m: {sh_sec:02d} s :{int(sh_took):02d} ms",
+                                  level=logging.INFO, logger=self.logger)
+                except Exception as E:
+                    print(E)
+                    self.logger.log_and_print(message="Exception occurred: Error in shape normalization",
+                                  level=logging.ERROR, logger=self.logger)
+                    continue
 
-                    io.imsave(savepath + self.measurement_name + cell.to_string(i + 1) + 'ratio' + ".tif", ratio)
-                    io.imsave(savepath + self.measurement_name + cell.to_string(i + 1) + 'ratio_normalized' + ".tif",
-                              normalized_ratio)
+                io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", ratio)
+                io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio_normalized' + ".tif",
+                          normalized_ratio)
+
                 bar()
         return normalized_cells_dict
 
@@ -693,7 +701,7 @@ class ImageProcessor:
         """
         Saves the image files within the cells of the cell list
         """
-        for i, cell in enumerate(self.cell_list):
+        for i, cell in enumerate(self.cells_with_bead_contact):
             save_path = self.save_path + '/cell_image_processed_files/'
             os.makedirs(save_path, exist_ok=True)
             io.imsave(save_path + '/' + self.measurement_name + cell.to_string(i) + '_channel_1' + '.tif',
@@ -707,8 +715,9 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         save_path = self.save_path + '/cell_image_ratio_files/'
         os.makedirs(save_path, exist_ok=True)
+        for i, cell in enumerate(self.cells_with_bead_contact):
+            io.imsave(save_path + '/'+ self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif', cell.give_ratio_image(), check_contrast=False)
 
-        for i, cell in enumerate(self.cell_list):
-            io.imsave(save_path + '/' + self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif',
-                      cell.give_ratio_image(), check_contrast=False)
 
+        
+    
