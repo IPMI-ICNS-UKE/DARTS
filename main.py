@@ -49,10 +49,12 @@ def main(gui_enabled):
 
     files_with_bead_contact = [file for file in filename_list if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
 
-    for file in files_with_bead_contact:
-        list_of_bead_contacts_for_file = info_saver.bead_contact_dict[file]
 
-        Processor = ImageProcessor(file, list_of_bead_contacts_for_file, parameters, model, logger)
+    for file in files_with_bead_contact:
+        parameters["properties"]["list_of_bead_contacts"] = info_saver.bead_contact_dict[file]
+        filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
+        Processor = ImageProcessor.fromfilename(filename, parameters, logger)
+
         print("Now processing the following file: " + file)
         # Postprocessing pipeline
         Processor.start_postprocessing()

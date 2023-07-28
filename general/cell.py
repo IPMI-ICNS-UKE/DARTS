@@ -66,9 +66,9 @@ class CellImage:
         for bbox in bbox_list_channel_2:
             minr_channel_2, minc_channel_2, maxr_channel_2, maxc_channel_2 = bbox  # minr = min row = min y; minc = min column = min x
             minr_channel_1 = minr_channel_2
-            minc_channel_1 = minc_channel_2 + self.width/2
+            minc_channel_1 = minc_channel_2 + self.width
             maxr_channel_1 = maxr_channel_2
-            maxc_channel_1 = maxc_channel_2 + self.width/2
+            maxc_channel_1 = maxc_channel_2 + self.width
             bbox_channel_1 = (minr_channel_1,minc_channel_1,maxr_channel_1,maxc_channel_1)
             bbox_list_channel_1.append(bbox_channel_1)
         return bbox_list_channel_1
