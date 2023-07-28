@@ -24,9 +24,6 @@ def main(gui_enabled):
         gui.run_main_loop()
     del gui
 
-
-
-
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
     info_saver = InfoToComputer(parameters)
