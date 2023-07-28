@@ -62,14 +62,13 @@ class ImageProcessor:
 
     def __init__(self, image_ch1, image_ch2, parameterdict, logger=None):
         self.parameters = parameterdict
+        self.file_name = self.parameters["inputoutput"]["filename"]
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
         self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
 
-        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
-        latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in self.list_of_bead_contacts])
-        end_frame = latest_time_of_bead_contact + self.duration_of_measurement  + 1  # not all frames need to be processed
+        self.duration_of_measurement = self.parameters["properties"]["duration_of_measurement"]  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -83,7 +82,7 @@ class ImageProcessor:
         self.cell_list = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
-              self.cells_with_bead_contact = None
+        self.cells_with_bead_contact = None
         self.excluded_cells_list = []
 
         self.ratio_list = []
@@ -158,7 +157,6 @@ class ImageProcessor:
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
         self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
         self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
-        self.file_name = None
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.results_folder,
                                                                 self.excel_filename_one_measurement,
@@ -321,7 +319,7 @@ class ImageProcessor:
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
-def medianfilter(self, channel):
+    def medianfilter(self, channel):
        """"
         Apply a medianfilter on either the channels or the ratio image;
         Pixelvalues of zeroes are excluded in median calculation
@@ -572,8 +570,7 @@ def medianfilter(self, channel):
             time_of_bead_contact,
             end_frame)
 
-        duration_of_measurement_after_bead_contact_in_seconds = (
-                                                                            end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
+        duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames,
                                                       duration_of_measurement_after_bead_contact_in_seconds)
 

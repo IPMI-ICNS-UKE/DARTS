@@ -28,7 +28,7 @@ class MeanDartboardGenerator:
             dartboard_data_array_list,
             self.dartboard_sections,
             self.dartboard_areas_per_section,
-            "")
+            "Mean_dartboard")
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section)
 
