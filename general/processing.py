@@ -83,7 +83,7 @@ class ImageProcessor:
         self.cell_list = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
-              self.cells_with_bead_contact = None
+        self.cells_with_bead_contact = None
         self.excluded_cells_list = []
 
         self.ratio_list = []
@@ -321,12 +321,11 @@ class ImageProcessor:
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
-def medianfilter(self, channel):
+    def medianfilter(self, channel):
        """"
         Apply a medianfilter on either the channels or the ratio image;
         Pixelvalues of zeroes are excluded in median calculation
         """
-
        print("\n Medianfilter " + channel + ": ")
        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
            for cell in self.cells_with_bead_contact:
@@ -341,7 +340,6 @@ def medianfilter(self, channel):
                         filtered_image_list.append(filtered_image)
                     cell.set_image_channel1(filtered_image_list[0])
                     cell.set_image_channel2(filtered_image_list[1])
-
                 elif channel == 'ratio':
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -352,10 +350,7 @@ def medianfilter(self, channel):
                             filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
                         filtered_image_list.append(filtered_image)
                     cell.ratio = filtered_image_list[0]
-
                 bar()
-
-
 
 
     def return_ratios(self):
