@@ -1,31 +1,19 @@
 import skimage.measure
 import numpy as np
-import matplotlib.pyplot as plt
-import skimage.io as io
-import os
-from skimage.filters import threshold_triangle, threshold_mean, threshold_otsu
+from skimage.filters import threshold_mean
 
 
 class BackgroundSubtractor():
     def __init__(self, segmentation):
         self.segmentation = segmentation
 
-    def clear_outside_of_cells(self, roi_before_backgroundcor_dict, cell_list):
+    def clear_outside_of_cells(self, cells_with_bead_contact):
+        for cell in cells_with_bead_contact:
+            cell.set_image_channel1(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel1()))
+            cell.set_image_channel2(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel2()))
+            cell.ratio = self.set_background_to_zero(cell.frame_masks, cell.ratio)
 
-        roi_cell_list = []
-        for i in range(len(roi_before_backgroundcor_dict)):
-            particle = list(roi_before_backgroundcor_dict.keys())[i]
-            [roi1_old, roi2_old, particle_dataframe_subset, shifted_frame_masks] = roi_before_backgroundcor_dict[particle]
 
-            roi1 = cell_list[i].give_image_channel1()
-            roi2 = cell_list[i].give_image_channel2()
-            roi1_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi1)
-            roi2_background_subtracted = self.set_background_to_zero(shifted_frame_masks, roi2)
-            ratio = cell_list[i].ratio
-            ratio_background_subtracted = self.set_background_to_zero(shifted_frame_masks, ratio)
-            roi_cell_list.append((roi1_background_subtracted, roi2_background_subtracted, particle_dataframe_subset,
-                                  shifted_frame_masks, ratio_background_subtracted))
-        return roi_cell_list
 
     def set_background_to_zero(self, frame_masks, cell_image_series):
         """
