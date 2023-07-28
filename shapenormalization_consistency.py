@@ -39,6 +39,14 @@ plt.show()
 #%%
 def cartesian_to_polar(xs, ys, origin):
     x0, y0 = origin
+    try:
+        iter(xs)
+    except TypeError:
+        xs = [xs]
+    try:
+        iter(ys)
+    except TypeError:
+        ys = [ys]
     polar_coords = []
     for x, y in zip(xs, ys):
         r = math.sqrt((x - x0)**2 + (y - y0)**2)
@@ -80,7 +88,8 @@ def find_edge_and_centroid(frame):
 
 def plot_accesoires(frame):
 
-    edge, closed_edge, [x0, y0], rmin_cart, rmax_cart = find_edge_and_centroid(frame)
+    edge, closed_edge, [x0, y0], rmin_cart, rmax_cart\
+        = find_edge_and_centroid(frame)
 
     ratio = frame
     channel1 = None
@@ -129,6 +138,14 @@ closed_edge_n = result_norm["closed_edge"]
 [x1_n, y1_n] = result_norm["rmin_cart"]
 [x2_n, y2_n] = result_norm["rmax_cart"]
 
+pc = cartesian_to_polar(closed_edge[1, :-1], closed_edge[0, :-1], [x0, y0])
+pc_1 = cartesian_to_polar(x1, y1, [x0, y0])
+pc_1[0][0] = pc_1[0][0] * (0.962 * np.mean(pc[:,0])/ pc_1[0][0])
+pc_1_cart = (pc_1[0][0] * math.cos(pc_1[0][1]) + x0_n, pc_1[0][0] * math.sin(pc_1[0][1]) + y0_n)
+pc_2 = cartesian_to_polar(x2, y2, [x0, y0])
+pc_2[0][0] = pc_2[0][0] * (0.962 * np.mean(pc[:,0])/ pc_2[0][0])
+pc_2_cart = (pc_2[0][0] * math.cos(pc_2[0][1]) + x0_n, pc_2[0][0] * math.sin(pc_2[0][1]) + y0_n)
+
 fig, ax = plt.subplots(nrows=2, ncols=2)
 ax[0,0].imshow(frame1)
 ax[0,0].plot(closed_edge[1,:], closed_edge[0,:], color='red')
@@ -140,12 +157,14 @@ ax[0,0].plot((x0, x2), (y0, y2), '-r', linewidth=2.5)
 ax[0,1].imshow(normalized_ratio_image)
 ax[0,1].plot(closed_edge_n[1,:], closed_edge_n[0,:], color='red')
 ax[0,1].plot(x0_n, y0_n, 'o', color='red')
-ax[0,1].plot((x0_n, x1_n), (y0_n, y1_n), '-r', linewidth=2.5)
-ax[0,1].plot((x0_n, x2_n), (y0_n, y2_n), '-r', linewidth=2.5)
+ax[0,1].plot((x0_n, pc_1_cart[0]), (y0_n, pc_1_cart[1]), '-r', linewidth=2.5)
+ax[0,1].plot((x0_n, pc_2_cart[0]), (y0_n, pc_1_cart[1]), '-r', linewidth=2.5)
 plt.show()
 
 #%%
 
+
+print(closed_edge[0,:-1].shape)
 
 #%%
 fig, ax = plt.subplots()
