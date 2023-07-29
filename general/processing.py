@@ -127,8 +127,8 @@ class ImageProcessor:
         self.microdomains_timelines_dict = {}
         self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
-        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
-        #self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        # self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
+        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
         self.save_path = self.results_folder + '/' + self.measurement_name
         self.frame_number = len(self.channel1)

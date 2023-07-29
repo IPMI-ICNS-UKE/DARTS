@@ -18,7 +18,7 @@ class RatioConverter():
 
         if celltype == 'jurkat':
             a = 15.48  # a = 15.48
-            b = 2.0  # b = 1.644
+            b = 1.9  # b = 1.644 -> 2.0 -> 1.9
 
 
             corresponding_Ca_value = a * math.e**(b*ratio_mean_value)

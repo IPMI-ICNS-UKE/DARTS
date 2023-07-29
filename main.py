@@ -77,8 +77,8 @@ def main(gui_enabled):
         info_saver.dartboard_data_list.append(average_dartboard_data_multiple_cells)
 
         # save image files
-        Processor.save_image_files()
-        Processor.save_ratio_image_files()
+        # Processor.save_image_files()
+        # Processor.save_ratio_image_files()
         del Processor
         gc.collect()
 
