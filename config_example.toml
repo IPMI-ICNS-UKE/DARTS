@@ -5,15 +5,15 @@ path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-dupl
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
 
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/WT OKT3"
+path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/K2 Klon OKT3/test skript"
 
-path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/New Test with activated cell"
+path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/test skript"
 excel_filename_all_cells = "microdomain_data.xlsx"
 
 start_frame = 0
 end_frame = 10
 user = "dejan"
-experiment_name = "HN1L C2 OKT3"
+experiment_name = "test_skript"
 
 bead_contact_table_path = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/HN1L Beadkontakte Anfang Ende.xlsx"
 HN1L_condition = 'KO'  # 'KO' or 'WT'
@@ -40,6 +40,7 @@ spatial_resolution = 3 # pixels
 ratio_preactivation_threshold = 1.0
 dartboard_number_of_sections = 12
 dartboard_number_of_areas_per_section = 8
+duration_of_measurement = 600  # Frames
 
 bleaching_correction_in_pipeline = true
 bleaching_correction_algorithm = "additiv no fit"

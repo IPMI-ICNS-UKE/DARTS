@@ -62,14 +62,13 @@ class ImageProcessor:
 
     def __init__(self, image_ch1, image_ch2, parameterdict, logger=None):
         self.parameters = parameterdict
+        self.file_name = self.parameters["inputoutput"]["filename"]
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
         self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
 
-        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
-        latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in self.list_of_bead_contacts])
-        end_frame = latest_time_of_bead_contact + self.duration_of_measurement  + 1  # not all frames need to be processed
+        self.duration_of_measurement = self.parameters["properties"]["duration_of_measurement"]  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
 
         self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
         self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
@@ -128,8 +127,8 @@ class ImageProcessor:
         self.microdomains_timelines_dict = {}
         self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
-        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
-        #self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        # self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
+        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["inputoutput"]["path_to_output"]
         self.save_path = self.results_folder + '/' + self.measurement_name
         self.frame_number = len(self.channel1)
@@ -152,13 +151,11 @@ class ImageProcessor:
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         self.ratio_converter = RatioConverter()
         self.minimum_spotsize = 4
-        self.duration_of_measurement = 600  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
         self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
         self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
-        self.file_name = None
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.results_folder,
                                                                 self.excel_filename_one_measurement,
@@ -370,8 +367,7 @@ class ImageProcessor:
 
             time_of_bead_contact = bead_contact.return_time_of_bead_contact()
             selected_position_inside_cell = bead_contact.return_selected_position_inside_cell()
-            selected_x_position_inside_cell = selected_position_inside_cell[0]
-            selected_y_position_inside_cell = selected_position_inside_cell[1]
+            selected_x_position_inside_cell, selected_y_position_inside_cell = selected_position_inside_cell[0], selected_position_inside_cell[1]
 
             for cell in self.cell_list:
                 dataframe = cell.cell_image_data_channel_2
@@ -379,7 +375,7 @@ class ImageProcessor:
                 bbox_for_frame = cell_data_for_frame['bbox'].values.tolist()[0]
                 min_row, min_col, max_row, max_col = bbox_for_frame
 
-                if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:
+                if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:  # if bead contact inside bounding box of the cell
                     cell.time_of_bead_contact = time_of_bead_contact
                     centroid_x_coord_cell = cell_data_for_frame['x'].values.tolist()[0]
                     centroid_y_coord_cell = cell_data_for_frame['y'].values.tolist()[0]
@@ -433,39 +429,38 @@ class ImageProcessor:
         return number_of_analyzed_cells, number_of_cells_with_hotspots, self.microdomains_timelines_dict
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
-        if cell.has_bead_contact:  # if user defined a bead contact site (in the range from 1 to 12)
-            start_frame = int(cell.time_of_bead_contact - self.frames_per_second)
-            if start_frame < 0:
-                start_frame = 0
-            time_before_bead_contact = cell.time_of_bead_contact - start_frame
-            frame_number_cell = cell.frame_number
+        start_frame = int(cell.time_of_bead_contact - self.frames_per_second)
+        if start_frame < 0:
+            start_frame = 0
+        time_before_bead_contact = cell.time_of_bead_contact - start_frame
+        frame_number_cell = cell.frame_number
 
-            if start_frame + time_before_bead_contact + self.duration_of_measurement >= frame_number_cell:
-                end_frame = frame_number_cell - 1
-            else:
-                end_frame = start_frame + time_before_bead_contact + self.duration_of_measurement
-            time_after_bead_contact = end_frame - cell.time_of_bead_contact
-            mean_ratio_value_list_short = mean_ratio_value_list[start_frame:end_frame]
+        if start_frame + time_before_bead_contact + self.duration_of_measurement >= frame_number_cell:
+            end_frame = frame_number_cell - 1
+        else:
+            end_frame = start_frame + time_before_bead_contact + self.duration_of_measurement
+        time_after_bead_contact = end_frame - cell.time_of_bead_contact
+        mean_ratio_value_list_short = mean_ratio_value_list[start_frame:end_frame]
 
-            measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
-                                                                                 start_frame,
-                                                                                 end_frame,
-                                                                                 mean_ratio_value_list_short,
-                                                                                 self.spotHeight,
-                                                                                 self.minimum_spotsize,
-                                                                                 # lower area limit in pixels
-                                                                                 20,  # upper area limit in pixels
-                                                                                 self.cell_type,
-                                                                                 time_before_bead_contact)
-            cell.signal_data = measurement_microdomains
-            number_of_analyzed_frames = end_frame - start_frame
-            if not measurement_microdomains.empty:
-                dataframe_after_bead_contact = measurement_microdomains.loc[
-                    measurement_microdomains['frame'] > 0].copy()
-            else:
-                dataframe_after_bead_contact = pd.DataFrame()
-            cell_has_hotspots_after_bead_contact = not dataframe_after_bead_contact.empty
-            return number_of_analyzed_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact
+        measurement_microdomains = self.hotspotdetector.measure_microdomains(ratio_image,
+                                                                             start_frame,
+                                                                             end_frame,
+                                                                             mean_ratio_value_list_short,
+                                                                             self.spotHeight,
+                                                                             self.minimum_spotsize,
+                                                                             # lower area limit in pixels
+                                                                             20,  # upper area limit in pixels
+                                                                             self.cell_type,
+                                                                             time_before_bead_contact)
+        cell.signal_data = measurement_microdomains
+        number_of_analyzed_frames = end_frame - start_frame
+        if not measurement_microdomains.empty:
+            dataframe_after_bead_contact = measurement_microdomains.loc[
+                measurement_microdomains['frame'] > 0].copy()
+        else:
+            dataframe_after_bead_contact = pd.DataFrame()
+        cell_has_hotspots_after_bead_contact = not dataframe_after_bead_contact.empty
+        return number_of_analyzed_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact
 
     def save_measurements(self, i, cell_signal_data, number_of_frames, time_before_bead_contact):
         microdomains_timeline_for_cell = self.hotspotdetector.save_dataframes(self.file_name, i, cell_signal_data,
@@ -516,11 +511,7 @@ class ImageProcessor:
                     self.logger.log_and_print(message=f"Dartboard analysis of cell {i} "
                                           f"took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
                                   level=logging.INFO, logger=self.logger)
-                    """
-                    else:
-                        log_and_print(message=f"No Dartboard analysis of cell {i} ",
-                                      level=logging.WARNING, logger=logger)
-                    """
+
                 except Exception as E:
                     print(E)
                     self.logger.log_and_print(message="Exception occurred: Error in Dartboard (single cell)",
@@ -567,8 +558,7 @@ class ImageProcessor:
             time_of_bead_contact,
             end_frame)
 
-        duration_of_measurement_after_bead_contact_in_seconds = (
-                                                                            end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
+        duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames,
                                                       duration_of_measurement_after_bead_contact_in_seconds)
 

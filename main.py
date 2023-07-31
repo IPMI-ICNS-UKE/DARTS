@@ -3,7 +3,6 @@ import tomli
 import os
 import json
 import time
-from stardist.models import StarDist2D
 import argparse
 from general.processing import ImageProcessor
 from GUI import TDarts_GUI
@@ -24,14 +23,9 @@ def main(gui_enabled):
         gui.run_main_loop()
     del gui
 
-
-
-
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
     info_saver = InfoToComputer(parameters)
-
-    model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
     directory = parameters["inputoutput"]["path_to_input_combined"]
     filename_list = os.listdir(directory)
@@ -51,8 +45,15 @@ def main(gui_enabled):
 
 
     for file in files_with_bead_contact:
-        parameters["properties"]["list_of_bead_contacts"] = info_saver.bead_contact_dict[file]
+        list_of_bead_contacts = info_saver.bead_contact_dict[file]
+        parameters["properties"]["list_of_bead_contacts"] = list_of_bead_contacts
+
         filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
+        parameters["inputoutput"]["filename"] = file
+        latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in list_of_bead_contacts])
+        end_frame_file = latest_time_of_bead_contact + parameters["properties"]["duration_of_measurement"] + 1  # not all frames need to be processed
+
+        parameters["inputoutput"]["end_frame"] = end_frame_file
         Processor = ImageProcessor.fromfilename(filename, parameters, logger)
 
         print("Now processing the following file: " + file)
@@ -76,8 +77,8 @@ def main(gui_enabled):
         info_saver.dartboard_data_list.append(average_dartboard_data_multiple_cells)
 
         # save image files
-        Processor.save_image_files()
-        Processor.save_ratio_image_files()
+        # Processor.save_image_files()
+        # Processor.save_ratio_image_files()
         del Processor
         gc.collect()
 

@@ -1,5 +1,6 @@
 import pandas as pd
 from analysis.MeanDartboard import MeanDartboardGenerator
+import os
 
 class InfoToComputer():
     def __init__(self, parameters):
@@ -46,7 +47,9 @@ class InfoToComputer():
         experiment_name = self.parameters["inputoutput"]["experiment_name"]
         dartboard_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         dartboard_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
+
         source_path = self.save_path + 'Dartboard_data_all_files'
+        os.makedirs(source_path, exist_ok=True)
         measurement_name = "dartboard_for_all_analyzed_cells"
 
         mean_dartboard_generator = MeanDartboardGenerator(source_path, self.save_path, self.number_of_analyzed_cells_in_total, fps,
