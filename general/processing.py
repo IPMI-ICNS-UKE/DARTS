@@ -143,7 +143,7 @@ class ImageProcessor:
         elif self.cell_type == 'NK':
             self.spotHeight = 72  # needs to be checked
         self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
-
+        self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
         self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = self.parameters["properties"][
             "dartboard_number_of_areas_per_section"]
@@ -396,7 +396,7 @@ class ImageProcessor:
 
     def hotspot_detection(self, normalized_cells_dict):
         number_of_analyzed_cells = 0
-        number_of_cells_with_hotspots = 0
+        number_of_responding_cells = 0
 
         with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
             for i, cell in enumerate(self.cells_with_bead_contact):
@@ -408,7 +408,7 @@ class ImageProcessor:
 
                     number_of_frames, time_before_bead_contact, time_after_bead_contact, cell_has_hotspots_after_bead_contact = self.detect_hotspots(normalized_ratio, mean_ratio_value_list, cell, i)
                     if cell_has_hotspots_after_bead_contact:
-                        number_of_cells_with_hotspots += 1
+                        number_of_responding_cells += 1
                     hd_took = (timeit.default_timer() - hd_start) * 1000.0
                     hd_sec, hd_min, hd_hour = convert_ms_to_smh(int(hd_took))
                     self.logger.log_and_print(message=f"Hotspot detection of cell {i} "
@@ -431,7 +431,7 @@ class ImageProcessor:
                     continue
 
                 bar()
-        return number_of_analyzed_cells, number_of_cells_with_hotspots, self.microdomains_timelines_dict
+        return number_of_analyzed_cells, number_of_responding_cells, self.microdomains_timelines_dict
 
     def detect_hotspots(self, ratio_image, mean_ratio_value_list, cell, i):
         start_frame = int(cell.time_of_bead_contact - self.frames_per_second)
@@ -473,7 +473,7 @@ class ImageProcessor:
                                                                               time_before_bead_contact)
         return microdomains_timeline_for_cell
 
-    def dartboard(self, normalized_cells_dict):
+    def dartboard(self, normalized_cells_dict, timeline_single_dartboard_areas):
         normalized_dartboard_data_multiple_cells = []
 
         with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
@@ -495,13 +495,16 @@ class ImageProcessor:
                     else:
                         end_frame = start_frame + time_before_bead_contact + self.duration_of_measurement
 
-                    average_dartboard_data_single_cell = self.generate_average_dartboard_data_single_cell(
+                    average_dartboard_data_single_cell = self.generate_dartboard_data_single_cell(
                         centroid_coords_list,
                         cell,
                         radii_after_normalization,
                         i,
                         cell.time_of_bead_contact,
-                        end_frame)
+                        end_frame,
+                        self.selected_dartboard_areas,
+                        timeline_single_dartboard_areas)
+
                     normalized_dartboard_data_single_cell = self.normalize_average_dartboard_data_one_cell(
                         average_dartboard_data_single_cell,
                         cell.bead_contact_site,
@@ -546,7 +549,7 @@ class ImageProcessor:
         dartboard_data_filename = self.file_name + '_dartboard_data_cell_' + str(cell_index)
         self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data)
 
-    def generate_average_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, end_frame):
+    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
         if not cell.signal_data.empty:
             signal_data_for_cell = cell.signal_data.loc[cell.signal_data['frame'] >= 0]  # only data after bead contact
         else:
@@ -561,7 +564,9 @@ class ImageProcessor:
             radii_after_normalization,
             cell_index,
             time_of_bead_contact,
-            end_frame)
+            end_frame,
+            selected_dartboard_areas,
+            timeline_single_dartboard_areas)
 
         duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames,

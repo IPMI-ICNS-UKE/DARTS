@@ -8,6 +8,7 @@ from general.processing import ImageProcessor
 from GUI import TDarts_GUI
 from general.logger import Logger
 from analysis.Bead_Contact_GUI import BeadContactGUI
+from analysis.DartboardGUI import DartboardGUI
 import gc
 from general.InfoToComputer import InfoToComputer
 
@@ -25,6 +26,14 @@ def main(gui_enabled):
 
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
+
+    selected_dartboard_areas_for_timeline = []
+    dartboard_gui = DartboardGUI(parameters, selected_dartboard_areas_for_timeline)
+    dartboard_gui.run_main_loop()
+    del dartboard_gui
+
+
+    parameters["properties"]["selected_dartboard_areas_for_timeline"] = selected_dartboard_areas_for_timeline
     info_saver = InfoToComputer(parameters)
 
     directory = parameters["inputoutput"]["path_to_input_combined"]
@@ -64,15 +73,15 @@ def main(gui_enabled):
         normalized_cells_dict = Processor.apply_shape_normalization()
 
         # analysis: hotspot detection and dartboard projection
-        number_of_analyzed_cells, number_of_analyzed_cells_with_hotspots, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
+        number_of_analyzed_cells, number_of_responding_cells, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
 
         info_saver.number_of_analyzed_cells_in_total += number_of_analyzed_cells
-        info_saver.number_of_analyzed_cells_with_hotspots_in_total += number_of_analyzed_cells_with_hotspots
+        info_saver.number_of_responding_cells_in_total += number_of_responding_cells
 
         info_saver.add_signal_information(microdomains_timelines_dict)
         info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
 
-        average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict)
+        average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict, info_saver.timeline_single_dartboard_areas)
 
         info_saver.dartboard_data_list.append(average_dartboard_data_multiple_cells)
 
@@ -94,6 +103,10 @@ def main(gui_enabled):
 
         # save mean amplitudes to the computer
         info_saver.save_mean_amplitudes()
+
+        # save data for selected areas of the dartboard to the computer
+        info_saver.adapt_timeline_data()
+        info_saver.save_timelines_for_single_dartboard_areas()
 
     end_time = time.time()
     # execution time
