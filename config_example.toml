@@ -1,6 +1,6 @@
 [inputoutput]
 
-
+path_to_input_singlechannels = "Data/"
 path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-duplicated-image.tif"
 path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
 
