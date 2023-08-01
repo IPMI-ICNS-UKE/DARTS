@@ -27,8 +27,8 @@ class InfoToComputer:
         self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
         self.timeline_single_dartboard_areas = pd.DataFrame()
         if self.selected_dartboard_areas:  # if not empty
-            for frame in range(int(15*fps)):  # only after bead contact
-                time_in_seconds = frame / fps
+            for frame in range(int(16*fps)):  # only after bead contact
+                time_in_seconds = (frame - fps) / fps
                 new_row = {'frame': int(frame),
                            'time_in_seconds': time_in_seconds}
                 for selected_area in self.selected_dartboard_areas:
@@ -102,10 +102,32 @@ class InfoToComputer:
             self.timeline_single_dartboard_areas[str(selected_area)] = divided_by_cell_number.tolist()
         if not self.timeline_single_dartboard_areas.empty:
             self.timeline_single_dartboard_areas['sum'] = sum.tolist()
+        self.change_column_names_timeline_data()
+
+    def change_column_names_timeline_data(self):
+        changed_names_dict = {}
+        for selected_area in self.selected_dartboard_areas:
+            corresponding_name = self.generate_corresponding_name(selected_area)
+            changed_names_dict[str(selected_area)] = corresponding_name
+
+        self.timeline_single_dartboard_areas = self.timeline_single_dartboard_areas.rename(columns=changed_names_dict)
+
+    def generate_corresponding_name(self, selected_dartboard_area):
+        list = ['3', '2', '1', '12', '11', '10', '9', '8', '7', '6', '5', '4']
+        clock = list[selected_dartboard_area[0]] + ' o\'clock, '
+        ring = ""
+        if selected_dartboard_area[1] == 5:
+            ring = 'inner ring'
+        elif selected_dartboard_area[1] == 6:
+            ring = 'middle ring'
+        elif selected_dartboard_area[1] == 7:
+            ring = 'outer ring'
+
+        return clock + ring
 
     def save_timelines_for_single_dartboard_areas(self):
         if not self.timeline_single_dartboard_areas.empty:
             with pd.ExcelWriter(self.save_path + '/Dartboards/Dartboard_data/timelines_dartboard.xlsx') as writer:
-                sheet_name = "timelines for selected areas in the dartboard"
+                sheet_name = "No. of hotspots per frame"
 
                 self.timeline_single_dartboard_areas.to_excel(writer, sheet_name=sheet_name, index=False)

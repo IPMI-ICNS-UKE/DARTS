@@ -40,12 +40,12 @@ class DartboardGUI:
     def mouse_clicked(self, event):
         x = event.x
         y = event.y
-        print("Pointer is currently at %d, %d" % (x, y))
+        # print("Pointer is currently at %d, %d" % (x, y))
         dartboard_section, dartboard_area_number_within_section = self.dartboard_generator.assign_signal_to_dartboard_area((x,y), self.centroid_coords, self.dartboard_number_of_sections, self.dartboard_number_of_areas_per_section, 139)
-        print(str(dartboard_section))
-        print(str(dartboard_area_number_within_section))
+        # print(str(dartboard_section))
+        # print(str(dartboard_area_number_within_section))
 
-        if self.dartboard_data[dartboard_area_number_within_section][dartboard_section] == 0:
+        if (self.dartboard_data[dartboard_area_number_within_section][dartboard_section]) == 0:
             self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 1
         else:
             self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 0

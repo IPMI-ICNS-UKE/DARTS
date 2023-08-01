@@ -501,6 +501,7 @@ class ImageProcessor:
                         radii_after_normalization,
                         i,
                         cell.time_of_bead_contact,
+                        start_frame,
                         end_frame,
                         self.selected_dartboard_areas,
                         timeline_single_dartboard_areas)
@@ -549,7 +550,7 @@ class ImageProcessor:
         dartboard_data_filename = self.file_name + '_dartboard_data_cell_' + str(cell_index)
         self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data)
 
-    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
+    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
         if not cell.signal_data.empty:
             signal_data_for_cell = cell.signal_data.loc[cell.signal_data['frame'] >= 0]  # only data after bead contact
         else:
@@ -564,6 +565,7 @@ class ImageProcessor:
             radii_after_normalization,
             cell_index,
             time_of_bead_contact,
+            start_frame,
             end_frame,
             selected_dartboard_areas,
             timeline_single_dartboard_areas)

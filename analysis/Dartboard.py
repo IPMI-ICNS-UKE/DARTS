@@ -101,10 +101,10 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
+    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
 
-        for frame in range(time_of_bead_contact, end_frame):
+        for frame in range(start_frame, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
             current_radius = radii_after_normalization[frame] + 1  # 1 as correction term; rather have to large radius than lose information. Sometime, the circle does not contain all the pixels.
             dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
@@ -113,7 +113,8 @@ class DartboardGenerator:
                                                                                                          number_of_dartboard_sections,
                                                                                                          number_of_dartboard_areas_per_section,
                                                                                                          current_radius)
-
+            if frame >= time_of_bead_contact:
+                cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)
 
             for selected_area in selected_dartboard_areas:
                 selected_dartboard_section_index = selected_area[0]   # e.g. 11 for 12 o'clock
@@ -122,14 +123,9 @@ class DartboardGenerator:
 
                 number_of_signals_in_selected_area = dartboard_area_frequency_this_frame[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
 
-                timeline_single_dartboard_areas.at[int(frame-time_of_bead_contact), str(selected_area)] += number_of_signals_in_selected_area
-
-
-            cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)
+                timeline_single_dartboard_areas.at[int(frame-start_frame), str(selected_area)] += number_of_signals_in_selected_area
 
         return cumulated_dartboard_data
-
-
 
 
     def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, filename):
