@@ -515,7 +515,7 @@ class ImageProcessor:
                         cell.bead_contact_site,
                         2)
 
-                    self.save_dartboard_data_single_cell(normalized_dartboard_data_single_cell, i)
+                    self.save_dartboard_data_single_cell(normalized_dartboard_data_single_cell, i, cell)
 
                     normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
 
@@ -550,9 +550,9 @@ class ImageProcessor:
             self.logger.log_and_print(message="Error in Dartboard (average dartboard for multiple cells)",
                                       level=logging.ERROR, logger=self.logger)
 
-    def save_dartboard_data_single_cell(self, dartboard_data, cell_index):
+    def save_dartboard_data_single_cell(self, dartboard_data, cell_index, cell):
         dartboard_data_filename = self.file_name + '_dartboard_data_cell_' + str(cell_index)
-        self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data)
+        self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data, cell)
 
     def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
         if not cell.signal_data.empty:
@@ -572,7 +572,8 @@ class ImageProcessor:
             start_frame,
             end_frame,
             selected_dartboard_areas,
-            timeline_single_dartboard_areas)
+            timeline_single_dartboard_areas,
+            cell)
 
         duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames,
@@ -582,7 +583,7 @@ class ImageProcessor:
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
                                                   normalized_bead_contact_site):
-        return self.dartboard_generator.normalize_average_dartboard_data_one_cell(average_dartboard_data,
+        return self.dartboard_generator.normalize_dartboard_data_to_bead_contact(average_dartboard_data,
                                                                                   real_bead_contact_site,
                                                                                   normalized_bead_contact_site)
 

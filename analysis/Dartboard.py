@@ -101,8 +101,10 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
+    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas, cell):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
+
+        dartboard_timeline_data_single_cell = timeline_single_dartboard_areas.copy()
 
         for frame in range(start_frame, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
@@ -116,14 +118,24 @@ class DartboardGenerator:
             if frame >= time_of_bead_contact:
                 cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)
 
+            # normalize the dartboard data for this frame, because the bead contact site might differ from the later normalized site:
+            normalized_dartboard_data = self.normalize_dartboard_data_to_bead_contact(
+                dartboard_area_frequency_this_frame.copy(), cell.bead_contact_site, 2)
+
             for selected_area in selected_dartboard_areas:
-                selected_dartboard_section_index = selected_area[0]   # e.g. 11 for 12 o'clock
+                    selected_dartboard_section_index = selected_area[0]
 
-                selected_dartboard_area_within_section_index = selected_area[1]
+                    selected_dartboard_area_within_section_index = selected_area[1]
 
-                number_of_signals_in_selected_area = dartboard_area_frequency_this_frame[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
+                    number_of_signals_in_selected_area = normalized_dartboard_data[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
 
-                timeline_single_dartboard_areas.at[int(frame-start_frame), str(selected_area)] += number_of_signals_in_selected_area
+                    timeline_single_dartboard_areas.at[
+                        int(frame - start_frame), str(selected_area)] += number_of_signals_in_selected_area
+
+                    dartboard_timeline_data_single_cell.at[
+                        int(frame - start_frame), str(selected_area)] = number_of_signals_in_selected_area
+
+        cell.dartboard_timeline_data = dartboard_timeline_data_single_cell
 
         return cumulated_dartboard_data
 
@@ -149,16 +161,20 @@ class DartboardGenerator:
             average_array = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
             return average_array
 
-    def save_dartboard_data_for_single_cell(self, dartboard_data_filename, dartboard_data):
+    def save_dartboard_data_for_single_cell(self, dartboard_data_filename, dartboard_data, cell):
         save_path = self.save_path + '/Dartboards/Dartboard_data/'
         os.makedirs(save_path, exist_ok=True)
         np.save(save_path + dartboard_data_filename, dartboard_data)
 
+        if not cell.dartboard_timeline_data.empty:
+            with pd.ExcelWriter(save_path + dartboard_data_filename + '_timelines.xlsx') as writer:
+                sheet_name = "dartboard timelines"
+                cell.dartboard_timeline_data.to_excel(writer, sheet_name=sheet_name, index=False)
 
 
-    def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site, normalized_bead_contact_site):
+    def normalize_dartboard_data_to_bead_contact(self, dartboard_data, real_bead_contact_site, normalized_bead_contact_site):
         difference = real_bead_contact_site - normalized_bead_contact_site
-        return self.rotate_dartboard_data_counterclockwise(average_dartboard_data, difference)
+        return self.rotate_dartboard_data_counterclockwise(dartboard_data, difference)
 
 
     def rotate_dartboard_data_counterclockwise(self, dartboard_data, n):
