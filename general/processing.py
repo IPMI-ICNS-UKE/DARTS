@@ -323,7 +323,6 @@ class ImageProcessor:
         Apply a medianfilter on either the channels or the ratio image;
         Pixelvalues of zeroes are excluded in median calculation
         """
-
        print("\n Medianfilter " + channel + ": ")
        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
            for cell in self.cells_with_bead_contact:
@@ -338,7 +337,6 @@ class ImageProcessor:
                         filtered_image_list.append(filtered_image)
                     cell.set_image_channel1(filtered_image_list[0])
                     cell.set_image_channel2(filtered_image_list[1])
-
                 elif channel == 'ratio':
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -349,10 +347,7 @@ class ImageProcessor:
                             filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
                         filtered_image_list.append(filtered_image)
                     cell.ratio = filtered_image_list[0]
-
                 bar()
-
-
 
 
     def return_ratios(self):
