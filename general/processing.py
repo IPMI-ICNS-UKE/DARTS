@@ -79,6 +79,8 @@ class ImageProcessor:
           
        # self.file_name = filename  # ntpath.basename(self.parameters["inputoutput"]["path_to_input_combined"
 
+        # self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
+
         self.cell_list = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
@@ -173,8 +175,7 @@ class ImageProcessor:
 # ------------------------ alternative constructors --------------------------------
     # alternative constructor to define image processor with filename
     @classmethod
-    def fromfilename(cls, filename, parameterdict, logger=None):
-        start = parameterdict["inputoutput"]["start_frame"]
+    def fromfilename_split(cls, filename, parameterdict, logger=None):
         end = parameterdict["inputoutput"]["end_frame"]
         # !! for now, images need to start at 0 because of bleaching correction !!
         image = cut_image_frames(io.imread(filename), 0, end)
@@ -185,6 +186,14 @@ class ImageProcessor:
             channel1, channel2 = np.split(image, 2, axis=2)
         elif image.ndim == 2:  # for static images
             channel1, channel2 = np.split(image, 2, axis=1)
+        return cls(channel1, channel2, parameterdict, logger)
+
+    @classmethod
+    def fromfilename_combine(cls, filename_ch1, filename_ch2, parameterdict, logger=None):
+        end = parameterdict["inputoutput"]["end_frame"]
+        # !! for now, images need to start at 0 because of bleaching correction !!
+        channel1 = cut_image_frames(io.imread(filename_ch1), 0, end)
+        channel2 = cut_image_frames(io.imread(filename_ch2), 0, end)
         return cls(channel1, channel2, parameterdict, logger)
 
     # alternative constructor to define image processor with image object

@@ -11,6 +11,7 @@ from analysis.Bead_Contact_GUI import BeadContactGUI
 from analysis.DartboardGUI import DartboardGUI
 import gc
 from general.InfoToComputer import InfoToComputer
+import glob
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
@@ -22,7 +23,7 @@ def main(gui_enabled):
     if gui_enabled:
         gui = TDarts_GUI()
         gui.run_main_loop()
-    del gui
+        del gui
 
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
@@ -36,13 +37,18 @@ def main(gui_enabled):
     parameters["properties"]["selected_dartboard_areas_for_timeline"] = selected_dartboard_areas_for_timeline
     info_saver = InfoToComputer(parameters)
 
-    directory = parameters["inputoutput"]["path_to_input_combined"]
+    if parameters["properties"]["channel_format"] == "two-in-one":
+        directory = parameters["inputoutput"]["path_to_input_combined"]
+    elif parameters["properties"]["channel_format"] == "single":
+        directory = parameters["inputoutput"]["path_to_input_channel1"]
     filename_list = os.listdir(directory)
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
+    if parameters["properties"]["channel_format"] == "single":
+        filename_list = [os.path.basename(file) for file in glob.glob(directory + "/*1.tif")]# loop only over channel 1 files
 
     # definition of bead contacts for each file
     for file in filename_list:
-        file_path = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
+        file_path = directory + '/' + file
         bead_contact_gui = BeadContactGUI(file, file_path, info_saver.bead_contact_dict)
         bead_contact_gui.run_main_loop()
     del bead_contact_gui
@@ -57,13 +63,22 @@ def main(gui_enabled):
         list_of_bead_contacts = info_saver.bead_contact_dict[file]
         parameters["properties"]["list_of_bead_contacts"] = list_of_bead_contacts
 
-        filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
-        parameters["inputoutput"]["filename"] = file
+        # find out end point
         latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in list_of_bead_contacts])
         end_frame_file = latest_time_of_bead_contact + parameters["properties"]["duration_of_measurement"] + 1  # not all frames need to be processed
-
         parameters["inputoutput"]["end_frame"] = end_frame_file
-        Processor = ImageProcessor.fromfilename(filename, parameters, logger)
+
+        # find out filename
+        if parameters["properties"]["channel_format"] == "two-in-one":
+            filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
+            parameters["inputoutput"]["filename"] = file
+            Processor = ImageProcessor.fromfilename_split(filename, parameters, logger)
+        elif parameters["properties"]["channel_format"] == "single":
+            filename_ch1 = parameters["inputoutput"]["path_to_input_channel1"] + '/' + file
+            filename_ch2 = parameters["inputoutput"]["path_to_input_channel1"] + '/' + file.replace("1.tif", "2.tif")
+            parameters["inputoutput"]["filename"] = file
+            Processor = ImageProcessor.fromfilename_combine(filename_ch1, filename_ch2, parameters, logger)
+
 
         print("Now processing the following file: " + file)
         # Postprocessing pipeline
