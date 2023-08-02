@@ -32,3 +32,18 @@ class MeanDartboardGenerator:
 
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section)
 
+"""
+source_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/HN1L C2 29.7.2023/Dartboard_data_all_files_one_cell_not_in_general_dartboard"
+save_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/HN1L C2 29.7.2023/Dartboard_data_all_files_one_cell_not_in_general_dartboard/save_path"
+source_path =
+save_path = 
+number_of_analyzed_cells = 33
+frame_rate = 40.0
+experiment_name = "dartboard_rest"
+measurement_name = "test"
+dartboard_sections = 12
+dartboard_areas_per_section = 8
+dartboard_gen = MeanDartboardGenerator(source_path, save_path, number_of_analyzed_cells, frame_rate, experiment_name, measurement_name, dartboard_sections, dartboard_areas_per_section)
+
+dartboard_gen.calculate_dartboard_data_for_all_cells()
+"""

@@ -154,7 +154,7 @@ class DartboardGUI:
                     horizontalalignment='left',
                     verticalalignment='bottom',
                     )
-
+        # plt.savefig("/Users/dejan/Documents/GitHub/T-DARTS/results/debug/"+ 'dartboard_gui.tiff', dpi=1200)
         return fig
 
 

@@ -108,8 +108,9 @@ class DartboardGenerator:
 
         for frame in range(start_frame, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
-            current_radius = radii_after_normalization[frame] + 1  # 1 as correction term; rather have to large radius than lose information. Sometimes, the circle does not contain all the pixels.
-            dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
+            current_radius = radii_after_normalization[frame] + 2  # 2 as correction term; rather have to large radius than lose information. Sometimes, the circle does not contain all the pixels.
+            normalized_frame = frame - start_frame
+            dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(normalized_frame,
                                                                                                          signal_dataframe,
                                                                                                          centroid_coords,
                                                                                                          number_of_dartboard_sections,
@@ -189,7 +190,7 @@ class DartboardGenerator:
 
     def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section):
         vmin = 0
-        vmax = 2.0
+        vmax = 0.2
         dartboard_data_per_second = dartboard_data
         # dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 
