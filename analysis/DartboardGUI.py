@@ -44,7 +44,7 @@ class DartboardGUI:
         dartboard_section, dartboard_area_number_within_section = self.dartboard_generator.assign_signal_to_dartboard_area((x,y), self.centroid_coords, self.dartboard_number_of_sections, self.dartboard_number_of_areas_per_section, 139)
         # print(str(dartboard_section))
         # print(str(dartboard_area_number_within_section))
-        if dartboard_area_number_within_section > 4:  # if not bull's eye
+        if dartboard_area_number_within_section is not None and dartboard_area_number_within_section > 4:  # if not bull's eye
             self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 1 - self.dartboard_data[dartboard_area_number_within_section][dartboard_section]
 
         """

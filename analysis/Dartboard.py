@@ -92,7 +92,7 @@ class DartboardGenerator:
             return dartboard_area_frequency
 
     def reduce_dataframe_to_one_frame(self, signal_dataframe, frame):
-        subset = signal_dataframe.loc[signal_dataframe['frame'] == frame]
+        subset = signal_dataframe.loc[signal_dataframe['frame'] == frame].copy()
         return subset
 
     def extract_signal_coordinates_from_one_frame(self, dataframe_subset):
@@ -104,11 +104,11 @@ class DartboardGenerator:
     def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas, cell):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
 
-        dartboard_timeline_data_single_cell = timeline_single_dartboard_areas.copy()
+        dartboard_timeline_data_single_cell = timeline_single_dartboard_areas.copy()  # better: initialize with zeros or NaN
 
         for frame in range(start_frame, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
-            current_radius = radii_after_normalization[frame] + 1  # 1 as correction term; rather have to large radius than lose information. Sometime, the circle does not contain all the pixels.
+            current_radius = radii_after_normalization[frame] + 1  # 1 as correction term; rather have to large radius than lose information. Sometimes, the circle does not contain all the pixels.
             dartboard_area_frequency_this_frame = self.count_signals_in_each_dartboard_area_in_one_frame(frame,
                                                                                                          signal_dataframe,
                                                                                                          centroid_coords,
@@ -122,23 +122,26 @@ class DartboardGenerator:
             normalized_dartboard_data = self.normalize_dartboard_data_to_bead_contact(
                 dartboard_area_frequency_this_frame.copy(), cell.bead_contact_site, 2)
 
+            sum = 0
             for selected_area in selected_dartboard_areas:
-                    selected_dartboard_section_index = selected_area[0]
+                selected_dartboard_section_index = selected_area[0]
 
-                    selected_dartboard_area_within_section_index = selected_area[1]
+                selected_dartboard_area_within_section_index = selected_area[1]
 
-                    number_of_signals_in_selected_area = normalized_dartboard_data[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
+                number_of_signals_in_selected_area = normalized_dartboard_data[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
 
-                    timeline_single_dartboard_areas.at[
-                        int(frame - start_frame), str(selected_area)] += number_of_signals_in_selected_area
+                timeline_single_dartboard_areas.at[
+                    int(frame - start_frame), str(selected_area)] += number_of_signals_in_selected_area
 
-                    dartboard_timeline_data_single_cell.at[
-                        int(frame - start_frame), str(selected_area)] = number_of_signals_in_selected_area
+                dartboard_timeline_data_single_cell.at[
+                    int(frame - start_frame), str(selected_area)] = number_of_signals_in_selected_area
+                sum += number_of_signals_in_selected_area
+
+            dartboard_timeline_data_single_cell.at[int(frame-start_frame), 'sum'] = sum
 
         cell.dartboard_timeline_data = dartboard_timeline_data_single_cell
 
         return cumulated_dartboard_data
-
 
     def calculate_mean_dartboard_multiple_cells(self, number_of_cells, dartboard_area_frequencies,number_of_sections, number_of_areas_within_section, filename):
         if(len(dartboard_area_frequencies)>0):
@@ -188,7 +191,7 @@ class DartboardGenerator:
         vmin = 0
         vmax = 2.0
         dartboard_data_per_second = dartboard_data
-        dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
+        # dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 
 
         # red_sequential_cmap = plt.get_cmap("Reds")
