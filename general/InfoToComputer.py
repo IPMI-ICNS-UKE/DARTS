@@ -36,8 +36,6 @@ class InfoToComputer:
                 new_row['sum'] = 0.0
                 self.timeline_single_dartboard_areas = self.timeline_single_dartboard_areas._append(new_row, ignore_index=True)
 
-
-
     def save_bead_contact_information(self):
         with open(self.save_path + 'Bead_contact_information.txt', 'w') as f:
             for file in self.bead_contact_dict:
@@ -97,7 +95,7 @@ class InfoToComputer:
         sum = np.zeros(len(self.timeline_single_dartboard_areas.index))
         for selected_area in self.selected_dartboard_areas:
             values_as_array = self.timeline_single_dartboard_areas[str(selected_area)].to_numpy()
-            divided_by_cell_number = np.divide(values_as_array, self.number_of_responding_cells_in_total)
+            divided_by_cell_number = np.divide(values_as_array, self.number_of_analyzed_cells_in_total)
             sum = np.add(sum, divided_by_cell_number)
             self.timeline_single_dartboard_areas[str(selected_area)] = divided_by_cell_number.tolist()
         if not self.timeline_single_dartboard_areas.empty:

@@ -44,17 +44,31 @@ class DartboardGUI:
         dartboard_section, dartboard_area_number_within_section = self.dartboard_generator.assign_signal_to_dartboard_area((x,y), self.centroid_coords, self.dartboard_number_of_sections, self.dartboard_number_of_areas_per_section, 139)
         # print(str(dartboard_section))
         # print(str(dartboard_area_number_within_section))
+        if dartboard_area_number_within_section is not None and dartboard_area_number_within_section > 4:  # if not bull's eye
+            self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 1 - self.dartboard_data[dartboard_area_number_within_section][dartboard_section]
 
-        if (self.dartboard_data[dartboard_area_number_within_section][dartboard_section]) == 0:
-            self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 1
+        """
+        if dartboard_area_number_within_section > 4:  # not bull's eye
+            if (self.dartboard_data[dartboard_area_number_within_section][dartboard_section]) == 0:  # toggle from 0 to 1
+                self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 1
+            else:
+                self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 0
         else:
-            self.dartboard_data[dartboard_area_number_within_section][dartboard_section] = 0
+            self.toggle_bulls_eye()
+        """
+
         # self.figure = self.create_dartboard()
+        plt.close(self.canvas.figure)
         self.canvas.figure = self.create_dartboard()
         self.canvas.draw()
 
+    def toggle_bulls_eye(self):
+        for i in range(5):
+            for n, col in enumerate(self.dartboard_data[i]):
+                self.dartboard_data[i][n] = 1 - self.dartboard_data[i][n]
+
     def save_and_close(self):  # better use list comprehension
-        for row in range(len(self.dartboard_data)):
+        for row in range(5, len(self.dartboard_data)):
             for col in range(len(self.dartboard_data[row])):
                 if self.dartboard_data[row][col] == 1:
                     # col, row = self.calculate_corresponding_dartboard_field((col,row))
@@ -140,7 +154,7 @@ class DartboardGUI:
                     horizontalalignment='left',
                     verticalalignment='bottom',
                     )
-
+        # plt.savefig("/Users/dejan/Documents/GitHub/T-DARTS/results/debug/"+ 'dartboard_gui.tiff', dpi=1200)
         return fig
 
 
