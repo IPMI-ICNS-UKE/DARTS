@@ -465,7 +465,7 @@ class ImageProcessor:
         number_of_analyzed_frames = end_frame - start_frame
         if not measurement_microdomains.empty:
             dataframe_after_bead_contact = measurement_microdomains.loc[
-                measurement_microdomains['frame'] > 0].copy()
+                measurement_microdomains['frame'] > (time_before_bead_contact)].copy()
         else:
             dataframe_after_bead_contact = pd.DataFrame()
         cell_has_hotspots_after_bead_contact = not dataframe_after_bead_contact.empty
@@ -508,7 +508,8 @@ class ImageProcessor:
                         start_frame,
                         end_frame,
                         self.selected_dartboard_areas,
-                        timeline_single_dartboard_areas)
+                        timeline_single_dartboard_areas,
+                        self.file_name)
 
                     normalized_dartboard_data_single_cell = self.normalize_average_dartboard_data_one_cell(
                         average_dartboard_data_single_cell,
@@ -554,15 +555,16 @@ class ImageProcessor:
         dartboard_data_filename = self.file_name + '_dartboard_data_cell_' + str(cell_index)
         self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data, cell)
 
-    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas):
+    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas, filename):
+        """
         if not cell.signal_data.empty:
-            signal_data_for_cell = cell.signal_data.loc[cell.signal_data['frame'] >= 0]  # only data after bead contact
+            signal_data_for_cell_after_bead_contact = cell.signal_data.loc[cell.signal_data['frame'] >= (time_of_bead_contact - start_frame)].copy()  # only data after bead contact
         else:
-            signal_data_for_cell = cell.signal_data
-
+            signal_data_for_cell_after_bead_contact = cell.signal_data
+        """
         # generate cumualted dartboard data for one cell
         cumulated_dartboard_data_all_frames = self.dartboard_generator.cumulate_dartboard_data_multiple_frames(
-            signal_data_for_cell,
+            cell.signal_data,
             self.dartboard_number_of_sections,
             self.dartboard_number_of_areas_per_section,
             centroid_coords_list,
@@ -573,7 +575,8 @@ class ImageProcessor:
             end_frame,
             selected_dartboard_areas,
             timeline_single_dartboard_areas,
-            cell)
+            cell,
+            filename)
 
         duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
         average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames,

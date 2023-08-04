@@ -70,7 +70,7 @@ class DartboardGenerator:
 
             return dartboard_section, dartboard_area_number_within_section
 
-    def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_sections, number_of_areas_within_section, radius_cell_image):
+    def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_sections, number_of_areas_within_section, radius_cell_image, filename, cellindex, cell):
         if not dataframe.empty:
             dartboard_area_frequency = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
 
@@ -86,10 +86,19 @@ class DartboardGenerator:
                 if(dartboard_section is not None and dartboard_area_number_within_section is not None):
                     dartboard_area_frequency[dartboard_area_number_within_section][dartboard_section] += 1
 
-            return dartboard_area_frequency
+
+
+
         else:
             dartboard_area_frequency = np.zeros(shape=(number_of_areas_within_section, number_of_sections))
-            return dartboard_area_frequency
+
+        normalized_dartboard_data_for_this_frame = self.normalize_dartboard_data_to_bead_contact(dartboard_area_frequency.copy(),cell.bead_contact_site,2)
+        save_path = self.save_path + '/Dartboards/Dartboard_data/'
+        os.makedirs(save_path, exist_ok=True)
+        dartboard_data_filename = filename + '_dartboard_data_cell_' + str(cellindex)
+        np.save(save_path + dartboard_data_filename + '_frame' + str(frame), normalized_dartboard_data_for_this_frame)
+
+        return dartboard_area_frequency
 
     def reduce_dataframe_to_one_frame(self, signal_dataframe, frame):
         subset = signal_dataframe.loc[signal_dataframe['frame'] == frame].copy()
@@ -101,7 +110,7 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas, cell):
+    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas, cell, filename):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
 
         dartboard_timeline_data_single_cell = timeline_single_dartboard_areas.copy()  # better: initialize with zeros or NaN
@@ -115,9 +124,12 @@ class DartboardGenerator:
                                                                                                          centroid_coords,
                                                                                                          number_of_dartboard_sections,
                                                                                                          number_of_dartboard_areas_per_section,
-                                                                                                         current_radius)
+                                                                                                         current_radius,
+                                                                                                         filename,
+                                                                                                         cell_index,
+                                                                                                         cell)
             if frame >= time_of_bead_contact:
-                cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)
+                cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)  # for dartboard
 
             # normalize the dartboard data for this frame, because the bead contact site might differ from the later normalized site:
             normalized_dartboard_data = self.normalize_dartboard_data_to_bead_contact(
@@ -190,7 +202,7 @@ class DartboardGenerator:
 
     def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section):
         vmin = 0
-        vmax = 0.2
+        vmax = 2.2
         dartboard_data_per_second = dartboard_data
         # dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 
