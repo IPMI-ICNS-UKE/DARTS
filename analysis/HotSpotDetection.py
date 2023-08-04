@@ -73,11 +73,12 @@ class HotSpotDetector():
 
         features = pd.DataFrame()
         for num, img in enumerate(image_series_in_analysis_range):
-            for region in skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img):
+            regions = skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img)
+            for region in regions:
                 if lower_limit_area <= region.area <= upper_limit_area:
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
-                                                  'frame': num - time_before_bead_contact,
+                                                  'frame': num,
                                                   'time_in_seconds': float(num-time_before_bead_contact)/self.frames_per_second,
                                                   'area in (µm)^2': region.area / (self.scale_pixels_per_micron**2),
                                                   'max_intensity': region.intensity_max,
