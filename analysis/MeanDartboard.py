@@ -30,16 +30,16 @@ class MeanDartboardGenerator:
             self.dartboard_areas_per_section,
             "Mean_dartboard")
 
-        #temporarily
-        # average_dartboard_data_all_measurements = np.divide(average_dartboard_data_all_measurements,1)  # number of frames
-        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section)
+        # average_dartboard_data_all_measurements = np.divide(average_dartboard_data_all_measurements,4.0)  # temporaer
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section, vmax_plot = 9.61)
+        # pass
 
 """
-source_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/HN1L C2 Dartboards/Dartboard 280-319/source"
-save_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/HN1L C2 Dartboards/Dartboard 280-319/save"
-number_of_analyzed_cells = 33
+source_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/KHYG-1 WT 4.8.2023/Part 1 variierte Beadkontakte/Dartboards/Dartboard 40-200/source"
+save_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/KHYG-1 WT 4.8.2023/Part 1 variierte Beadkontakte/Dartboards/Dartboard 40-200/save"
+number_of_analyzed_cells = 7
 frame_rate = 40.0
-experiment_name = "dartboard_rest"
+experiment_name = "NK_cells_4_sec"
 measurement_name = "test"
 dartboard_sections = 12
 dartboard_areas_per_section = 8

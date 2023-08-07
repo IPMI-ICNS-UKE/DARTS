@@ -200,9 +200,9 @@ class DartboardGenerator:
         return dartboard_data_copy
 
 
-    def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section):
+    def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section, vmax_plot = 0.13):
         vmin = 0
-        vmax = 2.2
+        vmax = vmax_plot
         dartboard_data_per_second = dartboard_data
         # dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 
@@ -284,4 +284,4 @@ class DartboardGenerator:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        plt.savefig(directory + image_identifier + '.tiff', dpi=1200)
+        plt.savefig(directory + image_identifier + '.tiff', dpi=450)
