@@ -66,8 +66,13 @@ class BackgroundSubtractor():
         background_subtracted_channel = channel_image_series.copy()
         for frame in range(len(channel_image_series)):
             subtrahend = round(np.interp(frame, frames, subtrahends))
-            max_value = np.max(background_subtracted_channel[frame])
-            background_subtracted_channel[frame] -= subtrahend
-            background_subtracted_channel[frame][background_subtracted_channel[frame] > max_value] = 0
+            # for values <= subtrahend: set to 0
+            copy = background_subtracted_channel[frame].copy()
+            copy[copy <= subtrahend] = 0
+
+            # for values > subtrahend
+            copy[copy > subtrahend] -= subtrahend
+
+            background_subtracted_channel[frame] = copy
 
         return background_subtracted_channel
