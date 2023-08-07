@@ -125,7 +125,10 @@ class InfoToComputer:
 
     def save_timelines_for_single_dartboard_areas(self):
         if not self.timeline_single_dartboard_areas.empty:
-            with pd.ExcelWriter(self.save_path + '/Dartboards/Dartboard_data/timelines_dartboard.xlsx') as writer:
+            excel_file = self.save_path + 'Dartboards/Dartboard_data/timelines_dartboard.xlsx'
+            # os.makedirs(save_path, exist_ok=True)
+
+            with pd.ExcelWriter(excel_file) as writer:
                 sheet_name = "No. of hotspots per frame"
 
                 self.timeline_single_dartboard_areas.to_excel(writer, sheet_name=sheet_name, index=False)

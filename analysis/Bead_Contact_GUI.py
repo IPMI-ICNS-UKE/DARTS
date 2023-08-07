@@ -9,11 +9,15 @@ import skimage.io as io
 
 
 class BeadContactGUI():
-    def __init__(self, file, filepath, bead_contact_dict):
+    def __init__(self, file, filepath, bead_contact_dict, parameters):
         self.file = file
         self.image = io.imread(filepath)
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
+        if parameters["properties"]["channel_format"] == "two-in-one":
+            self.channel_width = self.image_width*0.5
+        elif parameters["properties"]["channel_format"] == "single":
+            self.channel_width = self.image_width
 
         self.bead_contact_dict = bead_contact_dict
         self.root = Tk()
@@ -160,7 +164,7 @@ class BeadContactGUI():
             x_location = round(event.xdata)
             y_location = round(event.ydata)
 
-            if(self.image_width*0.5 >= x_location >= 0 and self.image_height >= y_location >= 0):
+            if(self.channel_width >= x_location >= 0 and self.image_height >= y_location >= 0):
                 if self.mouse_click_input.get() == 1:  # if bead contact position/frame have to be selected
                     frame = self.slider.get()
                     self.text_bead_contact_frame.delete(1.0, END)

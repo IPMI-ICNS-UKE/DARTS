@@ -60,30 +60,28 @@ class CellTracker:
             for num, img in enumerate(image_series):
                 time.sleep(.005)
                 for r, region in enumerate(skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img)):
-                    if True:
-                        features = features._append([{  'y': region.centroid[0],
-                                                        'x': region.centroid[1],
-                                                        'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
-                                                        'x_centroid_minus_bbox': region.centroid[1]-region.bbox[1],
-                                                        'frame': num,
-                                                        'bbox': region.bbox,
-                                                        'area in (µm)^2': region.area / (self.scale_pixels_per_micron ** 2),
-                                                        # Q: diameter could be relevant to check cell size
-                                                        'equivalent_diameter_area': region.equivalent_diameter_area,
-                                                        'mean_intensity': region.intensity_mean,
-                                                        'image_intensity': region.image_intensity,
-                                                        'image filled': region.image_filled,
-                                                        'edge': details_for_each_frame[num]['coord'][r],
-                                                        'edge_x': details_for_each_frame[num]['coord'][r][0, :] - region.bbox[0],
-                                                        'edge_y': details_for_each_frame[num]['coord'][r][1, :] - region.bbox[1]
-                        }, ])
-
+                    features = features._append([{  'y': region.centroid[0],
+                                                    'x': region.centroid[1],
+                                                    'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
+                                                    'x_centroid_minus_bbox': region.centroid[1]-region.bbox[1],
+                                                    'frame': num,
+                                                    'bbox': region.bbox,
+                                                    'area in (µm)^2': region.area / (self.scale_pixels_per_micron ** 2),
+                                                    # Q: diameter could be relevant to check cell size
+                                                    'equivalent_diameter_area': region.equivalent_diameter_area,
+                                                    'mean_intensity': region.intensity_mean,
+                                                    'image_intensity': region.image_intensity,
+                                                    'image filled': region.image_filled,
+                                                    'edge': details_for_each_frame[num]['coord'][r],
+                                                    'edge_x': details_for_each_frame[num]['coord'][r][0, :] - region.bbox[0],
+                                                    'edge_y': details_for_each_frame[num]['coord'][r][1, :] - region.bbox[1]
+                    }, ])
                 bar()
 
         if not features.empty:
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
-            search_range = 70
+            search_range = 50  #
             t = tp.link_df(features, search_range, memory=3)
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
             # print (t)
@@ -114,14 +112,6 @@ class CellTracker:
                 max_delta_x = delta_x
             if (delta_y > max_delta_y):
                 max_delta_y = delta_y
-
-        # if resize_box_factor is not None:
-        #     max_delta_x += max_delta_x * resize_box_factor
-        #     max_delta_y += max_delta_x * resize_box_factor
-        # print(max_delta_x, max_delta_y)
-
-        # max_delta_x += max_delta_x * 1.2
-        # max_delta_y += max_delta_x * 1.2
 
         return max_delta_x, max_delta_y
 
@@ -367,9 +357,14 @@ class CellTracker:
 
     def create_roi_image_series(self, empty_rois, intensity_images_in_bbox, shift_x_list, shift_y_list):
         roi_image_series = empty_rois.copy()
+
         for i in range(len(empty_rois)):
             delta_x_image = len(intensity_images_in_bbox[i][0])
             delta_y_image = len(intensity_images_in_bbox[i])
+
+            # y,x = roi_image_series[i].shape
+
+
             roi_image_series[i][0:delta_y_image, 0:delta_x_image] = intensity_images_in_bbox[i]
 
             x_shift = shift_x_list[i]
@@ -411,10 +406,10 @@ class CellTracker:
             centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle,dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
             max_delta_x, max_delta_y = self.equal_width_and_height(max_delta_x, max_delta_y)
-            max_delta_x, max_delta_y = int(max_delta_x*1.4), int(max_delta_y*1.4)
+            max_delta_x, max_delta_y = int(max_delta_x*1.4) + 10, int(max_delta_y*1.4) + 10
 
             try:
-                empty_rois = self.create_roi_template(channel1, max_delta_x, max_delta_y)  # empty rois with maximum bbox size
+                empty_rois = self.create_roi_template(channel1, max_delta_x+1, max_delta_y+1)  # empty rois with maximum bbox size
                 image_series_channel_1_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel1, bbox_list, 10)
                 image_series_channel_2_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel2, bbox_list, 10)
                 x_shift_image, y_shift_image = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y, shift_correction_list)

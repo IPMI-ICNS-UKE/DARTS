@@ -49,7 +49,7 @@ def main(gui_enabled):
     # definition of bead contacts for each file
     for file in filename_list:
         file_path = directory + '/' + file
-        bead_contact_gui = BeadContactGUI(file, file_path, info_saver.bead_contact_dict)
+        bead_contact_gui = BeadContactGUI(file, file_path, info_saver.bead_contact_dict, parameters)
         bead_contact_gui.run_main_loop()
         del bead_contact_gui
 
