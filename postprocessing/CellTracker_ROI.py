@@ -335,7 +335,7 @@ class CellTracker:
         shift_correction_list = []
         for i in range(len(image_series)):
             min_row, min_col, max_row, max_col = bbox_list[i]
-            min_row, min_col, max_row, max_col = min_row-delta, min_col-delta, max_row+delta, max_col+delta
+            min_row, min_col, max_row, max_col = min_row-delta, min_col-delta, max_row+delta-1, max_col+delta-1  # -1 als workaround gegen broadcast error
             t_max, y_max, x_max = image_series.shape
 
             if min_row < 0:
@@ -349,7 +349,7 @@ class CellTracker:
 
             min_row_difference = bbox_list[i][0] - min_row
             min_col_difference = bbox_list[i][1] - min_col
-            shift_correction_list.append((min_col_difference,min_row_difference))  # col = x, row = y
+            shift_correction_list.append((min_col_difference, min_row_difference))  # col = x, row = y
 
             cropped_image = image_series[i][min_row:max_row, min_col:max_col]
             cropped_images_list.append(cropped_image)
@@ -363,9 +363,14 @@ class CellTracker:
             delta_y_image = len(intensity_images_in_bbox[i])
 
             # y,x = roi_image_series[i].shape
-
-
             roi_image_series[i][0:delta_y_image, 0:delta_x_image] = intensity_images_in_bbox[i]
+
+            """
+            if intensity_images_in_bbox[i].shape == roi_image_series[i].shape:
+                roi_image_series[i][0:delta_y_image, 0:delta_x_image] = intensity_images_in_bbox[i]
+            elif :
+                x_difference =
+            """
 
             x_shift = shift_x_list[i]
             y_shift = shift_y_list[i]
@@ -406,10 +411,10 @@ class CellTracker:
             centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle,dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
             max_delta_x, max_delta_y = self.equal_width_and_height(max_delta_x, max_delta_y)
-            max_delta_x, max_delta_y = int(max_delta_x*1.4) + 10, int(max_delta_y*1.4) + 10
+            max_delta_x, max_delta_y = int(max_delta_x*1.4) + 15, int(max_delta_y*1.4) + 15
 
             try:
-                empty_rois = self.create_roi_template(channel1, max_delta_x+1, max_delta_y+1)  # empty rois with maximum bbox size
+                empty_rois = self.create_roi_template(channel1, max_delta_x, max_delta_y)  # empty rois with maximum bbox size
                 image_series_channel_1_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel1, bbox_list, 10)
                 image_series_channel_2_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel2, bbox_list, 10)
                 x_shift_image, y_shift_image = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y, shift_correction_list)
