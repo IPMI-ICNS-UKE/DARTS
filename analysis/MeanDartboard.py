@@ -23,15 +23,19 @@ class MeanDartboardGenerator:
             array = np.load(self.source_path + '/' + file)
             dartboard_data_array_list.append(array)
 
-        average_dartboard_data_all_measurements = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(
+        number_of_arrays = len(filename_list)  # divide by number of arrays to obtain mean dartboard data per cell and second for the whole measurement
+
+        average_dartboard_data_per_cell_all_measurements = self.dartboard_generator.calculate_mean_dartboard_multiple_cells(
             self.number_of_analyzed_cells,
             dartboard_data_array_list,
             self.dartboard_sections,
             self.dartboard_areas_per_section,
-            "Mean_dartboard")
+            "Mean_dartboard",
+            mean_dartboard_flag=True,
+            number_arrays_mean_dartboard=number_of_arrays)
 
         # average_dartboard_data_all_measurements = np.divide(average_dartboard_data_all_measurements,4.0)  # temporaer
-        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section, vmax_plot = 9.61)
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_per_cell_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section, vmax_plot = 9.61)
         # pass
 
 """
