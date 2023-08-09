@@ -81,8 +81,8 @@ class CellTracker:
         if not features.empty:
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
-            search_range = 50  #
-            t = tp.link_df(features, search_range, memory=3)
+            search_range = 50  #needs to be optimise; depends on the diameter of the cells in the given magnification
+            t = tp.link_df(features, search_range, memory=1)
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
             # print (t)
             # tp.plot_traj(t, superimpose=fluo_image[0])
@@ -119,12 +119,12 @@ class CellTracker:
         """
         Creates a series of boolean masks for a cell image series so that background subtraction can be performed later.
         """
-        frame_number = len(empty_rois)
+        # frame_number = len(empty_rois)
         label_container = empty_rois.copy()
         images_inside_bboxes = self.get_images_inside_bboxes(dataframe, particle)
         boolean_mask = np.empty_like(empty_rois, dtype=bool)
 
-        for frame in range(frame_number):
+        for frame in range(len(x_shift_all)):
             current_label = images_inside_bboxes[frame]
 
             x_shift = x_shift_all[frame]
@@ -180,16 +180,15 @@ class CellTracker:
         coords_list = list(zip(x_coords, y_coords))
         return coords_list
 
-    def get_bboxes_list(self,particle,dataframe):
+    def get_bboxes_list(self,particle_dataframe_subset):
         """
         Returns a list of bounding boxes of a cell image series.
         :param particle:
         :param dataframe:
         :return:
         """
-        subset = dataframe.loc[dataframe['particle'] == particle]
-        bbox_list = subset["bbox"].values.tolist()
-        return bbox_list
+
+        return particle_dataframe_subset["bbox"].values.tolist()
 
     def get_offset_between_centroid_and_bbox(self, particle, dataframe):
         """
@@ -317,8 +316,8 @@ class CellTracker:
         else:
             return max_delta_x,max_delta_y
 
-    def create_roi_template(self,image_series,max_delta_x,max_delta_y):
-        cropped_template = np.zeros_like(image_series[:,0:max_delta_y,0:max_delta_x])
+    def create_roi_template(self,image_series,max_delta_x,max_delta_y, number_bboxes):
+        cropped_template = np.zeros_like(image_series[0:number_bboxes,0:max_delta_y,0:max_delta_x])
         return cropped_template
 
     def create_cell_image_series(self,empty_rois,intensity_image_series,bbox_list):
@@ -333,7 +332,7 @@ class CellTracker:
     def crop_image_series_with_rois(self,image_series,bbox_list, delta):
         cropped_images_list = []
         shift_correction_list = []
-        for i in range(len(image_series)):
+        for i in range(len(bbox_list)):
             min_row, min_col, max_row, max_col = bbox_list[i]
             min_row, min_col, max_row, max_col = min_row-delta, min_col-delta, max_row+delta-1, max_col+delta-1  # -1 als workaround gegen broadcast error
             t_max, y_max, x_max = image_series.shape
@@ -358,7 +357,7 @@ class CellTracker:
     def create_roi_image_series(self, empty_rois, intensity_images_in_bbox, shift_x_list, shift_y_list):
         roi_image_series = empty_rois.copy()
 
-        for i in range(len(empty_rois)):
+        for i in range(len(intensity_images_in_bbox)):
             delta_x_image = len(intensity_images_in_bbox[i][0])
             delta_y_image = len(intensity_images_in_bbox[i])
 
@@ -407,14 +406,20 @@ class CellTracker:
         roi_before_backgroundcor_dict = {}
         for particle in particle_set:
             particle_dataframe_subset = self.get_dataframe_subset(dataframe, particle)
-            bbox_list = self.get_bboxes_list(particle, dataframe)
-            centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle,dataframe)
+
+            # clean up of dataframe in case that there are missing rows
+            particle_dataframe_subset.reset_index(drop=True, inplace=True)
+            frame_list = list(range(len(particle_dataframe_subset.index)))
+            particle_dataframe_subset['frame'] = frame_list
+
+            bbox_list = self.get_bboxes_list(particle_dataframe_subset)
+            centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle, dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
             max_delta_x, max_delta_y = self.equal_width_and_height(max_delta_x, max_delta_y)
             max_delta_x, max_delta_y = int(max_delta_x*1.4) + 15, int(max_delta_y*1.4) + 15
 
             try:
-                empty_rois = self.create_roi_template(channel1, max_delta_x, max_delta_y)  # empty rois with maximum bbox size
+                empty_rois = self.create_roi_template(channel1, max_delta_x, max_delta_y, len(bbox_list))  # empty rois with maximum bbox size
                 image_series_channel_1_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel1, bbox_list, 10)
                 image_series_channel_2_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel2, bbox_list, 10)
                 x_shift_image, y_shift_image = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y, shift_correction_list)
