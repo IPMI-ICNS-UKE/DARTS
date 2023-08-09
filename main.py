@@ -65,7 +65,7 @@ def main(gui_enabled):
 
         # find out end point
         latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in list_of_bead_contacts])
-        end_frame_file = latest_time_of_bead_contact + parameters["properties"]["duration_of_measurement"] + 1  # not all frames need to be processed
+        end_frame_file = latest_time_of_bead_contact + parameters["properties"]["duration_of_measurement"] + 20  # not all frames need to be processed
         parameters["inputoutput"]["end_frame"] = end_frame_file
 
         # find out filename

@@ -157,7 +157,7 @@ class ImageProcessor:
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
         self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
-        self.excel_filename_one_measurement = self.measurement_name + '_' + self.excel_filename_general
+        self.excel_filename_one_measurement = self.measurement_name + '_microdomain_data'
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.results_folder,
                                                                 self.excel_filename_one_measurement,
@@ -474,7 +474,7 @@ class ImageProcessor:
     def save_measurements(self, i, cell_signal_data, number_of_frames, time_before_bead_contact):
         microdomains_timeline_for_cell = self.hotspotdetector.save_dataframes(self.file_name, i, cell_signal_data,
                                                                               number_of_frames,
-                                                                              time_before_bead_contact)
+                                                                              time_before_bead_contact, self.duration_of_measurement)
         return microdomains_timeline_for_cell
 
     def dartboard(self, normalized_cells_dict, timeline_single_dartboard_areas):
