@@ -1,12 +1,15 @@
 import numpy as np
 import pandas as pd
-from analysis.MeanDartboard import MeanDartboardGenerator
+# from analysis.MeanDartboard import MeanDartboardGenerator
+from analysis.Dartboard import DartboardGenerator
 import os
 
 
 class InfoToComputer:
     def __init__(self, parameters):
         self.dartboard_data_list = []
+        self.dartboard_data_cumulated_all_cells = np.zeros(shape=(parameters["properties"]["dartboard_number_of_areas_per_section"],parameters["properties"]["dartboard_number_of_sections"])).astype(float)
+        self.analyzed_seconds_cumulated = 0.0
         self.bead_contact_dict = {}
         self.save_path = parameters["inputoutput"]["path_to_output"] + '/'
         self.number_of_analyzed_cells_in_total = 0
@@ -62,14 +65,28 @@ class InfoToComputer:
         dartboard_sections = self.parameters["properties"]["dartboard_number_of_sections"]
         dartboard_areas_per_section = self.parameters["properties"]["dartboard_number_of_areas_per_section"]
 
-        source_path = self.save_path + 'Dartboard_data_all_files'
-        os.makedirs(source_path, exist_ok=True)
+        # source_path = self.save_path + 'Dartboard_data_all_files'
+        # os.makedirs(source_path, exist_ok=True)
         measurement_name = "dartboard_for_all_analyzed_cells"
+        # duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
+        analyzed_seconds_per_cell = self.analyzed_seconds_cumulated/self.number_of_analyzed_cells_in_total
+        dartboard_data_per_cell_and_second = np.divide(self.dartboard_data_cumulated_all_cells, (self.number_of_analyzed_cells_in_total*analyzed_seconds_per_cell))
 
+        """
         mean_dartboard_generator = MeanDartboardGenerator(source_path, self.save_path, self.number_of_analyzed_cells_in_total, fps,
                                                           experiment_name, measurement_name, dartboard_sections,
                                                           dartboard_areas_per_section)
         mean_dartboard_generator.calculate_dartboard_data_for_all_cells()
+        """
+        dartboard_generator = DartboardGenerator(self.save_path, fps, measurement_name, experiment_name, self.save_path)
+
+        dartboard_generator.save_dartboard_plot(dartboard_data_per_cell_and_second,
+                                                     self.number_of_analyzed_cells_in_total, dartboard_sections,
+                                                     dartboard_areas_per_section, vmax_plot=10.0)
+
+        cumulated_data_folder = self.save_path + '/Dartboard_data_all_files'
+        os.makedirs(cumulated_data_folder, exist_ok=True)
+        np.save(cumulated_data_folder + '/' + 'Mean_Dartboard_' + str(int(self.number_of_analyzed_cells_in_total)) + '_cells', dartboard_data_per_cell_and_second)
 
     def save_number_of_signals(self):
         excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
@@ -125,8 +142,9 @@ class InfoToComputer:
 
     def save_timelines_for_single_dartboard_areas(self):
         if not self.timeline_single_dartboard_areas.empty:
-            excel_file = self.save_path + 'Dartboards/Dartboard_data/timelines_dartboard.xlsx'
-            # os.makedirs(save_path, exist_ok=True)
+            save_path = self.save_path + 'Dartboards/Dartboard_data'
+            os.makedirs(save_path, exist_ok=True)
+            excel_file = save_path + '/timelines_dartboard.xlsx'
 
             with pd.ExcelWriter(excel_file) as writer:
                 sheet_name = "No. of hotspots per frame"
