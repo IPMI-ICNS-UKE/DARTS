@@ -96,7 +96,7 @@ def main(gui_enabled):
         info_saver.add_signal_information(microdomains_timelines_dict)
         info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
 
-        average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict, info_saver.timeline_single_dartboard_areas)
+        average_dartboard_data_multiple_cells = Processor.dartboard(normalized_cells_dict, info_saver)
 
         info_saver.dartboard_data_list.append(average_dartboard_data_multiple_cells)
 

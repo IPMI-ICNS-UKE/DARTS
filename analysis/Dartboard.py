@@ -110,10 +110,10 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
-    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, timeline_single_dartboard_areas, cell, filename):
+    def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, infosaver, cell, filename):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
 
-        dartboard_timeline_data_single_cell = timeline_single_dartboard_areas.copy()  # better: initialize with zeros or NaN
+        dartboard_timeline_data_single_cell = infosaver.timeline_single_dartboard_areas.copy()  # better: initialize with zeros or NaN
 
         for frame in range(start_frame, end_frame):
             centroid_coords = list_of_centroid_coords[frame]
@@ -130,7 +130,6 @@ class DartboardGenerator:
                                                                                                          cell)
             if frame >= time_of_bead_contact:
                 cumulated_dartboard_data = np.add(cumulated_dartboard_data, dartboard_area_frequency_this_frame)  # for dartboard
-
             # normalize the dartboard data for this frame, because the bead contact site might differ from the later normalized site:
             normalized_dartboard_data = self.normalize_dartboard_data_to_bead_contact(
                 dartboard_area_frequency_this_frame.copy(), cell.bead_contact_site, 2)
@@ -143,7 +142,7 @@ class DartboardGenerator:
 
                 number_of_signals_in_selected_area = normalized_dartboard_data[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
 
-                timeline_single_dartboard_areas.at[
+                infosaver.timeline_single_dartboard_areas.at[
                     int(frame - start_frame), str(selected_area)] += number_of_signals_in_selected_area
 
                 dartboard_timeline_data_single_cell.at[

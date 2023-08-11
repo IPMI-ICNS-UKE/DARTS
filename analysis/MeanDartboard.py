@@ -34,6 +34,7 @@ class MeanDartboardGenerator:
             mean_dartboard_flag=True,
             number_arrays_mean_dartboard=number_of_arrays)
 
+
         # average_dartboard_data_all_measurements = np.divide(average_dartboard_data_all_measurements,4.0)  # temporaer
         self.dartboard_generator.save_dartboard_plot(average_dartboard_data_per_cell_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section, vmax_plot = 9.61)
         # pass
