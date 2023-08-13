@@ -31,20 +31,19 @@ class MeanDartboardGenerator:
             self.dartboard_sections,
             self.dartboard_areas_per_section,
             "Mean_dartboard",
-            mean_dartboard_flag=True,
+            mean_dartboard_flag=False,
             number_arrays_mean_dartboard=number_of_arrays)
 
-
-        # average_dartboard_data_all_measurements = np.divide(average_dartboard_data_all_measurements,4.0)  # temporaer
-        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_per_cell_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section, vmax_plot = 9.61)
+        # average_dartboard_data_per_cell_all_measurements = np.divide(average_dartboard_data_per_cell_all_measurements,5.0)  # temporaer
+        self.dartboard_generator.save_dartboard_plot(average_dartboard_data_per_cell_all_measurements, self.number_of_analyzed_cells, self.dartboard_sections, self.dartboard_areas_per_section, vmax_opt=9.657142857142857)
         # pass
 
 """
-source_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/KHYG-1 WT 4.8.2023/Part 1 variierte Beadkontakte/Dartboards/Dartboard 40-200/source"
-save_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/KHYG-1 WT 4.8.2023/Part 1 variierte Beadkontakte/Dartboards/Dartboard 40-200/save"
+source_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/KHYG-1 WT 4.8.2023/Part 1 variierte Beadkontakte/Dartboards/Dartboard 440-639/source"
+save_path = "/Users/dejan/Documents/GitHub/T-DARTS/results/KHYG-1 WT 4.8.2023/Part 1 variierte Beadkontakte/Dartboards/Dartboard 440-639/save"
 number_of_analyzed_cells = 7
 frame_rate = 40.0
-experiment_name = "NK_cells_4_sec"
+experiment_name = "NK_cells_10_15_sec"
 measurement_name = "test"
 dartboard_sections = 12
 dartboard_areas_per_section = 8

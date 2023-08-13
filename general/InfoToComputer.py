@@ -69,9 +69,12 @@ class InfoToComputer:
         # os.makedirs(source_path, exist_ok=True)
         measurement_name = "dartboard_for_all_analyzed_cells"
         # duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
-        analyzed_seconds_per_cell = self.analyzed_seconds_cumulated/self.number_of_analyzed_cells_in_total
-        dartboard_data_per_cell_and_second = np.divide(self.dartboard_data_cumulated_all_cells, (self.number_of_analyzed_cells_in_total*analyzed_seconds_per_cell))
-
+        if self.number_of_analyzed_cells_in_total > 0:
+            analyzed_seconds_per_cell = self.analyzed_seconds_cumulated/self.number_of_analyzed_cells_in_total
+            dartboard_data_per_cell_and_second = np.divide(self.dartboard_data_cumulated_all_cells, (self.number_of_analyzed_cells_in_total*analyzed_seconds_per_cell))
+        else:
+            analyzed_seconds_per_cell = 0
+            dartboard_data_per_cell_and_second = np.divide(self.dartboard_data_cumulated_all_cells, 1)
         """
         mean_dartboard_generator = MeanDartboardGenerator(source_path, self.save_path, self.number_of_analyzed_cells_in_total, fps,
                                                           experiment_name, measurement_name, dartboard_sections,
@@ -82,7 +85,7 @@ class InfoToComputer:
 
         dartboard_generator.save_dartboard_plot(dartboard_data_per_cell_and_second,
                                                      self.number_of_analyzed_cells_in_total, dartboard_sections,
-                                                     dartboard_areas_per_section, vmax_plot=10.0)
+                                                     dartboard_areas_per_section)
 
         cumulated_data_folder = self.save_path + '/Dartboard_data_all_files'
         os.makedirs(cumulated_data_folder, exist_ok=True)

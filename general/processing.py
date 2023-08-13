@@ -683,8 +683,8 @@ class ImageProcessor:
             # plt.show()
             label = skimage.measure.label(thresholded_image)
             regions = skimage.measure.regionprops(label_image=label, intensity_image=current_frame)
+            # print("frame :" + str(frame))
             largest_region, largest_area = self.give_largest_region(regions)  # largest area in pixels
-
             mean_ratio_value_of_largest_area = largest_region.intensity_mean
             mean_ratio_value_list.append(mean_ratio_value_of_largest_area)
 
