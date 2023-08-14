@@ -202,9 +202,12 @@ class DartboardGenerator:
         return dartboard_data_copy
 
 
-    def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section, vmax_plot = 0.13):
+    def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section, vmax_opt = None):
         vmin = 0
-        vmax = vmax_plot
+        if vmax_opt is None:
+            vmax = np.amax(dartboard_data)  # alternatively: vmax = np.amax(dartboard_data) => colorbar will always be adapted to the maximum value of the array
+        else:
+            vmax = vmax_opt
         dartboard_data_per_second = dartboard_data
         # dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
 

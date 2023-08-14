@@ -82,8 +82,8 @@ class CellTracker:
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
             search_range = 50  #needs to be optimise; depends on the diameter of the cells in the given magnification
-            t = tp.link_df(features, search_range, memory=1)
-            t = tp.filtering.filter_stubs(t, threshold=number_of_frames-1)
+            t = tp.link_df(features, search_range, memory=3)
+            t = tp.filtering.filter_stubs(t, threshold=len(image_series)-5)
             # print (t)
             # tp.plot_traj(t, superimpose=fluo_image[0])
             # print (t)
@@ -102,10 +102,11 @@ class CellTracker:
         max_delta_x = 0
         max_delta_y = 0
         for bbox in bboxlist:
-            y_min = bbox[0]
-            x_min = bbox[1]
-            y_max = bbox[2]
-            x_max = bbox[3]
+            # corresponding_frame = bbox[0]
+            y_min = bbox[1][0]
+            x_min = bbox[1][1]
+            y_max = bbox[1][2]
+            x_max = bbox[1][3]
             delta_x = x_max - x_min
             delta_y = y_max - y_min
             if (delta_x > max_delta_x):
@@ -332,8 +333,9 @@ class CellTracker:
     def crop_image_series_with_rois(self,image_series,bbox_list, delta):
         cropped_images_list = []
         shift_correction_list = []
-        for i in range(len(bbox_list)):
-            min_row, min_col, max_row, max_col = bbox_list[i]
+        for bbox in bbox_list:
+            i = bbox[0]  # bbox is a tuple now. (corresponding frame, bbox)
+            min_row, min_col, max_row, max_col = bbox[1]
             min_row, min_col, max_row, max_col = min_row-delta, min_col-delta, max_row+delta-1, max_col+delta-1  # -1 als workaround gegen broadcast error
             t_max, y_max, x_max = image_series.shape
 
@@ -346,8 +348,8 @@ class CellTracker:
             if max_col > x_max:
                 max_col = x_max - 1
 
-            min_row_difference = bbox_list[i][0] - min_row
-            min_col_difference = bbox_list[i][1] - min_col
+            min_row_difference = bbox[1][0] - min_row
+            min_col_difference = bbox[1][1] - min_col
             shift_correction_list.append((min_col_difference, min_row_difference))  # col = x, row = y
 
             cropped_image = image_series[i][min_row:max_row, min_col:max_col]
@@ -409,10 +411,13 @@ class CellTracker:
 
             # clean up of dataframe in case that there are missing rows
             particle_dataframe_subset.reset_index(drop=True, inplace=True)
-            frame_list = list(range(len(particle_dataframe_subset.index)))
-            particle_dataframe_subset['frame'] = frame_list
+            frame_list_before_correction = particle_dataframe_subset['frame'].copy().values.tolist()
+            bbox_list = list(zip(frame_list_before_correction, self.get_bboxes_list(particle_dataframe_subset)))
 
-            bbox_list = self.get_bboxes_list(particle_dataframe_subset)
+            corrected_frame_list = list(range(len(particle_dataframe_subset.index)))
+            particle_dataframe_subset['frame'] = corrected_frame_list
+
+
             centroid_minus_bbox_offset = self.get_offset_between_centroid_and_bbox(particle, dataframe)
             max_delta_x, max_delta_y = self.get_max_bbox_shape(bbox_list)
             max_delta_x, max_delta_y = self.equal_width_and_height(max_delta_x, max_delta_y)
