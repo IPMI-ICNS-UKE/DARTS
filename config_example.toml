@@ -1,23 +1,19 @@
 [inputoutput]
 
-path_to_input_singlechannels = "Data/"
-path_to_input_channel1 = "Data/ATP/230302_ATPOS_Beladung_100x_488-4-2-frame-duplicated-image.tif"
-path_to_input_channel2 = "Data/ATP/230302_ATPOS_Beladung_100x_561-4-2-frame-duplicated-image-duplicate.tif"
+
+path_to_input_channel1 = "/Users/dejan/Documents/GitHub/T-DARTS/Data/primaere Zellen/Testdateien tracking"
+path_to_input_channel2 = ""
 
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/K2 Klon OKT3/test skript"
+path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/KHYG1/Rohdateien"
 
-path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/test skript"
+path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/debug"
 excel_filename_all_cells = "microdomain_data.xlsx"
 
 start_frame = 0
 end_frame = 10
 user = "dejan"
-experiment_name = "test_skript"
-
-bead_contact_table_path = "/Users/dejan/Documents/GitHub/T-DARTS/Data/HN1L/HN1L Beadkontakte Anfang Ende.xlsx"
-HN1L_condition = 'KO'  # 'KO' or 'WT'
-
+experiment_name = "test"
 
 [properties]
 
@@ -25,7 +21,7 @@ HN1L_condition = 'KO'  # 'KO' or 'WT'
 # (where in the latter, the two input channels are in separate files)
 
 used_microscope = "test microscope"
-day_of_measurement = "2023-07-17"
+day_of_measurement = "2023-08-20"
 
 channel_format = "two-in-one"
 wavelength_1 = 488
@@ -33,18 +29,18 @@ wavelength_2 = 561
 # further information regarding the imaging:
 laserpower_wavelength_1 = 0.6 # e.g. 60%, important for bleaching correction
 laserpower_wavelength_2 = 0.4 # 40%
-scale_pixels_per_micron = 6.5359
+scale_pixels_per_micron = 0.0
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
-cell_type = "jurkat"  # ['jurkat', 'primary', 'NK']
+cell_type = "NK"  # ['jurkat', 'primary', 'NK']
 frames_per_second = 40.0 # how many frames are being measured per second?
 spatial_resolution = 3 # pixels
 ratio_preactivation_threshold = 1.0
-dartboard_number_of_sections = 12
-dartboard_number_of_areas_per_section = 8
+# dartboard_number_of_sections = 12
+# dartboard_number_of_areas_per_section = 8
 duration_of_measurement = 600  # Frames
 
 bleaching_correction_in_pipeline = true
-bleaching_correction_algorithm = "additiv no fit"
+bleaching_correction_algorithm = "additiv, no fit"
 
 # TO DO Fura etc.
 registration_in_pipeline = true

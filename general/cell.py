@@ -27,6 +27,7 @@ class CellImage:
         self.number_of_frames_before_cell_activation = 0
         self.signal_data = None
         self.dartboard_timeline_data = None
+        self.normalized_dartboard_data_table = None
         self.time_of_bead_contact = 0  # start_frame
         self.bead_contact_site = 0  # init value
         self.has_bead_contact = False

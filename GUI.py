@@ -314,7 +314,7 @@ class TDarts_GUI():
         self.check_box_bleaching_correction.config(state=DISABLED)
 
         bleaching_correction_algorithms = [
-            "additive, no fit"
+            "additiv no fit"
         ]
 
         self.bleaching_correction_algorithm = StringVar(self.label_processing_pipeline)
@@ -644,7 +644,7 @@ class TDarts_GUI():
     def default_processing_settings(self):
         self.check_box_frame_by_frame_registration.deselect()
         self.deconvolution_algorithm.set('LR')
-        self.bleaching_correction_algorithm.set('additive, no fit')
+        self.bleaching_correction_algorithm.set('additiv no fit')
 
 
         self.text_psf_type.delete(1.0, END)
