@@ -171,7 +171,7 @@ class HotSpotDetector():
 
                 sheet_name = "Microdomains, cell " + str(index)
                 cell_signal_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                number_of_microdomains,microdomains_timeline_for_cell = self.count_microdomains_in_each_frame(index, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact, duration_of_measurement)
+                number_of_microdomains, microdomains_timeline_for_cell = self.count_microdomains_in_each_frame(index, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact, duration_of_measurement)
                 sheet_name = "Microdomains per frame, cell " + str(index)
                 number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
                 return microdomains_timeline_for_cell

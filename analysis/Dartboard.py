@@ -6,7 +6,7 @@ from matplotlib import colors
 import matplotlib as mpl
 import os
 import pandas as pd
-
+from tkinter import filedialog
 
 class DartboardGenerator:
     def __init__(self, save_path, frame_rate, measurement_name, experiment_name, results_folder):
@@ -36,8 +36,8 @@ class DartboardGenerator:
     def assign_angle_to_dartboard_section(self, angle, number_of_sections):
         angle_one_section = 360.0 / number_of_sections
         dartboard_section = int(angle / angle_one_section)
-        # list = [3,2,1,12,11,10,9,8,7,6,5,4]
-        return dartboard_section
+        list = [3,2,1,12,11,10,9,8,7,6,5,4]
+        return str(list[dartboard_section])
 
     def assign_signal_to_nth_area(self, distance_from_center, radius_cell_image, number_of_areas_in_one_section):
         # height_of_annuli = [0, 0, 0, 0, 0, 2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
@@ -46,15 +46,15 @@ class DartboardGenerator:
 
         normalized_distance_of_signal_from_center = (distance_from_center / radius_cell_image) * radius_dartboard
         if 0 < normalized_distance_of_signal_from_center <= bottom_list[0]:
-            return 4  # equivalent to bull's eye
+            return 'bulls eye'
         elif bottom_list[0] < normalized_distance_of_signal_from_center <= bottom_list[1]:
-            return 5
+            return 'inner'
         elif bottom_list[1] < normalized_distance_of_signal_from_center <= bottom_list[2]:
-            return 6
+            return 'middle'
         elif bottom_list[2] < normalized_distance_of_signal_from_center <= bottom_list[3]:
-            return 7
+            return 'outer'
         else:
-            return -1
+            return None
 
     def assign_signal_to_dartboard_area(self, signal_coords, centroid_coords, number_of_sections, number_of_areas_in_one_section, radius_cell_image):
         if radius_cell_image < self.distance_from_pixel_to_center(signal_coords, centroid_coords): #< radius_inner_circle:
@@ -62,13 +62,15 @@ class DartboardGenerator:
         else:
             # angle_one_dartboard_area = 360.0/number_of_sections
             angle = self.calculate_signal_angle_relative_to_center(centroid_coords, signal_coords)
-            dartboard_section = self.assign_angle_to_dartboard_section(angle, number_of_sections)
+            clock = self.assign_angle_to_dartboard_section(angle, number_of_sections)
             distance_to_center = self.distance_from_pixel_to_center(signal_coords, centroid_coords)
-            dartboard_area_number_within_section = self.assign_signal_to_nth_area(distance_to_center,
+            dartboard_area_within_section = self.assign_signal_to_nth_area(distance_to_center,
                                                                                   radius_cell_image,
                                                                                   number_of_areas_in_one_section)
-
-            return dartboard_section, dartboard_area_number_within_section
+            if dartboard_area_within_section == 'bulls eye':
+                return 'bulls eye'
+            else:
+                return clock + ' ' + dartboard_area_within_section
 
     def count_signals_in_each_dartboard_area_in_one_frame(self, frame, dataframe, centroid_coords, number_of_sections, number_of_areas_within_section, radius_cell_image, filename, cellindex, cell):
         if not dataframe.empty:
@@ -109,6 +111,43 @@ class DartboardGenerator:
         y_values = dataframe_subset['y'].to_numpy().tolist()
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
+
+    def normalize_dartboard_area_to_bead_contact(self, dartboard_area, bead_contact_site, normalized_bead_contact_site):
+        bead_contact_site_list = np.arange(1, 13)
+        dartboard_area_number_index = int(dartboard_area.split(" ")[0]) - 1
+        section = dartboard_area.split(" ")[1]
+        n = bead_contact_site - normalized_bead_contact_site
+        normalized_bead_contact_site_list = np.roll(bead_contact_site_list,n)
+        normalized_dartboard_area = str(normalized_bead_contact_site_list[dartboard_area_number_index]) + ' ' + section
+        return normalized_dartboard_area
+
+    def generate_dartboard_data_one_frame(self, frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell):
+        for signal in signal_in_frame_coords_list:
+            dartboard_area = self.assign_signal_to_dartboard_area(signal, centroid_coords, 12, 8, radius_after_normalization)
+            if dartboard_area != 'bulls eye':
+                bead_contact_site = cell.bead_contact_site
+                normalized_bead_contact_site = 2
+                dartboard_area_normalized_to_bead_contact = self.normalize_dartboard_area_to_bead_contact(dartboard_area, bead_contact_site,normalized_bead_contact_site)
+                frame_dict[dartboard_area_normalized_to_bead_contact] += 1
+            else:
+                frame_dict[dartboard_area] += 1
+        return frame_dict
+
+    def append_normalized_frame_data(self, frame, normalized_frame, normalized_time_in_sec, normalized_dartboard_data_table_single_cell, centroid_coords, radius_after_normalization, cell_index, column_names, signal_dataframe, cell):
+        frame_dict = {}
+        for col in column_names:
+            frame_dict[col] = 0
+        frame_dict['frame'] = normalized_frame
+        frame_dict['time in seconds'] = normalized_time_in_sec
+
+        signal_dataframe_this_frame = self.reduce_dataframe_to_one_frame(signal_dataframe, normalized_frame)
+        signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(signal_dataframe_this_frame)
+
+        frame_dict = self.generate_dartboard_data_one_frame(frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell)
+
+        new_row = [frame_dict[col] for col in frame_dict]
+        normalized_dartboard_data_table_single_cell.loc[normalized_frame] = new_row
+        return normalized_dartboard_data_table_single_cell
 
     def cumulate_dartboard_data_multiple_frames(self, signal_dataframe, number_of_dartboard_sections, number_of_dartboard_areas_per_section, list_of_centroid_coords, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, infosaver, cell, filename):
         cumulated_dartboard_data = np.zeros(shape=(number_of_dartboard_areas_per_section, number_of_dartboard_sections)).astype(float)
@@ -201,71 +240,89 @@ class DartboardGenerator:
             dartboard_data_copy[elem] = np.roll(dartboard_data_copy[elem],n)
         return dartboard_data_copy
 
+    def generate_dartboard(self, start_time_in_sec, end_time_in_sec, data_per_second=True, vmax_opt=None):
+        files = filedialog.askopenfilenames(title='Choose a file')
+        if data_per_second:
+            time_division = end_time_in_sec - start_time_in_sec  # number of seconds
+        else:
+            time_division = (end_time_in_sec - start_time_in_sec) * self.frames_per_second  # number of frames
+        dartboard_area_dict = {}
 
-    def save_dartboard_plot(self, dartboard_data, number_of_cells, number_of_sections, number_of_areas_in_section, vmax_opt = None):
+        number_of_cells = 0
+        for file in files:
+            if file.endswith('.xlsx') and 'dartboard_data_table_cell' in file:
+                current_dataframe = pd.read_excel(file)
+                sub_dataframe = current_dataframe[(start_time_in_sec <= current_dataframe['time in seconds']) & (end_time_in_sec > current_dataframe['time in seconds'])]
+                for column in [x for x in sub_dataframe.columns if x not in ['frame', 'time in seconds']]:
+                    if column in dartboard_area_dict:
+                        dartboard_area_dict[column] += sub_dataframe[column].sum()
+                    else:
+                        dartboard_area_dict[column] = sub_dataframe[column].sum()
+                number_of_cells += 1
+
+        for col in dartboard_area_dict:
+            dartboard_area_dict[col] = dartboard_area_dict[col] / (number_of_cells * time_division)
+
+        self.save_dartboard_plot(dartboard_area_dict, number_of_cells, start_time_in_sec, end_time_in_sec, vmax_opt=vmax_opt)
+
+    def save_dartboard_plot(self, dartboard_area_dict, number_of_cells, start_time_in_sec, end_time_in_sec, number_of_sections=12, number_of_areas_in_section=8, vmax_opt=None, data_per_second=True):
         vmin = 0
         if vmax_opt is None:
-            vmax = np.amax(dartboard_data)  # alternatively: vmax = np.amax(dartboard_data) => colorbar will always be adapted to the maximum value of the array
+            vmax = max(dartboard_area_dict.values())
         else:
             vmax = vmax_opt
-        dartboard_data_per_second = dartboard_data
-        # dartboard_data_per_frame = dartboard_data_per_second / self.frames_per_second
-
 
         # red_sequential_cmap = plt.get_cmap("Reds")
         normalized_color = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
         white_to_red_cmap = colors.LinearSegmentedColormap.from_list("", ["white","red"])
-
-
 
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
 
         angle_per_section = 360.0 / number_of_sections
 
-        height_of_annuli = [0, 0, 0, 0, 0, 2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
-        bottom_list = [0, 0, 0, 0, 0, 5, 7, 8.544, 9.8489]
+        height_of_annuli = [2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
+        bottom_list = [5, 7, 8.544, 9.8489]
         area_of_one_dartboard_area = (7**2*math.pi - 5**2*math.pi)*angle_per_section/360.0
         area_of_bulls_eye = 5**2*math.pi
         area_ratio_bulls_eye_dartboard_area = area_of_bulls_eye / area_of_one_dartboard_area
 
-
         # create bull's eye
-        number_of_signals_in_bulls_eye = 0
-        for i in range(5):
-            number_of_signals_in_bulls_eye += np.sum(dartboard_data_per_second[i])
+        number_of_signals_in_bulls_eye = dartboard_area_dict['bulls eye']
+
         normalized_number_of_signals = number_of_signals_in_bulls_eye / area_ratio_bulls_eye_dartboard_area
 
         color = white_to_red_cmap(normalized_color(normalized_number_of_signals))
-
 
         ax.bar(x=0, height=5, width=2 * np.pi,
                bottom=0,
                color=color)
 
-
         # create dartboard areas outside of bull's eye
-        for i in range(number_of_sections):
+        for i, clock in enumerate(['3', '2', '1', '12', '11', '10', '9', '8', '7', '6', '5', '4']):
             center_angle = math.radians((i * angle_per_section + angle_per_section / 2) % 360.0)
 
-            for dartboard_area in range(number_of_areas_in_section):
-                if (dartboard_area>4):
-                    number_of_signals_in_current_dartboard_area = dartboard_data_per_second[dartboard_area][i]
+            for n,dartboard_field in enumerate(['inner', 'middle', 'outer']):
+                number_of_signals_in_current_dartboard_area = dartboard_area_dict[clock + ' ' + dartboard_field]
 
-                    color = white_to_red_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
+                color = white_to_red_cmap(normalized_color(number_of_signals_in_current_dartboard_area))
 
-                    ax.bar(x=center_angle, height=height_of_annuli[dartboard_area], width=2 * np.pi / (number_of_sections), bottom=bottom_list[dartboard_area],
+                ax.bar(x=center_angle, height=height_of_annuli[n], width=2 * np.pi / (number_of_sections), bottom=bottom_list[n],
                            color=color, edgecolor='white')
 
         plt.ylim(0, 9.85)
 
-        ax.grid(False) # test
+        ax.grid(False)  # test
 
         ax.set_yticks([])
         ax.axis("on")  # test
         ax.set_xticks([])
 
-        image_identifier = self.measurement_name + 'average_dartboard_plot_' + str(int(number_of_cells)) + '_cells'
+        if data_per_second:
+            time_text = 'per_second_from_' + str(start_time_in_sec) + "_to_" + str(end_time_in_sec) + "sec_"
+        else:
+            time_text = 'per_frame_from_' + str(start_time_in_sec) + "_to_" + str(end_time_in_sec) + "sec_"
+        image_identifier = self.measurement_name + 'average_dartboard_plot_' + time_text + str(int(number_of_cells)) + '_cells'
 
         plt.title('Activity map: ' + str(int(number_of_cells)) + ' cell(s)', x=0.5, y=1.15)
 
@@ -290,3 +347,4 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=450)
+

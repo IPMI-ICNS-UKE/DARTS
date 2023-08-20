@@ -145,10 +145,9 @@ class ImageProcessor:
         elif self.cell_type == 'NK':
             self.spotHeight = 72  # needs to be checked
         self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
-        self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
-        self.dartboard_number_of_sections = self.parameters["properties"]["dartboard_number_of_sections"]
-        self.dartboard_number_of_areas_per_section = self.parameters["properties"][
-            "dartboard_number_of_areas_per_section"]
+        # self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
+        self.dartboard_number_of_sections = 12 # self.parameters["properties"]["dartboard_number_of_sections"]
+        self.dartboard_number_of_areas_per_section = 8 # self.parameters["properties"]["dartboard_number_of_areas_per_section"]
 
         self.frames_per_second = self.parameters["properties"]["frames_per_second"]
         self.ratio_converter = RatioConverter()
@@ -295,7 +294,8 @@ class ImageProcessor:
         self.deconvolve_cell_images()
 
         # bleaching correction
-        self.bleaching_correction()
+        if not self.bleaching is None:
+            self.bleaching_correction()
 
         # first median filter
         if self.deconvolution.give_name() != "TDE Deconvolution":
@@ -478,8 +478,6 @@ class ImageProcessor:
         return microdomains_timeline_for_cell
 
     def dartboard(self, normalized_cells_dict, info_saver):
-        normalized_dartboard_data_multiple_cells = []
-
         with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
             for i, cell in enumerate(self.cells_with_bead_contact):
                 try:
@@ -499,26 +497,15 @@ class ImageProcessor:
                     else:
                         end_frame = start_frame + time_before_bead_contact + self.duration_of_measurement
 
-                    average_dartboard_data_single_cell = self.generate_dartboard_data_single_cell(
-                        centroid_coords_list,
-                        cell,
-                        radii_after_normalization,
-                        i,
-                        cell.time_of_bead_contact,
-                        start_frame,
-                        end_frame,
-                        self.selected_dartboard_areas,
-                        info_saver,
-                        self.file_name)
-
-                    normalized_dartboard_data_single_cell = self.normalize_average_dartboard_data_one_cell(
-                        average_dartboard_data_single_cell,
-                        cell.bead_contact_site,
-                        2)
-
-                    self.save_dartboard_data_single_cell(normalized_dartboard_data_single_cell, i, cell)
-
-                    normalized_dartboard_data_multiple_cells.append(normalized_dartboard_data_single_cell)
+                    self.generate_dartboard_data_single_cell(centroid_coords_list,
+                                                             cell,
+                                                             radii_after_normalization,
+                                                             i,
+                                                             cell.time_of_bead_contact,
+                                                             start_frame,
+                                                             end_frame,
+                                                             info_saver,
+                                                             self.file_name)
 
                     db_took = (timeit.default_timer() - db_start) * 1000.0
                     db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
@@ -534,61 +521,44 @@ class ImageProcessor:
 
                 bar()
 
-        try:
-            db_start = timeit.default_timer()
-            average_dartboard_data_multiple_cells = self.generate_average_and_save_dartboard_multiple_cells(
-                len(normalized_dartboard_data_multiple_cells),
-                normalized_dartboard_data_multiple_cells, self.file_name)
-            db_took = (timeit.default_timer() - db_start) * 1000.0
-            db_sec, db_min, db_hour = convert_ms_to_smh(int(db_took))
-            print("\n")
-            self.logger.log_and_print(message=f"Dartboard plot: Done!"
-                                              f" It took: {db_hour:02d} h: {db_min:02d} m: {db_sec:02d} s :{int(db_took):02d} ms",
-                                      level=logging.INFO, logger=self.logger)
-            return average_dartboard_data_multiple_cells
-        except Exception as E:
-            print(E)
-            self.logger.log_and_print(message="Error in Dartboard (average dartboard for multiple cells)",
-                                      level=logging.ERROR, logger=self.logger)
-
     def save_dartboard_data_single_cell(self, dartboard_data, cell_index, cell):
         dartboard_data_filename = self.file_name + '_dartboard_data_cell_' + str(cell_index)
         self.dartboard_generator.save_dartboard_data_for_single_cell(dartboard_data_filename, dartboard_data, cell)
 
-    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, selected_dartboard_areas, infosaver, filename):
-        """
-        if not cell.signal_data.empty:
-            signal_data_for_cell_after_bead_contact = cell.signal_data.loc[cell.signal_data['frame'] >= (time_of_bead_contact - start_frame)].copy()  # only data after bead contact
-        else:
-            signal_data_for_cell_after_bead_contact = cell.signal_data
-        """
-        # generate cumualted dartboard data for one cell
-        cumulated_dartboard_data_all_frames = self.dartboard_generator.cumulate_dartboard_data_multiple_frames(
-            cell.signal_data,
-            self.dartboard_number_of_sections,
-            self.dartboard_number_of_areas_per_section,
-            centroid_coords_list,
-            radii_after_normalization,
-            cell_index,
-            time_of_bead_contact,
-            start_frame,
-            end_frame,
-            selected_dartboard_areas,
-            infosaver,
-            cell,
-            filename)
+    def generate_dartboard_data_single_cell(self, centroid_coords_list, cell, radii_after_normalization, cell_index, time_of_bead_contact, start_frame, end_frame, infosaver, filename):
 
-        # placeholder
-        normalized_data = self.normalize_average_dartboard_data_one_cell(cumulated_dartboard_data_all_frames.copy(), cell.bead_contact_site, 2)
-        infosaver.dartboard_data_cumulated_all_cells = np.add(infosaver.dartboard_data_cumulated_all_cells, normalized_data)
+        # create new dataframe for single cell
+        column_names = ['frame', 'time in seconds', '1 outer', '1 middle', '1 inner',
+                                                    '2 outer', '2 middle', '2 inner',
+                                                    '3 outer', '3 middle', '3 inner',
+                                                    '4 outer', '4 middle', '4 inner',
+                                                    '5 outer', '5 middle', '5 inner',
+                                                    '6 outer', '6 middle', '6 inner',
+                                                    '7 outer', '7 middle', '7 inner',
+                                                    '8 outer', '8 middle', '8 inner',
+                                                    '9 outer', '9 middle', '9 inner',
+                                                    '10 outer', '10 middle', '10 inner',
+                                                    '11 outer', '11 middle', '11 inner',
+                                                    '12 outer', '12 middle', '12 inner',
+                                                    'bulls eye']
 
-        duration_of_measurement_after_bead_contact_in_seconds = (end_frame - time_of_bead_contact) / self.frames_per_second  # e.g. 600 Frames + 40 Frames, 40fps => 16s
-        infosaver.analyzed_seconds_cumulated += duration_of_measurement_after_bead_contact_in_seconds
+        normalized_dartboard_data_table_single_cell = pd.DataFrame(0, index=np.arange(0, end_frame-start_frame), columns=column_names)
 
-        average_dartboard_data_per_second = np.divide(cumulated_dartboard_data_all_frames,
-                                                      duration_of_measurement_after_bead_contact_in_seconds)
+        for frame in range(start_frame, end_frame):
+            normalized_frame = frame - start_frame
+            normalized_time_in_sec = (normalized_frame-self.frames_per_second)/self.frames_per_second
+            normalized_dartboard_data_table_single_cell = self.dartboard_generator.append_normalized_frame_data(frame, normalized_frame, normalized_time_in_sec, normalized_dartboard_data_table_single_cell, centroid_coords_list[frame], radii_after_normalization[frame] + 2, cell_index, column_names, cell.signal_data, cell)
 
-        return average_dartboard_data_per_second
+        cell.normalized_dartboard_data_table = normalized_dartboard_data_table_single_cell
+
+        os.makedirs(self.save_path + '/Dartboards/Dartboard_data', exist_ok=True)
+        with pd.ExcelWriter(self.save_path + '/Dartboards/Dartboard_data/' + filename + 'normalized_dartboard_data_table_cell_' + str(cell_index) + ".xlsx") as writer:
+            normalized_dartboard_data_table_single_cell.to_excel(writer, index=False)
+
+        os.makedirs(self.results_folder + '/Dartboards/Dartboard_data', exist_ok=True)
+        with pd.ExcelWriter(self.results_folder + '/Dartboards/Dartboard_data/' + filename + 'normalized_dartboard_data_table_cell_' + str(cell_index) + ".xlsx") as writer:
+            normalized_dartboard_data_table_single_cell.to_excel(writer, index=False)
+
 
     def normalize_average_dartboard_data_one_cell(self, average_dartboard_data, real_bead_contact_site,
                                                   normalized_bead_contact_site):
@@ -703,10 +673,10 @@ class ImageProcessor:
 
     def give_mean_amplitude_list(self):
         mean_amplitude_list_of_cells = []
-        for cell in self.cell_list:
+        for i, cell in enumerate(self.cells_with_bead_contact):
             cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals_after_bead_contact()
             if cell_mean_signal_amplitude is not None:
-                mean_amplitude_list_of_cells.append(cell_mean_signal_amplitude)
+                mean_amplitude_list_of_cells.append((self.file_name,i,cell_mean_signal_amplitude))
         return mean_amplitude_list_of_cells
 
 

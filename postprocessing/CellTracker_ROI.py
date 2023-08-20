@@ -81,9 +81,9 @@ class CellTracker:
         if not features.empty:
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
-            search_range = 50  #needs to be optimise; depends on the diameter of the cells in the given magnification
+            search_range = 60  #needs to be optimise; depends on the diameter of the cells in the given magnification
             t = tp.link_df(features, search_range, memory=3)
-            t = tp.filtering.filter_stubs(t, threshold=len(image_series)-5)
+            t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250)
             # print (t)
             # tp.plot_traj(t, superimpose=fluo_image[0])
             # print (t)
