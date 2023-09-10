@@ -97,7 +97,7 @@ class ShapeNormalization:
         y_coords = np.arange(centeredData.shape[0])
         x_coords = np.arange(centeredData.shape[1])
         interpolating_function = interpolate.RegularGridInterpolator((y_coords, x_coords), centeredData,
-                                                                     bounds_error=False)
+                                                                     bounds_error=False, method="nearest")
 
         # Create a grid for the interpolator using the previously computed x and y
         points = np.vstack((y_new.ravel(), x_new.ravel())).T
