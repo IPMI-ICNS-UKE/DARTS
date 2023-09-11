@@ -1,4 +1,5 @@
 
+import numpy as np
 
 class BaseBleaching:
     def execute(self, input_roi, parameters):
@@ -37,3 +38,28 @@ class BleachingAdditiveNoFit(BaseBleaching):
 
     def give_name(self):
         return "Bleaching correction (additive no fit)"
+
+class BleachingMultiplicativeSimple (BaseBleaching):
+    def run(self, cell, parameters, model):
+        bleaching_channel_copy = cell.give_image_channel2()
+        mean_intensity_frame_zero = cell.calculate_mean_value_in_channel_frame(0, 2)
+
+        for frame_index in range(len(bleaching_channel_copy)):
+            current_mean_intensity = cell.calculate_mean_value_in_channel_frame(frame_index, 2)
+            correction_factor = mean_intensity_frame_zero / current_mean_intensity
+
+            bleaching_channel_copy[frame_index] = self.multiply_pixels_by_value(bleaching_channel_copy[frame_index], correction_factor)
+
+        cell.set_image_channel2(bleaching_channel_copy)
+
+    def multiply_pixels_by_value(self, image, factor):
+        copy = image.copy()
+        for y in range(len(copy)):
+            for x in range(len(copy[0])):
+                if copy[y][x] > 0.05:  # to prevent increase of background intensity
+                    old_value = copy[y][x]
+                    new_value = old_value * factor
+                    if new_value < old_value:  # if overflow happened
+                        new_value = np.iinfo(image.dtype).max  # set pixel to maximum possible value
+                    copy[y][x] = new_value
+        return copy
