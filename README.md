@@ -20,7 +20,7 @@ It combines the following modules:
 
 
 ## Installation 
-For detailed information regarding the installation, see [Docs](https://ipmi-icns-uke.github.io/DARTS/))
+For detailed information regarding the installation, see [Docs](https://ipmi-icns-uke.github.io/DARTS/)
 
 
 ## Usage
