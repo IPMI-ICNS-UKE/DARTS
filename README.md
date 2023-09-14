@@ -1,8 +1,9 @@
 # DARTS
-<img width="700" alt="image" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/f10a8e5d-6e71-49ef-82ab-0b9b4595fd74">
+<img width="700" align="center" alt="image" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/f10a8e5d-6e71-49ef-82ab-0b9b4595fd74">
 
 ## About
 **DARTS** is an integrated tool for the analysis of Ca<sup>2+</sup> microdomains in immune cells (Jurkat T cells, primary murine cells, NK).
+For detailed information, see [Docs](https://ipmi-icns-uke.github.io/DARTS/).
 
 It combines the following modules:
 
@@ -23,9 +24,9 @@ For detailed information regarding the installation, see [Docs](https://ipmi-icn
 
 
 ## Usage
-1. Store raw image files in a source directory 
+1. Store raw image files in a source directory. All common microscopy image formats can be opened, e.g. ics- or tif-files. 
 2. Run python main.py
-3. Enter relevant information in the GUI.
+3. Enter relevant information in the GUI. 
 4. If necessary, define the bead contacts for each cell of interest in each image file.
 
 <img width="1512" alt="Bildschirmfoto 2023-09-14 um 12 13 52" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/c0630881-da3b-4d02-bfdf-600cfe94b608">
