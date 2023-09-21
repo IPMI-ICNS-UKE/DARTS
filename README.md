@@ -41,7 +41,7 @@ For detailed information regarding the installation, see [Docs](https://ipmi-icn
 ## References and Citing
 If DARTS is useful for a project that leads to publication, please acknowledge DARTS by citing it.
 
-[1] Frontiers Paper Link später hier einfügen?
+[1]  DARTS: an open-source Python pipeline for Ca2+ microdomain analysis in live cell imaging data 
 
 [2] Diercks BP, Werner R, Schetelig D, Wolf IMA, Guse AH. High-Resolution Calcium Imaging Method for Local Calcium Signaling. Methods Mol Biol. 2019;1929:27-39. doi: [https://doi.org/10.1007/978-1-4939-9030-6_3](https://doi.org/10.1007/978-1-4939-9030-6_3)
 
