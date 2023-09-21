@@ -4,7 +4,7 @@ title: Welcome
 nav_order: 1
 ---
 
-# **DARTS**: <br> **An open-source Python pipeline for Ca$^{2+}$ microdomain analysis in live cell imaging data**
+# **DARTS**: <br> **An open-source Python pipeline for Ca2+ microdomain analysis in live cell imaging data**
 
 <br>
 <br>
@@ -23,7 +23,7 @@ The reference paper can be found here, the corresponding paper to the code is he
 <br>
 
 {: .note-title }
-## Overview of C-DARTS
+## Overview of DARTS
 
 What's the goal? Auf welchen Daten funktioniert das Skript? + Die info, dass ein Matlab-Script (Paper vllt verlinken)
 nach Python übersetzt wurde, mit paar (notwendigen) changes.
