@@ -11,6 +11,15 @@ from analysis.Bead_Contact_GUI import BeadContactGUI
 import gc
 from general.InfoToComputer import InfoToComputer
 import glob
+import fnmatch
+try:
+    import javabridge
+    import bioformats
+    bf_avail = True
+except Exception as E:
+    print(E)
+    print("continuing without bioformats library")
+    bf_avail = False
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
@@ -18,6 +27,19 @@ logger = Logger()
 
 def main(gui_enabled):
     start_time = time.time()
+
+    if bf_avail:
+        max_heap_size = "512M"
+        javabridge.start_vm(class_path=bioformats.JARS, run_headless=True, max_heap_size=max_heap_size)
+        # suppress bioformats warnings/ debug messages
+        myloglevel = "ERROR"
+        rootLoggerName = javabridge.get_static_field("org/slf4j/Logger", "ROOT_LOGGER_NAME", "Ljava/lang/String;")
+        rootLogger = javabridge.static_call("org/slf4j/LoggerFactory", "getLogger",
+                                            "(Ljava/lang/String;)Lorg/slf4j/Logger;", rootLoggerName)
+        logLevel = javabridge.get_static_field("ch/qos/logback/classic/Level", myloglevel,
+                                               "Lch/qos/logback/classic/Level;")
+        javabridge.call(rootLogger, "setLevel", "(Lch/qos/logback/classic/Level;)V", logLevel)
+
 
     if gui_enabled:
         gui = TDarts_GUI()
@@ -29,18 +51,20 @@ def main(gui_enabled):
 
     info_saver = InfoToComputer(parameters)
 
-    if parameters["properties"]["channel_format"] == "two-in-one":
-        directory = parameters["inputoutput"]["path_to_input_combined"]
-    elif parameters["properties"]["channel_format"] == "single":
-        directory = parameters["inputoutput"]["path_to_input_channel1"]
-    filename_list = os.listdir(directory)
-    filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
+    input_path = parameters["inputoutput"]["input_path"]
+
+    if os.path.isdir(input_path):
+        input_directory = input_path
+        filename_list = os.listdir(input_path)
+    else:
+        input_directory = os.path.dirname(input_path)
+        filename_list = [os.path.basename(input_path)]
     if parameters["properties"]["channel_format"] == "single":
-        filename_list = [os.path.basename(file) for file in glob.glob(directory + "/*1.tif")]# loop only over channel 1 files
+        filename_list = [f for f in filename_list if fnmatch.fnmatch(f, '*_1.*')]# loop only over channel 1 files
 
     # definition of bead contacts for each file
     for file in filename_list:
-        file_path = directory + '/' + file
+        file_path = os.path.join(input_directory, file)
         bead_contact_gui = BeadContactGUI(file, file_path, info_saver.bead_contact_dict, parameters)
         bead_contact_gui.run_main_loop()
         del bead_contact_gui
@@ -49,7 +73,6 @@ def main(gui_enabled):
     info_saver.save_bead_contact_information()
 
     files_with_bead_contact = [file for file in filename_list if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
-
 
     for file in files_with_bead_contact:
         list_of_bead_contacts = info_saver.bead_contact_dict[file]
@@ -60,17 +83,9 @@ def main(gui_enabled):
         end_frame_file = latest_time_of_bead_contact + parameters["properties"]["duration_of_measurement"] + 20  # not all frames need to be processed
         parameters["inputoutput"]["end_frame"] = end_frame_file
 
-        # find out filename
-        if parameters["properties"]["channel_format"] == "two-in-one":
-            filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
-            parameters["inputoutput"]["filename"] = file
-            Processor = ImageProcessor.fromfilename_split(filename, parameters, logger)
-        elif parameters["properties"]["channel_format"] == "single":
-            filename_ch1 = parameters["inputoutput"]["path_to_input_channel1"] + '/' + file
-            filename_ch2 = parameters["inputoutput"]["path_to_input_channel1"] + '/' + file.replace("1.tif", "2.tif")
-            parameters["inputoutput"]["filename"] = file
-            Processor = ImageProcessor.fromfilename_combine(filename_ch1, filename_ch2, parameters, logger)
-
+        parameters["inputoutput"]["filename"] = file
+        filename = os.path.join(input_directory, file)
+        Processor = ImageProcessor.fromfilename(filename, parameters, logger)
 
         print("Now processing the following file: " + file)
         # Postprocessing pipeline
@@ -114,6 +129,8 @@ def main(gui_enabled):
     print("\n")
     logger.log_and_print(message=f'Execution time: {float(elapsed_time):.1f}, seconds',
                   level=logger.logging.INFO, logger=logger)
+    if bf_avail:
+        javabridge.kill_vm()
 
 
 if __name__ == "__main__":
