@@ -1,6 +1,6 @@
-title: T-Darts
+title: DARTS
 logo: assets/img/Logo.png
-description: Postprocessing and Analysis
+description: Python pipeline for Ca2+ microdomain analysis
 theme: just-the-docs
 show_downloads: true
 google_analytics:
