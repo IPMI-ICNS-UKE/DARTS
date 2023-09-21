@@ -46,8 +46,10 @@ For more information regarding the installation, see the [Documentation](https:/
 3. Enter relevant information in the GUI. 
 4. If necessary, define the bead contacts for each cell of interest in each image file.
 
+
 ![Main](/docs/assets/img/screenshot_main.png)
 ![Bead contacts](/docs/assets/img/screenshot_beadGUI.png)
+
 
 
 ## License
