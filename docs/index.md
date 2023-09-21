@@ -12,13 +12,13 @@ nav_order: 1
 {: .note-title }
 ## General information
 
-DARTS is a pipeline xxx written in Python 3 by Lena-Marie Woelk, Dejan Kovacevic, Hümeyra Husseini and Fritz Förster.
-For support, please open an [issue](https://github.com/IPMI-ICNS-UKE/T-DARTS/issues).
+DARTS is a pipeline for Ca2+ microdomain analysis in live cell imaging data written in Python 3 by Lena-Marie Woelk, Dejan Kovacevic, Hümeyra Husseini and Fritz Förster.
+For support, please open an [issue](https://github.com/IPMI-ICNS-UKE/DARTS/issues).
 
 This pipeline is part of the sfb1328 [A02 project](https://www.sfb1328.de/index.php?id=29). 
 The reference paper can be found here, the corresponding paper to the code is here:
 
-[View it on GitHub](https://github.com/IPMI-ICNS-UKE/T-DARTS){: .btn .btn-outline }
+[View it on GitHub](https://github.com/IPMI-ICNS-UKE/DARTS){: .btn .btn-outline }
 <br>
 <br>
 
