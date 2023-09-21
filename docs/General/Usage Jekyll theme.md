@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Usage Information Jekyll Theme
-nav_order: 8
+#nav_order: 8
 ---
 
 # **How to use Jekyll Theme**

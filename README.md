@@ -1,7 +1,4 @@
 # DARTS
-<p align="center">
-  <img width="700" align="center" alt="image" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/f10a8e5d-6e71-49ef-82ab-0b9b4595fd74">
-</p>
 
 ![overview](/docs/assets/img/Figure1_dart.png)
 
