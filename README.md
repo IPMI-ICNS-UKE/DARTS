@@ -3,6 +3,8 @@
   <img width="700" align="center" alt="image" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/f10a8e5d-6e71-49ef-82ab-0b9b4595fd74">
 </p>
 
+![overview](/docs/assets/img/Figure1_dart.png)
+
 ## About
 **DARTS** is an integrated tool for the analysis of Ca<sup>2+</sup> microdomains in immune cells (Jurkat T cells, primary murine cells, NK).
 For detailed information, see [Docs](https://ipmi-icns-uke.github.io/DARTS/).
