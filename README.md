@@ -21,21 +21,39 @@ It combines the following modules:
 
 
 ## Installation 
-For detailed information regarding the installation, see [Docs](https://ipmi-icns-uke.github.io/DARTS/)
+We recommend using [anaconda](https://www.anaconda.com/download) to install the necessary packages.
+
+Download and install anaconda and python and either clone the DARTS code with 
+``
+git clone https://github.com/IPMI-ICNS-UKE/DARTS.git
+``
+
+or download the .zip file via the download button. Navigate to the folder containing the `DARTS.yml` file and run 
+
+``
+conda env create -f DARTS.yml
+conda activate DARTS
+``
+
+in the command line. 
+
+For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
 
 ## Usage
 1. Store raw image files in a source directory. All common microscopy image formats can be opened, e.g. ics- or tif-files. 
-2. Run python main.py
+2. Run `python main.py` in the terminal/ shell/ powershell or IDE of your choice.
 3. Enter relevant information in the GUI. 
 4. If necessary, define the bead contacts for each cell of interest in each image file.
 
-<img width="1512" alt="Bildschirmfoto 2023-09-14 um 12 13 52" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/86417ddd-e902-4d84-bccb-8b35c8fde7b0">
-<img width="1312" alt="Bildschirmfoto 2023-09-14 um 12 17 14" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/08cadf87-1954-4c13-bfaf-3db39f079c0a">
+
+![Main](/docs/assets/img/screenshot_main.png)
+![Bead contacts](/docs/assets/img/screenshot_beadGUI.png)
 
 
-## License 
 
+## License
+This code runs under the Apache 2.0 license.
 
 ## References and Citing
 If DARTS is useful for a project that leads to publication, please acknowledge DARTS by citing it.
