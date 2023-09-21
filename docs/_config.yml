@@ -1,0 +1,30 @@
+title: T-Darts
+logo: assets/img/Logo.png
+description: Postprocessing and Analysis
+theme: just-the-docs
+show_downloads: true
+google_analytics:
+url: https://ipmi-icns-uke.github.io/DARTS/
+baseurl: /docs
+
+favicon_ico: favicon.ico
+color_scheme: foo
+
+callouts_opacity: 0.3
+
+callouts_level: quiet # or loud
+callouts:
+  highlight:
+    color: yellow
+  important:
+    title: Important
+    color: blue
+  new:
+    title: New
+    color: green
+  note:
+    title: Note
+    color: grey-dk
+  warning:
+    title: Warning
+    color: red
