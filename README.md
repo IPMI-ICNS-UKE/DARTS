@@ -33,8 +33,8 @@ For detailed information regarding the installation, see [Docs](https://ipmi-icn
 3. Enter relevant information in the GUI. 
 4. If necessary, define the bead contacts for each cell of interest in each image file.
 
-<img width="1512" alt="Bildschirmfoto 2023-09-14 um 12 13 52" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/c0630881-da3b-4d02-bfdf-600cfe94b608">
-<img width="1312" alt="Bildschirmfoto 2023-09-14 um 12 17 14" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/4b3b2770-117b-4df9-a6b9-b1459899c80a">
+<img width="1512" alt="Bildschirmfoto 2023-09-14 um 12 13 52" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/86417ddd-e902-4d84-bccb-8b35c8fde7b0">
+<img width="1312" alt="Bildschirmfoto 2023-09-14 um 12 17 14" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/08cadf87-1954-4c13-bfaf-3db39f079c0a">
 
 
 ## License 
