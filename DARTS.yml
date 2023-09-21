@@ -1,4 +1,4 @@
-name: PipelineElastix
+name: DARTS
 channels:
   - conda-forge
   - defaults
