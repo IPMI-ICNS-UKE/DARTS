@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Segmentation/ Cell tracking
-parent: Postprocessing Components
+parent: Postprocessing
 nav_order: 4
 ---
 
