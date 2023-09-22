@@ -1,6 +1,6 @@
 # DARTS
 
-![overview](/docs/assets/img/Figure1_dart.png)
+![overview](/docs/assets/img/Figure_1_dart.png)
 
 ## About
 **DARTS** is an integrated tool for the analysis of Ca<sup>2+</sup> microdomains in immune cells (Jurkat T cells, primary murine cells, NK).
