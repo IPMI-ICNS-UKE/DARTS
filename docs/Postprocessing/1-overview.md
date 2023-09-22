@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Overview
-parent: Postprocessing Components
+parent: Postprocessing
 nav_order: 1
 ---
 
