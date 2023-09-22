@@ -7,8 +7,7 @@ nav_order: 5
 
 # Deconvolution
 
-{: .note-title }
-> General information
+## General information
 
 If the illumination time is increased when trying to generate high-resolution images of experimental data, 
 undesirable side effects may occur: Live cells can cause motion artifacts, and rapid intensity fluctuations might 
@@ -16,8 +15,7 @@ not be captured. At the same time, longer exposure can lead to photobleaching an
 Too short an exposure time, however, can result in noisy images. 
 This is where deconvolution comes in to equalize images, reduce noise, and increase resolution.
 
-{: .note-title }
-> Background information
+## Background information
 
 When images are captured, various physical factors such as lenses and light incidence can cause
 the original "ground truth" image to change. This effect is known as "convolution." Deconvolution aims to reverse this
@@ -28,8 +26,7 @@ of this PSF. Using Deconvolution, images with short exposure time (and thus orig
 produce data with high image quality, without the negative effects of longer light exposure.
 
 
-{: .note-title }
-> Lucy-Richardson Deconvolution
+## Lucy-Richardson Deconvolution
 
 A commonly used method is the "Lucy-Richardson deconvolution" (LR) (Richardson WH, "Bayesian-Based Iterative Method
 of Image Restoration",doi:10.1364/JOSA.62.000055, and Lucy LB, "An iterative technique for the rectification of 
@@ -40,8 +37,7 @@ LR is often considered a starting point against which newer methods are compared
 However, it can lead to artifacts at edge transitions and poor results when the Signal-to-Noise Ratio (SNR) is low.
 
 
-{: .note-title }
-> Timedependent Entropy Deconvolution
+## Time-Dependent Entropy Deconvolution
 
 An alternative approach is Timedependent Entropy Deconvolution (TDE) by Woelk et al. (https://pubmed.ncbi.nlm.nih.gov/34769223/).
 This method captures temporal components as well as spatial components, which is particularly 
@@ -50,8 +46,7 @@ highly noisy images with low SNR -  Where LR deconvolution might produce poor re
 TDE can separate and recover the signal from noise. 
 However, smoothing effects may occur at high intensity levels.
 
-{: .note-title }
-> Parameters for Deconvolution
+## Parameters for Deconvolution
 
 {: .highlight }
 >General Parameters for PSF calculation:
@@ -72,8 +67,7 @@ However, smoothing effects may occur at high intensity levels.
 > different dependent on the type of data; normally in the range of 0.1 to 3
 >- lambda t: Temporal Lagrange parameter to weigh the regularization terms; Works best when of a similar order of magnitude as lambda
 
-{: .note-title }
-> Example 
+## Example 
 > ![](decon.png)
 > _Comparison of deconvolution methods for TPC2-
 > R.GECO.1.2 images captured with different 
