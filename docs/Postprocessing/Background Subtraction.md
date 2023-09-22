@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Background Subtraction
-parent: Postprocessing Components
+parent: Postprocessing
 nav_order: 3
 ---
 
