@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Registration
-parent: Postprocessing Components
+parent: Postprocessing
 nav_order: 2
 ---
 
