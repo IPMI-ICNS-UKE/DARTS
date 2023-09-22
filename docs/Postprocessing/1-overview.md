@@ -7,10 +7,6 @@ nav_order: 1
 
 # Overview
 
-Postprocessing steps
-
-
-
 After the acquisition of microscopy data, the raw image files need to be processed to enable further analysis. We 
 implemented a postprocessing pipeline based on [1], but with a modified order. The pipeline consists of: 
 - Registration / Channel alignment
