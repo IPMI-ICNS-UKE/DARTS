@@ -7,8 +7,18 @@ nav_order: 2
 
 # Usage
 
-- how to use with and without GUI
-- config file
+After installing the necessary packages, activate the environment
 
+``
+conda activate DARTS
+``
 
-- minimal example of how to run
+and then run
+
+```
+python main.py
+```
+
+Depending on the python versions you have installed, it might be `python3 main.py`.
+
+This will launch a GUI interface, where user input is required.
