@@ -1,22 +1,12 @@
 ---
 layout: default
-title: Postprocessing Components
+title: Postprocessing
 nav_order: 3
 has_children: true
 ---
 
-# **Postprocessing Components**
-
+# **Postprocessing**
+In order to enhance the image quality, we use a postprocessing pipeline that consists of various steps, such as the deconvolution or the bleaching correction. 
 <br>
-<br>
-
-{: .note-title }
-> Overview of Postprocessing Components
-
-The following image displays an overview of our Postprocessing Components. 
-<br>
-<br>
-![overview image](/assets/img/postprocessing_components_overview.PNG)
-
 
 For more information, feel free to click on the respective Component in the table of contents below.
