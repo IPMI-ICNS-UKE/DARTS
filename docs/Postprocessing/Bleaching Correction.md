@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Bleaching Correction
-parent: Postprocessing Components
+parent: Postprocessing
 nav_order: 6
 ---
 
