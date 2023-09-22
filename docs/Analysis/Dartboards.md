@@ -27,7 +27,7 @@ After running the script, you can find Excel-files for each cell saved on your c
 <br>
 <img width="788" alt="Bildschirmfoto 2023-09-22 um 14 36 26" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/57df4af1-342f-4710-bfac-4a08ea962391">
 <br>
-The Excel files contain information for each frame and each dartboard area, leading to a 2D-Matrix/table. 
+The Excel files contain information for each frame and each dartboard area, leading to a 2D-Matrix/table. There are 37 dartboard areas. The bullseye in the middle is 12.5 times larger than all the other dartbaord areas, which are equal in size. Outside of the bullseye, there are three rings - each consisting of 12 areas. The bead contact site is defined as 2 o'clock. 
 <br>
 <br>
 Example: 
