@@ -2,33 +2,21 @@
 layout: default
 title: Registration
 parent: Postprocessing Components
-nav_order: 1
+nav_order: 2
 ---
 
 # **Registration**
 
-<br>
-<br>
-
-{: .note-title }
-> What is registration?
+## What is registration?
 
 Image registration involves estimating a transformation that aligns points from one image to their corresponding points
 in another image. This transformation establishes a mapping between the coordinate systems of the fixed and moving 
-images. 
+images. In the context of fluorescence microscopy, image registration is relevant because in dual-channel imaging, the channels often are not aligned perfectly. This could cause unwanted alterations of the signal. 
 <br>
 <br>
 
-{: .note-title }
-> What's the goal?
 
-The goal of registration is to correct for any misalignments or distortions caused by various factors, such as 
-cell movement, optical aberrations etc.
-<br>
-<br>
-
-{: .note-title }
-> What kind of approaches exist?
+## What kind of approaches exist?
 
 Various approaches exist for image registration, including:
 - feature-based methods
@@ -38,16 +26,15 @@ Various approaches exist for image registration, including:
 - affine registration 
 - non-affine registration
 <br>
-<br>
 
-{: .note-title }
-> Which approach did we use?
+
+## Which approach did we use?
 
 Since we are working with low signal-to-noise ratio images, feature based methods may be less effective 
 because the presence of noise can affect the detection and matching of distinct features and can therefore 
 lead to suboptimal registration results.
 
-We utilized the **[SimpleITK](https://simpleitk.readthedocs.io/en/master/about.html)** Python package and was installed 
+We utilized the **[SimpleITK](https://simpleitk.readthedocs.io/en/master/about.html)** Python package that was installed 
 with **`pip install SimpleITK`**.
 SimpleITK, built on top of ITK (Insight Segmentation and Registration Toolkit), is an open-source library. 
 SimpleITK offers a user-friendly interface for common operations such as filtering, registration, segmentation, 
