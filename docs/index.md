@@ -9,7 +9,6 @@ nav_order: 1
 <br>
 <br>
 
-{: .note-title }
 ## General information
 
 DARTS is a pipeline for Ca2+ microdomain analysis in live cell imaging data written in Python 3 by Lena-Marie Woelk, Dejan Kovacevic, Hümeyra Husseini and Fritz Förster.
@@ -22,7 +21,6 @@ The reference paper can be found here, the corresponding paper to the code is he
 <br>
 <br>
 
-{: .note-title }
 ## Overview of DARTS
 
 What's the goal? Auf welchen Daten funktioniert das Skript? + Die info, dass ein Matlab-Script (Paper vllt verlinken)
@@ -30,10 +28,9 @@ nach Python übersetzt wurde, mit paar (notwendigen) changes.
 
 Below you can find an overview of the pipeline and its components: 
 1. [Postprocessing Components]({% link Postprocessing/Postprocessing Components.md %}#Postprocessing Components)
-1. [Shape normalization]({% link Postprocessing/Shape Normalization.md %}#Shape Normalization)
+2. [Shape normalization]({% link Postprocessing/Shape Normalization.md %}#Shape Normalization)
+3. [Analysis]({% link Analysis/Analysis.md %}#Analysis)
 
-
-[Postprocessing Components]({% link Postprocessing/Postprocessing Components.md %}#Postprocessing Components) verlinken.
 
 ---
 
