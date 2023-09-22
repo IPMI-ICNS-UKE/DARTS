@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Deconvolution
-parent: Postprocessing Components
+parent: Postprocessing
 nav_order: 5
 ---
 
