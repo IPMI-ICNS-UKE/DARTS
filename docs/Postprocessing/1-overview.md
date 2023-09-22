@@ -1,5 +1,8 @@
 ---
-sort: 1
+layout: default
+title: Overview
+parent: Postprocessing Components
+nav_order: 1
 ---
 
 # Overview
