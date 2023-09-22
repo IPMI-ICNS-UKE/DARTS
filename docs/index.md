@@ -24,7 +24,7 @@ This pipeline is part of the sfb1328 [A02 project](https://www.sfb1328.de/index.
 
 ## Program Structure
 
-![overview](/assets/img/Figure_1_dart.png)
+![](assets/img/Figure_1_dart.png)
 
 The pipeline can be roughly divided into three parts:
 
