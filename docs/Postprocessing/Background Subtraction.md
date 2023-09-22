@@ -2,28 +2,17 @@
 layout: default
 title: Background Subtraction
 parent: Postprocessing Components
-nav_order: 4
+nav_order: 3
 ---
 
 # Background Subtraction
 
-{: .note-title }
-> Explanation:
-/ChatGPT: Background correction, in the context of microscopy image processing, refers to a series of techniques used to 
-remove or reduce the unwanted, non-biological signals from an image. Microscopy images often suffer from variations in 
-llumination, sensor noise, or other artifacts, which can obscure or interfere with the relevant biological structures or 
-features of interest. Background correction methods aim to enhance the quality and clarity of the image, allowing for 
-more accurate and reliable analysis and interpretation.
-ChatGPT/
+## Explanation
+Background signal can obscure or interefere with the relevant biological structures. That is why it is important to remove the background. Background correction methods aim to enhance the quality of the image. One possible method to correct the background is to apply a background subtraction algorithm, that we also used in our script. 
 
-We decided to use the background subtraction. 
 
-{: .note-title }
-> How it works:
+## How it works
 The mean intensity of the background is measured in the first and in the last frame. Next, a linear interpolation is used
-to estimate the mean intensity in the frames in between. The frame-specific mean value is then subtracted from the whole image.
-The background was separated from the cells using a threshold function from skimage. 
+to estimate the mean background intensity in the frames in between. The frame-specific mean value is then subtracted from the whole image. To avoid integer-overflow, the maximum subtraction only sets pixels to zero instead of assigning very large values to the pixels. 
 
-{: .note-title }
-> Example:
-hier Bild einfügen vor und nach Background subtraction? 
+The background was separated from the cells using a threshold function from skimage. 
