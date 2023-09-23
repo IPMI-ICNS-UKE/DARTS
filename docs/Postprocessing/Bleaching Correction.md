@@ -47,4 +47,5 @@ for frame_n in ref_i:
 Blue = correction <br>
 Red = without correction
 
-![Bleaching correction image](/assets/img/Bleaching_correction.PNG)
+![Bleaching_correction](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/fe42281a-c0df-4b57-a68c-c805beb38b83)
+
