@@ -46,10 +46,11 @@ We applied the `affine` transformation to define the mapping between images.
 Below, you can find an example image. As shown, SITK with affine transformation works really well on our low signal-to-noise
 ratio images:
 
-![image tooltip here](/assets/img/sitk_registration_example.PNG)
+![sitk_registration_example](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/058d7b73-0ea2-44f7-8ed7-571b6872576e)
+
 
 We offer the user the option to choose whether to employ the registration method frame by frame or not. As the latter option 
 is much more time-efficient and provides good results, we recommend not to use the registration frame-by-frame. Instead, 
 letting the script calculate the transformation in the first frame and using it for the following frames is recommended.
 
-For more code details, please visit our [Githhub page](https://github.com/IPMI-ICNS-UKE/T-DARTS/blob/main/postprocessing/registration.py)
+For more code details, please visit our [Github page](https://github.com/IPMI-ICNS-UKE/T-DARTS/blob/main/postprocessing/registration.py)
