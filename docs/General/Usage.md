@@ -7,6 +7,7 @@ nav_order: 2
 
 # Usage
 
+## Starting the script
 After installing the necessary packages, activate the environment
 
 ``
@@ -21,6 +22,7 @@ python main.py
 
 Depending on the python versions you have installed, it might be `python3 main.py`.
 
+## First GUI: Initial information
 This initiates the first GUI, prompting for general information. In the top left corner, you must specify whether the raw data is in dual-channel format (two channels in one file) or single-channel format (both channels separated in individual files), along with setting the source and results directories. An example of a source directory can be found below the GUI.
 
 In the bottom left, provide measurement properties like scale (pixels per micron) and frame rate. This data is critical for accurate Calcium Microdomains measurements. Additionally, specifying the correct cell type is crucial as the internal calibration depends on it.
@@ -44,7 +46,7 @@ Example image:
 
 <img width="622" alt="Bildschirmfoto 2023-09-23 um 13 03 31" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/bb34d520-e8b3-4ed9-8e63-849f2fcfa894">
 
-
+## Definition of bead contacts 
 After clicking on "Start", there will appear a GUI for each image file, so that the bead contacts can be defined. A bead contact is defined as the contact of a (stimulatory) with the cells of interest. Internally, it consists of (1) the bead contact time, e.g. frame 300 and (2) the bead contact position relative to the center of the cell, e.g. 1 o'clock or 12 o'clock. In order to define bead contacts, the user needs to enter information regarding each bead contact manually. Use the following procedure to define bead contacts: 
 
 1. Have a look at the whole image sequence to identify bead contacts. Beads usually appear in the first couple seconds of the addition, depending on the time of addition. 
@@ -58,7 +60,7 @@ After clicking on "Start", there will appear a GUI for each image file, so that 
 <img width="1312" alt="Bildschirmfoto 2023-09-23 um 13 22 28" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/70ae4e82-609b-410f-9ff7-f39824f192b3">
 
 
-
+## Output of running the script 
 After the definition of bead contacts, the script processes the image files by itself (postprocessing, shape normalization, analysis). Depending on the input data, this can take up to 
 hours to complete. 
 
@@ -69,7 +71,11 @@ The output of the script consists of various files:
 4. In the Excel-file "microdomain_data", you can find the number of signals in each detected cell in each frame from 1 second before until 15s seconds after bead contact.
 5. Finally, in the directory "Dartboards/Dartboard_data", you can find excel sheets for each detected cells, displaying the number of microdomains in each dartboard area and each frame (see below). These excel files can be used to generate dartboards (see section Analysis > Dartboards). 
 
+Example for output:
+
 <img width="788" alt="Bildschirmfoto 2023-09-23 um 13 51 10" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/1e14a989-5e52-48ce-bae4-9ec0a4cf9921">
+
+Example for dartboard data table for one cell:
 
 <img width="1119" alt="Bildschirmfoto 2023-09-23 um 13 52 43" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/92ca8474-bb14-4c83-8e60-49cecbc46b31">
 
