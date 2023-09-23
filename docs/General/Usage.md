@@ -67,7 +67,7 @@ The output of the script consists of various files:
 2. On the top layer of the results directory, you will find a text-file with all the defined bead contacts.
 3. Based on the microdomain-measurement, you will find information regarding the number of responding cells (percentage of cells, that have at least one Calcium microdomain after the bead contact) and the mean amplitude of the responding cells (mean amplitude of the calcium signals in the responding cells)
 4. In the Excel-file "microdomain_data, you can find the number of signals in each detected cell in each frame from 1 second before until 15s seconds after bead contact.
-5. Finally, in the directory "Dartboards", you can find excel sheets for each detected cells, displaying the number of microdomains in each dartboard area and each frame (see below). These excel files can be used to generate dartboards (see section Analysis > Dartboards). 
+5. Finally, in the directory "Dartboards/Dartboard_data", you can find excel sheets for each detected cells, displaying the number of microdomains in each dartboard area and each frame (see below). These excel files can be used to generate dartboards (see section Analysis > Dartboards). 
 
 <img width="788" alt="Bildschirmfoto 2023-09-23 um 13 51 10" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/1e14a989-5e52-48ce-bae4-9ec0a4cf9921">
 
