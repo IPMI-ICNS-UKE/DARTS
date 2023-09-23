@@ -25,7 +25,7 @@ characteristics of Fura-Red are considered. Alternatively, we offer two more ble
 <br>
 <br>
 
-## Bleaching Algorithm: Pseudocode
+## Bleaching correction Algorithm (additive frame-by-frame, no fit): Pseudocode
 
 Here is an exemplified code of the bleaching correction:
 
