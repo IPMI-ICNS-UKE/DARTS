@@ -19,13 +19,12 @@ function.
 The trackpy-package is used to connect the cell labels in each frame so that each cell will later consist of a time series 
 of cell images in both channels. Variables such as the memory, the maximum positional alteration between two frames and others can be modified by the user.  
 After identifying the cells, the cell-specific information regarding the position and the bounding boxes are used to crop an image series out of the channel images (same size as raw data). 
-Because of the fact, that in our case, the beads are mostly prominent in the first channel, we apply the cell selection algorithm only on the seconds channel. After that, the bounding boxes for cell cropping can be used in the first channel as well.   
+Because of the fact, that in our case, the beads are mostly prominent in the first channel, we apply the cell selection algorithm only onto the second channel. After that, the bounding boxes can be used in the first channel for cropping out the cells, too.   
 
 ## Example
 
 <img width="284" alt="Stardist_illustration" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/5238fb3d-73c6-496a-9cc4-a67719487b90">
 
-<br>
 <br>
 
 ## References
