@@ -13,6 +13,6 @@ Background signal can obscure or interefere with the relevant biological structu
 
 ## How it works
 The mean intensity of the background is measured in the first and in the last frame. Next, a linear interpolation is used
-to estimate the mean background intensity in the frames in between. The frame-specific mean value is then subtracted from the whole image. To avoid integer-overflow, the maximum subtraction only sets pixels to zero instead of assigning very large values to the pixels. 
+to estimate the mean background intensity in the frames in between. The frame-specific mean background value is then subtracted from the whole image. In order to avoid integer-overflow, the maximum subtraction only sets pixels to zero. Otherwise, the subtraction could result in very large intensity values, if the subtrahend > pixel value. 
 
-The background was separated from the cells using a threshold function from skimage. 
+The background was separated from the cells using a threshold function from skimage and creating a mask for the background. In the next step, the mean intensity was measured with the regionprops-function. 
