@@ -23,9 +23,14 @@ Because of the fact, that in our case, the beads are mostly prominent in the fir
 
 ## Example
 
-<img width="284" alt="Stardist_illustration" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/5238fb3d-73c6-496a-9cc4-a67719487b90">
+In each frame, the StarDist-algorithm tries to detect cells and creates a labelled image: 
 
-<br>
+<img width="635" alt="Bildschirmfoto 2023-09-23 um 12 48 59" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/336b00f0-f3e2-442d-9c71-1f839b578284">
+
+The trackpy algorithm associates labels, enabling the generation of cell traces that can then be used to crop individual cell images from each frame, resulting in a series of smaller images for each cell.
+
+<img width="635" alt="Bildschirmfoto 2023-09-23 um 12 48 09" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/c16b584d-945c-4c70-8c97-fde1d6c52dcc">
+
 
 ## References
 
