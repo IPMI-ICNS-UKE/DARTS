@@ -11,17 +11,15 @@ nav_order: 6
 
 Photobleaching is a common problem in fluorescence microscopy. It leads to a gradual decrease in 
 fluorescence signal intensity over time and results in intensity decay, loss of information and - if not corrected - to 
-false interpretations. Therefore it is crucial to compensate for signal intensity loss.
+false interpretations. Therefore it is crucial to compensate for signal intensity loss. There are several Bleaching correction approaches available. 
 <br>
 
-There are several Bleaching correction approaches.
+## Offered algorithms
 In the framework of this project, we work on **Calcium Microdomains** (see reference paper: [Diercks et al. - 2019 - 
-High-resolution calcium imaging method for local calcium signaling](https://pubmed.ncbi.nlm.nih.gov/30710265/)). 
-
-This program was developed to automatically process calcium imaging data. Similar to the aforementioned reference paper,
+High-resolution calcium imaging method for local calcium signaling](https://pubmed.ncbi.nlm.nih.gov/30710265/)). This program was developed to automatically process calcium imaging data. Similar to the reference paper,
 we carry out an **additive frame-by-frame bleaching correction** algorithm. Local calcium imaging employs the two dyes 
 Fura-Red and Fluo-4. Given the negligible bleaching of Fluo-4 in comparison to Fura-Red, only the bleaching 
-characteristics of Fura-Red are considered. Alternatively, we offer two more bleaching correction algorithms: simple multiplicative correction (based on the ratio of Frame 0 and Frame i) and a bi-exponential fit with additive correction.  
+characteristics of Fura-Red are considered. Alternatively, we offer two more bleaching correction algorithms: simple multiplicative correction (based on the ratio of Frame 0 and Frame i) and a bi-exponential fit with additive correction (using a curve-fit-function from scipy).  
 <br>
 <br>
 
