@@ -18,7 +18,7 @@ class TDarts_GUI():
         self.window.geometry(str(width) + "x" + str(height))
 
 
-        self.window.title("Welcome to C-DARTS")
+        self.window.title("Welcome to DARTS")
 
         self.frame = Frame(self.window)
         self.frame.pack()
@@ -315,7 +315,8 @@ class TDarts_GUI():
 
         bleaching_correction_algorithms = [
             "additiv no fit",
-            "multiplicative simple ratio"
+            "multiplicative simple ratio",
+            "biexponential fit additiv"
         ]
 
         self.bleaching_correction_algorithm = StringVar(self.label_processing_pipeline)

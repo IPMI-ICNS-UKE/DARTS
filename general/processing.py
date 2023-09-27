@@ -21,7 +21,7 @@ from postprocessing.registration import Registration_SITK, Registration_SR
 from analysis import HotSpotDetection
 from shapenormalization.shapenormalization import ShapeNormalization
 from analysis.Dartboard import DartboardGenerator
-from postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple
+from postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
 from general.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
@@ -118,6 +118,8 @@ class ImageProcessor:
                 self.bleaching = BleachingAdditiveNoFit()
             elif self.parameters["properties"]["bleaching_correction_algorithm"] == "multiplicative simple ratio":
                 self.bleaching = BleachingMultiplicativeSimple()
+            elif self.parameters["properties"]["bleaching_correction_algorithm"] == "biexponential fit additiv":
+                self.bleaching = BleachingBiexponentialFitAdditive()
             # further bleaching correction alternatives here...
 
             else:
@@ -314,6 +316,7 @@ class ImageProcessor:
 
         # clear area outside the cells
         self.clear_outside_of_cells()
+        pass
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
