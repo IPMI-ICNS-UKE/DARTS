@@ -46,6 +46,14 @@ Example image:
 
 <img width="622" alt="Bildschirmfoto 2023-09-23 um 13 03 31" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/bb34d520-e8b3-4ed9-8e63-849f2fcfa894">
 
+## Test file 
+You can try out the script by yourself using the test file that was uploaded to the DARTS-Repo. The folder is called "DARTS_test_file" and the file "DARTS_testfile.tif". 
+
+The bottom cell has a bead contact at approximately frame 45: 
+
+<img width="622" alt="Bildschirmfoto 2023-09-27 um 11 33 07" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/a6a07fa9-2d75-406f-8b29-f45fc27fe4e4">
+
+
 ## Definition of bead contacts 
 After clicking on "Start", there will appear a GUI for each image file, so that the bead contacts can be defined. A bead contact is defined as the contact of a (stimulatory) with the cells of interest. Internally, it consists of (1) the bead contact time, e.g. frame 300 and (2) the bead contact position relative to the center of the cell, e.g. 1 o'clock or 12 o'clock. In order to define bead contacts, the user needs to enter information regarding each bead contact manually. Use the following procedure to define bead contacts: 
 
