@@ -47,7 +47,7 @@ Example image:
 <img width="622" alt="Bildschirmfoto 2023-09-23 um 13 03 31" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/bb34d520-e8b3-4ed9-8e63-849f2fcfa894">
 
 ## Test file 
-You can try out the script by yourself using the test file that was uploaded to the DARTS-Repo. The folder is called "DARTS_test_file" and the file "DARTS_testfile.tif". 
+You can try out the script by yourself using the test file that was uploaded to the DARTS-Repo. You can find the file in the following folder: https://github.com/IPMI-ICNS-UKE/DARTS/tree/main/DARTS_test_file. 
 
 The bottom cell has a bead contact at approximately frame 45: 
 
