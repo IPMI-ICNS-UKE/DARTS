@@ -3,6 +3,7 @@ layout: default
 title: Shape normalization
 nav_order: 4
 has_children: false
+math: katex
 ---
 
 
@@ -34,6 +35,6 @@ The algorithm is purely two dimensional, time-dependent input will be processed 
 
 The normalization process can be described in three parts:
 
-1. converting the edge coordinates from cartesian to polar coordinates $(r, \theta)$
+1. converting the edge coordinates from cartesian to polar coordinates $$(r, \theta)$$
 2. normalizing the radii from the edge coordinates onto a fixed value, thus transforming the shape into a circle
 3. interpolating the transformation of the edge onto the entire image using nearest neighbor interpolation
