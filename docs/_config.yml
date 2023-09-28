@@ -10,6 +10,8 @@ baseurl: /docs
 favicon_ico: favicon.ico
 color_scheme: foo
 
+math: katex
+
 callouts_opacity: 0.3
 
 callouts_level: quiet # or loud
