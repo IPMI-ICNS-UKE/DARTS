@@ -17,7 +17,7 @@ since this determines the transformation.
 
 Our implementation was inspired by the approach used by [Möhl et. al 2012](https://doi.org/10.1242/jcs.090746).
 
-![](../assets/img/normalization.jpg)
+<img src="../assets/img/normalization.jpg" width="200">
 
 ## Usage
 
