@@ -30,10 +30,10 @@ git clone https://github.com/IPMI-ICNS-UKE/DARTS.git
 
 or download the .zip file via the download button. Navigate to the folder containing the `DARTS.yml` file and run 
 
-``
+```
 conda env create -f DARTS.yml
 conda activate DARTS
-``
+```
 
 in the command line. 
 
