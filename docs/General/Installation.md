@@ -25,10 +25,10 @@ in your command line.
 
 Verify you are in the folder containing the `DARTS.yml` file and run 
 
-``
+```
 conda env create -f DARTS.yml
 conda activate DARTS
-``
+```
 
 This includes the [bioformats library](http://www.openmicroscopy.org/bio-formats/), which allows processing of common microscopy imaging formats.
 
