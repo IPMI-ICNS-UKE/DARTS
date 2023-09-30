@@ -140,10 +140,10 @@ class DartboardGenerator:
         frame_dict['frame'] = normalized_frame
         frame_dict['time in seconds'] = normalized_time_in_sec
 
-        signal_dataframe_this_frame = self.reduce_dataframe_to_one_frame(signal_dataframe, normalized_frame)
-        signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(signal_dataframe_this_frame)
-
-        frame_dict = self.generate_dartboard_data_one_frame(frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell)
+        if not signal_dataframe.empty:
+            signal_dataframe_this_frame = self.reduce_dataframe_to_one_frame(signal_dataframe, normalized_frame)
+            signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(signal_dataframe_this_frame)
+            frame_dict = self.generate_dartboard_data_one_frame(frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell)
 
         new_row = [frame_dict[col] for col in frame_dict]
         normalized_dartboard_data_table_single_cell.loc[normalized_frame] = new_row
