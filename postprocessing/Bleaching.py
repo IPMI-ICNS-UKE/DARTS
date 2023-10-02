@@ -31,13 +31,13 @@ class BleachingBiexponentialFitAdditive (BaseBleaching):
         frame_number = len(bleaching_channel_copy)
         x_values = np.arange(frame_number)
         y_values = np.asarray([cell.calculate_mean_value_in_channel_frame(frame_index, 2) for frame_index in range(frame_number)])
-        initial_guess = [1800, 1, 2000, 1]
-        popt, pcov = curve_fit(f=biexponential_decay, xdata=x_values, ydata=y_values, p0=initial_guess)
-        x, A1, A2, tau1, tau2 = popt
+        # initial_guess = [1800, 1, 2000, 1]
+        popt, pcov = curve_fit(f=biexponential_decay, xdata=x_values, ydata=y_values) # , p0=initial_guess)
+        A1, A2, tau1, tau2 = popt
         mean_intensity_first_frame_fitted = biexponential_decay(0, A1, A2, tau1, tau2)
 
         for frame in range(frame_number):
-            fitted_mean_intensity_this_frame = biexponential_decay(x, A1, A2, tau1, tau2)
+            fitted_mean_intensity_this_frame = biexponential_decay(frame, A1, A2, tau1, tau2)
             differenz = mean_intensity_first_frame_fitted - fitted_mean_intensity_this_frame
             bleaching_channel_copy[frame] = self.add_value_to_each_pixel_in_region(bleaching_channel_copy[frame], differenz)
 
