@@ -6,9 +6,9 @@ path_to_input_channel1 = "/Users/dejan/Documents/GitHub/T-DARTS/Data/primaere Ze
 path_to_input_channel2 = ""
 
 # path_to_input_combined = "Data/170424 JMP HN1L-KO Beads/170424 HN1L K2 OKT3 Beads/170424 2.tif"
-path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/KHYG1/Rohdateien"
+path_to_input_combined = "/Users/dejan/Documents/GitHub/T-DARTS/Data/debug"
 
-path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/debug"
+path_to_output = "/Users/dejan/Documents/GitHub/T-DARTS/results/debug/limitations shape normalization"
 excel_filename_all_cells = "microdomain_data.xlsx"
 
 start_frame = 0
@@ -22,7 +22,7 @@ experiment_name = "test"
 # (where in the latter, the two input channels are in separate files)
 
 used_microscope = "test microscope"
-day_of_measurement = "2023-08-20"
+day_of_measurement = "2023-09-11"
 
 channel_format = "two-in-one"
 wavelength_1 = 488
@@ -30,9 +30,9 @@ wavelength_2 = 561
 # further information regarding the imaging:
 laserpower_wavelength_1 = 0.6 # e.g. 60%, important for bleaching correction
 laserpower_wavelength_2 = 0.4 # 40%
-scale_pixels_per_micron = 0.0
+scale_pixels_per_micron = 6.5359  # 6.5359 default value for left microscope in our lab
 estimated_cell_diameter_in_pixels = 100 # ATP: 100 for 100x and 60 for 63x, but not safe...
-cell_type = "NK"  # ['jurkat', 'primary', 'NK']
+cell_type = "jurkat"  # ['jurkat', 'primary', 'NK']
 frames_per_second = 40.0 # how many frames are being measured per second?
 spatial_resolution = 3 # pixels
 ratio_preactivation_threshold = 1.0
@@ -41,7 +41,7 @@ ratio_preactivation_threshold = 1.0
 duration_of_measurement = 600  # Frames
 
 bleaching_correction_in_pipeline = true
-bleaching_correction_algorithm = "additiv, no fit"
+bleaching_correction_algorithm = "additiv no fit"  # "additiv no fit"; "multiplicative simple ratio"; "biexponential fit additiv"
 
 # TO DO Fura etc.
 registration_in_pipeline = true

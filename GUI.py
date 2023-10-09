@@ -13,12 +13,12 @@ class TDarts_GUI():
 
         self.window = Tk()
         # self.window.resizable(False, False)
-        width = 1300
+        width = 1400
         height = 900
         self.window.geometry(str(width) + "x" + str(height))
 
 
-        self.window.title("Welcome to C-DARTS")
+        self.window.title("Welcome to DARTS")
 
         self.frame = Frame(self.window)
         self.frame.pack()
@@ -320,7 +320,9 @@ class TDarts_GUI():
         self.check_box_bleaching_correction.config(state=DISABLED)
 
         bleaching_correction_algorithms = [
-            "additiv no fit"
+            "additiv no fit",
+            "multiplicative simple ratio",
+            "biexponential fit additiv"
         ]
 
         self.bleaching_correction_algorithm = StringVar(self.label_processing_pipeline)

@@ -85,7 +85,7 @@ class CellTracker:
             t = tp.link_df(features, search_range, memory=3)
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250)
             # print (t)
-            # tp.plot_traj(t, superimpose=fluo_image[0])
+            # tp.plot_traj(t, superimpose=image_series[0])
             # print (t)
             particle_set = set(t['particle'].tolist())
             # print(particle_set)

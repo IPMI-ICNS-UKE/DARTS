@@ -140,10 +140,10 @@ class DartboardGenerator:
         frame_dict['frame'] = normalized_frame
         frame_dict['time in seconds'] = normalized_time_in_sec
 
-        signal_dataframe_this_frame = self.reduce_dataframe_to_one_frame(signal_dataframe, normalized_frame)
-        signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(signal_dataframe_this_frame)
-
-        frame_dict = self.generate_dartboard_data_one_frame(frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell)
+        if not signal_dataframe.empty:
+            signal_dataframe_this_frame = self.reduce_dataframe_to_one_frame(signal_dataframe, normalized_frame)
+            signal_in_frame_coords_list = self.extract_signal_coordinates_from_one_frame(signal_dataframe_this_frame)
+            frame_dict = self.generate_dartboard_data_one_frame(frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell)
 
         new_row = [frame_dict[col] for col in frame_dict]
         normalized_dartboard_data_table_single_cell.loc[normalized_frame] = new_row
@@ -266,9 +266,18 @@ class DartboardGenerator:
         self.save_dartboard_plot(dartboard_area_dict, number_of_cells, start_time_in_sec, end_time_in_sec, vmax_opt=vmax_opt)
 
     def save_dartboard_plot(self, dartboard_area_dict, number_of_cells, start_time_in_sec, end_time_in_sec, number_of_sections=12, number_of_areas_in_section=8, vmax_opt=None, data_per_second=True):
+        angle_per_section = 360.0 / number_of_sections
+        area_of_one_dartboard_area = (7 ** 2 * math.pi - 5 ** 2 * math.pi) * angle_per_section / 360.0
+        area_of_bulls_eye = 5 ** 2 * math.pi
+        area_ratio_bulls_eye_dartboard_area = area_of_bulls_eye / area_of_one_dartboard_area
+
         vmin = 0
         if vmax_opt is None:
-            vmax = max(dartboard_area_dict.values())
+            values_without_bulls_eye = [dartboard_area_dict[x] for x in dartboard_area_dict if x != 'bulls eye']
+            if dartboard_area_dict['bulls eye']/area_ratio_bulls_eye_dartboard_area > max(values_without_bulls_eye):
+                vmax = dartboard_area_dict['bulls eye']/area_ratio_bulls_eye_dartboard_area
+            else:
+                vmax = max(values_without_bulls_eye)
         else:
             vmax = vmax_opt
 
@@ -279,13 +288,10 @@ class DartboardGenerator:
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
 
-        angle_per_section = 360.0 / number_of_sections
 
         height_of_annuli = [2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
         bottom_list = [5, 7, 8.544, 9.8489]
-        area_of_one_dartboard_area = (7**2*math.pi - 5**2*math.pi)*angle_per_section/360.0
-        area_of_bulls_eye = 5**2*math.pi
-        area_ratio_bulls_eye_dartboard_area = area_of_bulls_eye / area_of_one_dartboard_area
+
 
         # create bull's eye
         number_of_signals_in_bulls_eye = dartboard_area_dict['bulls eye']
