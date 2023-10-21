@@ -48,60 +48,63 @@ class BeadContactGUI():
         self.input_frame = Frame(self.root)
         self.input_frame.place(x=750, y=50)
 
-        self.bead_contact_list_label = Label(self.input_frame, text="list of bead contacts (position, frame, position inside cell)")
-        self.bead_contact_list_label.grid(row=2, column=0, sticky="W")
+
+        self.label_bead_contact_information = Label(self.input_frame, text="Bead contact information: x, y, t")
+        self.label_bead_contact_information.grid(row=1, column=0, sticky="W")
+        self.text_bead_contact_information = Text(self.input_frame, height=1, width=30)
+        self.text_bead_contact_information.grid(row=2, column=0, sticky="W")
+
+        self.label_position_inside_cell = Label(self.input_frame, text="Position inside cell: x,y")
+        self.label_position_inside_cell.grid(row=3, column=0, sticky="W")
+        self.text_position_inside_cell = Text(self.input_frame, height=1, width=30)
+        self.text_position_inside_cell.grid(row=4, column=0, sticky="W")
+
+        self.add_bead_contact_button = Button(self.input_frame, bg='red', text="ADD bead contact",
+                                                 command=self.add_bead_contact)
+        self.add_bead_contact_button.grid(row=5, column=0, sticky="W")
+
+        self.mouse_click_input = IntVar()
+        self.input_button_1 = Radiobutton(self.input_frame, text='bead contact: x, y, t', value=1,
+                                                      variable=self.mouse_click_input)
+        self.input_button_2 = Radiobutton(self.input_frame, text='Choose cell by clicking a point inside', value=2,
+                                                      variable=self.mouse_click_input)
+        self.input_button_1.grid(row=6, column=0, sticky="W")
+        self.input_button_2.grid(row=7, column=0, sticky="W")
+
 
         self.bead_contact_frame = Frame(self.input_frame)
-        self.bead_contact_frame.grid(row=3, column=0, sticky="W")
+        self.bead_contact_frame.grid(row=9, column=0, sticky="W")
+        self.bead_contact_list_label = Label(self.bead_contact_frame,
+                                             text="list of bead contacts (position, frame, position inside cell)")
+        self.bead_contact_list_label.grid(row=1, column=0, sticky="W")
+        self.listbox_frame = Frame(self.bead_contact_frame)
+        self.listbox_frame.grid(row=2, column=0, sticky="W")
 
-        self.bead_contact_list = Listbox(self.bead_contact_frame, width=60, height=10, font=("Helvetica", 12))
+
+        self.bead_contact_list = Listbox(self.listbox_frame, width=60, height=10, font=("Helvetica", 12))
         self.bead_contact_list.pack(side="left", fill="y")
         self.bead_contact_list.bind("<<ListboxSelect>>", self.bead_contact_list_selection_changed)
-        scrollbar = Scrollbar(self.bead_contact_frame, orient="vertical")
+        scrollbar = Scrollbar(self.listbox_frame, orient="vertical")
         scrollbar.config(command=self.bead_contact_list.yview)
         scrollbar.pack(side="right", fill="y")
 
         self.bead_contact_list.config(yscrollcommand=scrollbar.set)
         self.bead_contacts = []
 
-        self.remove_bead_contact_button = Button(self.input_frame, text="Remove bead contact", command=self.remove_bead_contact)
-        self.remove_bead_contact_button.grid(row=4, column=0, sticky="W")
-
-        self.label_bead_contact_position = Label(self.input_frame, text="Bead contact position: x,y")
-        self.label_bead_contact_position.grid(row=5, column=0, sticky="W")
-        self.text_bead_contact_position = Text(self.input_frame, height=1, width=30)
-        self.text_bead_contact_position.grid(row=6, column=0, sticky="W")
-
-        self.label_bead_contact_frame = Label(self.input_frame, text="Time of bead contact (frame)")
-        self.label_bead_contact_frame.grid(row=7, column=0, sticky="W")
-        self.text_bead_contact_frame = Text(self.input_frame, height=1, width=30)
-        self.text_bead_contact_frame.grid(row=8, column=0, sticky="W")
-
-        self.label_position_inside_cell = Label(self.input_frame, text="Position inside cell: x,y")
-        self.label_position_inside_cell.grid(row=9, column=0, sticky="W")
-        self.text_position_inside_cell = Text(self.input_frame, height=1, width=30)
-        self.text_position_inside_cell.grid(row=10, column=0, sticky="W")
-
-        self.add_bead_contact_button = Button(self.input_frame, text="Add bead contact (position, frame, position inside cell)",
-                                                 command=self.add_bead_contact)
-        self.add_bead_contact_button.grid(row=11, column=0, sticky="W")
-
-        self.mouse_click_input = IntVar()
-        self.input_button_1 = Radiobutton(self.input_frame, text='bead contact position/time of bead contact', value=1,
-                                                      variable=self.mouse_click_input)
-        self.input_button_2 = Radiobutton(self.input_frame, text='position inside cell', value=2,
-                                                      variable=self.mouse_click_input)
-        self.input_button_1.grid(row=12, column=0, sticky="W")
-        self.input_button_2.grid(row=13, column=0, sticky="W")
+        self.remove_bead_contact_button = Button(self.bead_contact_frame, text="Remove bead contact", command=self.remove_bead_contact)
+        self.remove_bead_contact_button.grid(row=3, column=0, sticky="W")
 
 
-
-
-
-        self.close_button = Button(self.root, text="Continue with next image or processing, respectively", command=self.close_gui)
-        self.close_button.place(x=self.GUI_width * 0.7, y=self.GUI_height * 0.65)
+        self.close_button = Button(self.input_frame, text="Continue with next image or processing, respectively", command=self.close_gui)
+        self.close_button.grid(row=10, column=0, sticky="W")
         self.user_info_given = False
 
+        self.cancel_button = Button(self.input_frame, text='Cancel', command=self.cancel)
+        self.cancel_button.grid(row=11, column=0, sticky="W")
+
+    def cancel(self):
+        self.root.destroy()
+        quit()
 
     def get_frame_from_selection_in_bead_contact_list(self):
         if self.bead_contact_list.curselection() != ():
@@ -136,12 +139,13 @@ class BeadContactGUI():
 
     def add_bead_contact(self):  # idea: RegEx für die Textboxen
         try:
-            bead_contact_position = self.text_bead_contact_position.get("1.0", "end-1c").split(",")
+            bead_contact_position = self.text_bead_contact_information.get("1.0", "end-1c").split(",")
             bead_contact_x_position = int(bead_contact_position[0])
             bead_contact_y_position = int(bead_contact_position[1])
+            frame = int(bead_contact_position[2])
             bead_contact_position = (bead_contact_x_position, bead_contact_y_position)
 
-            frame = int(self.text_bead_contact_frame.get("1.0", "end-1c"))
+            # frame = int(self.text_bead_contact_frame.get("1.0", "end-1c"))
 
             position_inside_cell = self.text_position_inside_cell.get("1.0", "end-1c").split(",")
             x_position_inside_cell = int(position_inside_cell[0])
@@ -152,9 +156,9 @@ class BeadContactGUI():
             self.bead_contacts.append(bead_contact)
             self.bead_contact_list.insert(END, bead_contact.to_string())
 
-            self.text_bead_contact_position.delete(1.0, END)
+            self.text_bead_contact_information.delete(1.0, END)
             self.text_position_inside_cell.delete(1.0, END)
-            self.text_bead_contact_frame.delete(1.0, END)
+            # self.text_bead_contact_frame.delete(1.0, END)
         except Exception as E:
             print(E)
 
@@ -167,12 +171,9 @@ class BeadContactGUI():
             if(self.channel_width >= x_location >= 0 and self.image_height >= y_location >= 0):
                 if self.mouse_click_input.get() == 1:  # if bead contact position/frame have to be selected
                     frame = self.slider.get()
-                    self.text_bead_contact_frame.delete(1.0, END)
-                    self.text_bead_contact_frame.insert(1.0, str(frame))
+                    self.text_bead_contact_information.delete(1.0, END)
+                    self.text_bead_contact_information.insert(1.0, str(x_location) + ', ' + str(y_location) + ', ' + str(frame))
 
-                    bead_contact_position_text = str(x_location) + "," + str(y_location)
-                    self.text_bead_contact_position.delete(1.0, END)
-                    self.text_bead_contact_position.insert(1.0, bead_contact_position_text)
                 elif self.mouse_click_input.get() == 2:  # if position inside cell has to be defined
                     position_inside_cell_text = str(x_location) + "," + str(y_location)
                     self.text_position_inside_cell.delete(1.0, END)

@@ -1,3 +1,4 @@
+import tkinter.filedialog
 from tkinter import (Tk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
                     Radiobutton, IntVar,StringVar, Text, END, Entry, Toplevel, Checkbutton,
                      DISABLED, NORMAL)
@@ -413,26 +414,24 @@ class TDarts_GUI():
         self.label_control_buttons.grid(row=1, column=1, sticky="news", padx=20, pady=20)
 
         # settings from last run
-        self.settings_from_last_run = Button(self.label_control_buttons, text="Use settings from last run",
-                                             command=self.get_settings_from_last_run)
+        self.save_settings_as_method_button = Button(self.label_control_buttons, text="Save settings on computer",
+                                                      command=self.save_settings_as_method)
+        self.save_settings_as_method_button.grid(row=0, column=1, sticky="W")
 
-        self.settings_from_last_run.grid(column=1, row=0, sticky="W")
-
-
+        self.load_settings_from_computer_button = Button(self.label_control_buttons, text="Load settings from computer",
+                                                     command=self.load_settings_from_computer)
+        self.load_settings_from_computer_button.grid(row=1, column=1, sticky="W")
 
         ################################################################################
 
 
         self.start_button = Button(self.label_control_buttons, text='Start', command=self.start_analysis)
-        self.start_button.grid(column=1, row=1, sticky="W")
+        self.start_button.grid(row=2, column=1, sticky="W")
 
         # cancel button
         self.cancel_button = Button(self.label_control_buttons, text='Cancel', command=self.cancel)
-        self.cancel_button.grid(column=1, row=2, sticky="W")
+        self.cancel_button.grid(row=3, column=1, sticky="W")
 
-        # cancel button
-        self.reinit_button = Button(self.label_control_buttons, text='Reinitialize', command=None)
-        self.reinit_button.grid(column=1, row=3, sticky="W")
 
     def pick_date(self, event):
         global calendar, date_window
@@ -452,104 +451,190 @@ class TDarts_GUI():
         submit_button = Button(date_window, text='submit', command=self.grab_date)
         submit_button.place(x=80, y=190)
 
-    def get_settings_from_last_run(self):
-        with open("config.toml", mode="rt", encoding="utf-8") as fp:
-            config = tomlkit.load(fp)
-            image_config = self.convert_image_config_to_number(config["properties"]["channel_format"])
-            self.selected_image_configuration.set(image_config)
+    def save_settings_as_method(self):
+        data = {
+            'input_output': {
+                'image_conf': self.get_image_configuration(),
+                'path_to_input_1': self.text_single_path_to_input_channel1.get("1.0", "end-1c"),
+                'path_to_input_2': self.text_single_path_to_input_channel2.get("1.0", "end-1c"),
+                'path_to_input_combined': self.text_path_to_input_combined.get("1.0", "end-1c"),
+                'results_dir': self.text_results_directory.get("1.0", "end-1c")
+            },
+            'properties_of_measurement': {
+                'used_microscope': str(self.text_microscope.get("1.0", "end-1c")),
+                'scale': float(self.text_scale.get("1.0", END)),
+                'frame_rate': float(self.text_fps.get("1.0", END)),
+                'resolution': int(self.text_resolution.get("1.0", END)),
+                'cell_type': self.cell_type.get(),
+                'day_of_measurement': str(self.entry_time.get()),
+                'user': str(self.text_user.get("1.0", "end-1c")),
+                'experiment_name': str(self.text_experiment_name.get("1.0", "end-1c"))
+            },
+            'processing_pipeline': {
+                'postprocessing': {
+                    'channel_alignment_in_pipeline': self.channel_alignment_in_pipeline.get() == 1,
+                    'channel_alignment_each_frame': self.frame_by_frame_registration.get() == 1,
+                    'background_sub_in_pipeline': self.background_subtraction_in_pipeline.get() == 1,
+                    'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
+                    'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
+                    'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
+                    'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
+                    'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
+                    'psf_type': str(self.text_psf_type.get("1.0", "end-1c")),
+                    'psf_lambdaEx_ch1': int(self.text_psf_lambdaEx_ch1.get("1.0", END)),
+                    'psf_lambdaEm_ch1': int(self.text_psf_lambdaEx_ch1.get("1.0", END)),
+                    'psf_lambdaEx_ch2': int(self.text_psf_lambdaEx_ch2.get("1.0", END)),
+                    'psf_lambdaEm_ch2': int(self.text_psf_lambdaEm_ch2.get("1.0", END)),
+                    'psf_numAper': float(self.text_psf_numAper.get("1.0", END)),
+                    'psf_magObj': int(self.text_psf_magObj.get("1.0", END)),
+                    'psf_rindexObj': float(self.text_psf_rindexObj.get("1.0", END)),
+                    'psf_rindexSp': float(self.text_psf_rindexSp.get("1.0", END)),
+                    'psf_ccdSize': int(self.text_psf_ccdSize.get("1.0", END)),
+                    'bead_contact': self.bead_contacts_in_pipeline.get() == 1,
+                    'bleaching_correction_in_pipeline': self.bleaching_correction_in_pipeline.get() == 1,
+                    'bleaching_correction_algorithm': self.bleaching_correction_algorithm.get(),
+                    'ratio_images': self.ratio_generation_in_pipeline.get() == 1
+                },
+                'shape_normalization': {
+                    'shape_normalization': self.shape_normalization_in_pipeline.get() == 1
+                },
+                'analysis': {
+                    'hotspot_detection': self.hotspot_detection_in_pipeline.get() == 1,
+                    'dartboard_projection': self.dartboard_projection_in_pipeline.get() == 1
+                }
+            }
+        }
+        directory = tkinter.filedialog.askdirectory()
+        experiment_name = data['properties_of_measurement']['experiment_name']
+        user = data['properties_of_measurement']['user']
+        date = data['properties_of_measurement']['day_of_measurement']
+        file = open(directory + "/DARTS_settings_" + date + "_" + experiment_name + "_" + user + ".toml", "w")
 
-            if config["properties"]["channel_format"] == "single":
-                channel1_path = config["inputoutput"]["path_to_input_channel1"]
-                self.text_single_path_to_input_channel1.delete(1.0, END)
-                self.text_single_path_to_input_channel1.insert(1.0, channel1_path)
-                channel2_path = config["inputoutput"]["path_to_input_channel2"]
-                self.text_single_path_to_input_channel2.delete(1.0, END)
-                self.text_single_path_to_input_channel2.insert(1.0, channel2_path)
-            elif config["properties"]["channel_format"] == "two-in-one":
-                combined_path = config["inputoutput"]["path_to_input_combined"]
+        tomlkit.dump(data, file)
+        file.close()
+
+    def load_settings_from_computer(self):
+        config_file_path = tkinter.filedialog.askopenfilename()
+        with open(config_file_path, mode="rt", encoding="utf-8") as fp:
+            config = tomlkit.load(fp)
+            # INPUT OUTPUT
+            image_config = self.convert_image_config_to_number(config['input_output']['image_conf'])
+            self.selected_image_configuration.set(image_config)
+            if image_config == 2:  # two in one
+                combined_path = config["input_output"]["path_to_input_combined"]
                 self.text_path_to_input_combined.delete(1.0, END)
                 self.text_path_to_input_combined.insert(1.0, combined_path)
-
-            self.text_user.delete(1.0, END)
-            self.text_user.insert(1.0, config["inputoutput"]["user"])
-
-            self.text_experiment_name.delete(1.0, END)
-            self.text_experiment_name.insert(1.0, config["inputoutput"]["experiment_name"])
-
+            elif image_config == 1: # single
+                channel1_path = config["input_output"]["path_to_input_1"]
+                self.text_single_path_to_input_channel1.delete(1.0, END)
+                self.text_single_path_to_input_channel1.insert(1.0, channel1_path)
+                channel2_path = config["input_output"]["path_to_input_2"]
+                self.text_single_path_to_input_channel2.delete(1.0, END)
+                self.text_single_path_to_input_channel2.insert(1.0, channel2_path)
             self.text_results_directory.delete(1.0, END)
-            self.text_results_directory.insert(1.0, config["inputoutput"]["path_to_output"])
+            self.text_results_directory.insert(1.0, config["input_output"]["results_dir"])
 
+            # PROPERTIES OF MEASUREMENT
             self.text_microscope.delete(1.0, END)
-            self.text_microscope.insert(1.0, config["properties"]["used_microscope"])
-
+            self.text_microscope.insert(1.0, config["properties_of_measurement"]["used_microscope"])
             self.text_scale.delete(1.0, END)
-            self.text_scale.insert(1.0, config["properties"]["scale_pixels_per_micron"])
-
+            self.text_scale.insert(1.0, config["properties_of_measurement"]["scale"])
             self.text_fps.delete(1.0, END)
-            self.text_fps.insert(1.0, config["properties"]["frames_per_second"])
-
+            self.text_fps.insert(1.0, config["properties_of_measurement"]["frame_rate"])
             self.text_resolution.delete(1.0, END)
-            self.text_resolution.insert(1.0, config["properties"]["spatial_resolution"])
+            self.text_resolution.insert(1.0, config["properties_of_measurement"]["resolution"])
+            self.cell_type.set(config["properties_of_measurement"]["cell_type"])
+            self.entry_time.delete(0, END)
+            self.entry_time.insert(0, config["properties_of_measurement"]["day_of_measurement"])
+            self.text_user.delete(1.0, END)
+            self.text_user.insert(1.0, config["properties_of_measurement"]["user"])
+            self.text_experiment_name.delete(1.0, END)
+            self.text_experiment_name.insert(1.0, config["properties_of_measurement"]["experiment_name"])
 
-            if config["properties"]["registration_in_pipeline"]:
+            # PROCESSING PIPELINE
+            ## POSTPROCESSING
+            if config["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
                 self.check_box_channel_alignment.select()
             else:
                 self.check_box_channel_alignment.deselect()
-
-            if config["properties"]["registration_framebyframe"]:
+            if config["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"]:
                 self.check_box_frame_by_frame_registration.select()
             else:
                 self.check_box_frame_by_frame_registration.deselect()
-
-            if config["deconvolution"]["deconvolution_in_pipeline"]:
+            if config["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+                self.check_box_background_subtraction_in_pipeline.select()
+            else:
+                self.check_box_background_subtraction_in_pipeline.deselect()
+            if config["processing_pipeline"]["postprocessing"]["cell_segmentation_tracking_in_pipeline"]:
+                self.check_box_segmentation_tracking_in_pipeline.select()
+            else:
+                self.check_box_segmentation_tracking_in_pipeline.deselect()
+            if config["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
                 self.check_box_deconvolution_in_pipeline.select()
-                self.deconvolution_algorithm.set(config["deconvolution"]["decon"])
+
+                self.deconvolution_algorithm.set(config["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"])
                 self.option_menu_deconvolution.config(state=NORMAL)
                 if self.deconvolution_algorithm.get() == "TDE":
                     self.text_TDE_lambda.config(state=NORMAL)
                     self.text_TDE_lambda_t.config(state=NORMAL)
                     self.text_TDE_lambda.delete(1.0, END)
-                    self.text_TDE_lambda.insert(1.0, config["deconvolution"]["lambda"])
+                    self.text_TDE_lambda.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda"])
                     self.text_TDE_lambda_t.delete(1.0, END)
-                    self.text_TDE_lambda_t.insert(1.0, config["deconvolution"]["lambda_t"])
+                    self.text_TDE_lambda_t.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"])
                 self.text_psf_type.delete(1.0, END)
-                self.text_psf_type.insert(1.0, config["psf"]["type"])
+                self.text_psf_type.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_type"])
                 self.text_psf_lambdaEx_ch1.delete(1.0, END)
-                self.text_psf_lambdaEx_ch1.insert(1.0, config["psf"]["lambdaEx_ch1"])
+                self.text_psf_lambdaEx_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_lambdaEx_ch1"])
                 self.text_psf_lambdaEm_ch1.delete(1.0, END)
-                self.text_psf_lambdaEm_ch1.insert(1.0, config["psf"]["lambdaEm_ch1"])
+                self.text_psf_lambdaEm_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_lambdaEm_ch1"])
                 self.text_psf_lambdaEx_ch2.delete(1.0, END)
-                self.text_psf_lambdaEx_ch2.insert(1.0, config["psf"]["lambdaEx_ch2"])
+                self.text_psf_lambdaEx_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_lambdaEx_ch2"])
                 self.text_psf_lambdaEm_ch2.delete(1.0, END)
-                self.text_psf_lambdaEm_ch2.insert(1.0, config["psf"]["lambdaEm_ch2"])
+                self.text_psf_lambdaEm_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_lambdaEm_ch2"])
                 self.text_psf_numAper.delete(1.0, END)
-                self.text_psf_numAper.insert(1.0, config["psf"]["numAper"])
+                self.text_psf_numAper.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_numAper"])
                 self.text_psf_magObj.delete(1.0, END)
-                self.text_psf_magObj.insert(1.0, config["psf"]["magObj"])
+                self.text_psf_magObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_magObj"])
                 self.text_psf_rindexObj.delete(1.0, END)
-                self.text_psf_rindexObj.insert(1.0, config["psf"]["rindexObj"])
+                self.text_psf_rindexObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_rindexObj"])
                 self.text_psf_rindexSp.delete(1.0, END)
-                self.text_psf_rindexSp.insert(1.0, config["psf"]["rindexSp"])
+                self.text_psf_rindexSp.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_rindexSp"])
                 self.text_psf_ccdSize.delete(1.0, END)
-                self.text_psf_ccdSize.insert(1.0, config["psf"]["ccdSize"])
-
-
-
-
+                self.text_psf_ccdSize.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf_ccdSize"])
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
 
-            if config["properties"]["bleaching_correction_in_pipeline"]:
+            if config["processing_pipeline"]["postprocessing"]["bead_contact"]:
+                self.check_box_bead_contacts.select()
+            else:
+                self.check_box_bead_contacts.deselect()
+            if config["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
                 self.check_box_bleaching_correction.select()
-                self.bleaching_correction_algorithm.set(config["properties"]["bleaching_correction_algorithm"])
+                self.bleaching_correction_algorithm.set(config["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"])
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
+            if config["processing_pipeline"]["postprocessing"]["ratio_images"]:
+                self.check_box_ratio_generation.select()
+            else:
+                self.check_box_ratio_generation.deselect()
 
-            self.cell_type.set(config["properties"]["cell_type"])
-            self.entry_time.delete(0, END)
-            self.entry_time.insert(0, config["properties"]["day_of_measurement"])
+            ## SHAPE NORMALIZATION
+            if config["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
+                self.check_box_shape_normalization.select()
+            else:
+                self.check_box_shape_normalization.deselect()
 
+            ## ANALYSIS
+            if config["processing_pipeline"]["analysis"]["hotspot_detection"]:
+                self.check_box_hotspot_detection.select()
+            else:
+                self.check_box_hotspot_detection.deselect()
+
+            if config["processing_pipeline"]["analysis"]["dartboard_projection"]:
+                self.check_box_dartboard_projection.select()
+            else:
+                self.check_box_dartboard_projection.deselect()
 
 
 
