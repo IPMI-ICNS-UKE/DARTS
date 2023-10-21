@@ -46,9 +46,8 @@ For more information regarding the installation, see the [Documentation](https:/
 3. Enter relevant information in the GUI. 
 4. If necessary, define the bead contacts for each cell of interest in each image file.
 
-
-![Main](/docs/assets/img/screenshot_main.png)
-![Bead contacts](/docs/assets/img/screenshot_beadGUI.png)
+![Main](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/3549d0d5-5f8d-4d47-bf8c-096202c99bb0)
+![Bead contacts](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/d145d44f-f154-4125-b15d-3b82a40c788a)
 
 
 
