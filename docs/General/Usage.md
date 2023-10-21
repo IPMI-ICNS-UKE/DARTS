@@ -34,8 +34,7 @@ In the top right corner, input information regarding the post-processing pipelin
 3. Selection of the appropriate bleaching correction algorithm (additive no fit, multiplicative simple ratio, biexponential fit additive).
 
 In the bottom right corner, you can initiate or cancel the analysis.
-
-<img width="1512" alt="Bildschirmfoto 2023-09-23 um 12 57 24" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/d0539670-6432-43ec-acae-b01217ed2021">
+![Bildschirmfoto 2023-10-21 um 16 20 19](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/49a83945-a0ea-4254-981b-fc4b600569e4)
 
 An example for a source directory: 
 
@@ -65,7 +64,7 @@ After clicking on "Start", there will appear a GUI for each image file, so that 
 6. Repeat the steps 2. to 5. for each bead contact in the image sequence. 
 7. Once you have described every bead contact for this measurement, click on the button in the bottom right ("continue with next image or processing, respectively"). Repeat the steps 1. to 7. for every following image file or file pair in case of single file setup.
 
-<img width="1312" alt="Bildschirmfoto 2023-09-23 um 13 22 28" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/70ae4e82-609b-410f-9ff7-f39824f192b3">
+![Bildschirmfoto 2023-10-21 um 16 30 45](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/1ae79491-7ae9-49c6-a37c-3679a0590a82)
 
 
 ## Output of running the script 
