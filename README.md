@@ -28,7 +28,9 @@ Download and install anaconda and python and either clone the DARTS code with
 git clone https://github.com/IPMI-ICNS-UKE/DARTS.git
 ``
 
-or download the .zip file via the download button. Navigate to the folder containing the `DARTS.yml` file and run 
+or download the .zip file via the download button. Before continuing, please check the prerequisites on the Installation page in the [Documentation](https://ipmi-icns-uke.github.io/DARTS/General/Installation.html).
+
+Navigate to the folder containing the `DARTS.yml` file and run 
 
 ```
 conda env create -f DARTS.yml
