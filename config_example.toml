@@ -1,5 +1,6 @@
 [inputoutput]
 
+input_path = ""
 
 path_to_input_channel1 = "/Users/dejan/Documents/GitHub/T-DARTS/Data/primaere Zellen/Testdateien tracking"
 path_to_input_channel2 = ""

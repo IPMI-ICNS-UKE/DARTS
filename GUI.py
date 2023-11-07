@@ -30,56 +30,62 @@ class TDarts_GUI():
         self.input_output_frame = LabelFrame(self.frame, text="Input/Output:", labelanchor="n")
         self.input_output_frame.grid(row=0, column=0, sticky="news", padx=20, pady=20)
 
+        # batch or single processing
+
+        self.label_batch = Label(self.input_output_frame, text="Batch or single processing")
+        self.label_batch.grid(column=0, row=0, sticky="W")
+        self.select_mode = StringVar(value="file")
+        self.choose_single = Radiobutton(self.input_output_frame, text="Select File", variable=self.select_mode, value="file")
+        self.choose_single.grid(column=0, row=1, sticky="W")
+
+        self.choose_dir = Radiobutton(self.input_output_frame, text="Select Directory", variable=self.select_mode, value="dir")
+        self.choose_dir.grid(column=1, row=1, sticky="W")
+
+        self.label_path = Label(self.input_output_frame, text="path to input", anchor="e")
+        self.label_path.grid(row=2, column=0, sticky="E")
+        self.text_path = Text(self.input_output_frame, height=1, width=20)
+        self.text_path.grid(row=2, column=1, sticky="W")
+        self.selection_button = Button(self.input_output_frame, text="Choose files or directory", command=self.select_files_or_directory)
+        self.selection_button.grid(row=3, column=0, sticky="W")
+
+        self.empty_label_fd = Label(self.input_output_frame, text="")
+        self.empty_label_fd.grid(row=4, column=0, sticky="W")
+        # image config: "single" or "two in one"
         self.label_image_configuration = Label(self.input_output_frame, text="Image configuration")
-        self.label_image_configuration.grid(column=0, row=0, sticky="W")
+        self.label_image_configuration.grid(column=0, row=5, sticky="W")
         self.label_image_configuration.config(bg='lightgray')
 
-        # image config: "single" or "two in one"
-        self.selected_image_configuration = IntVar()
-        self.image_config_radiobutton_1 = Radiobutton(self.input_output_frame, text='single', value=1,
+        self.empty_label_cf = Label(self.input_output_frame, text="")
+        self.empty_label_cf.grid(row=6, column=0, sticky="W")
+
+        self.selected_image_configuration = IntVar(value=2)
+
+        self.image_config_radiobutton_1 = Radiobutton(self.input_output_frame, text='one file per channel', value=1,
                                                       variable=self.selected_image_configuration)
-        self.image_config_radiobutton_2 = Radiobutton(self.input_output_frame, text='two in one', value=2,
+        self.image_config_radiobutton_1.grid(row=7, column=0, sticky="W")
+        self.label_config1 = Label(self.input_output_frame, text="each channel is a separate file")
+        self.label_config1.grid(column=1, row=7, sticky="W")
+        self.image_config_radiobutton_2 = Radiobutton(self.input_output_frame, text='both channels in one file', value=2,
                                                       variable=self.selected_image_configuration)
-        self.image_config_radiobutton_1.grid(row=1, column=0, sticky="W")
-        self.image_config_radiobutton_2.grid(row=4, column=0, sticky="W")
+        self.image_config_radiobutton_2.grid(row=8, column=0, sticky="W")
+        self.label_config2 = Label(self.input_output_frame, text="channels are side-by-side in the same frame or "
+                                                                 + "in the channel dimension of bioformats")
+        self.label_config2.grid(column=1, row=8, sticky="W")
 
-
-        # path for "single"
-        # path to input channel 1
-        self.label_single_path_to_input_channel1 = Label(self.input_output_frame, text="path to input channel 1")
-        self.label_single_path_to_input_channel1.grid(row=2, column=0, sticky="W")
-        self.text_single_path_to_input_channel1 = Text(self.input_output_frame, height=1, width=20)
-        self.text_single_path_to_input_channel1.grid(row=2, column=1, sticky="W")
-        # path to input channel 2
-        self.label_single_path_to_input_channel2 = Label(self.input_output_frame, text="path to input channel 2")
-        self.label_single_path_to_input_channel2.grid(row=3, column=0, sticky="W")
-        self.text_single_path_to_input_channel2 = Text(self.input_output_frame, height=1, width=20)
-        self.text_single_path_to_input_channel2.grid(row=3, column=1, sticky="W")
-
-        # path for "two in one"
-        # path to combined
-        self.label_path_to_input_combined = Label(self.input_output_frame, text="path to input combined")
-        self.label_path_to_input_combined.grid(row=5, column=0, sticky="W")
-        self.text_path_to_input_combined = Text(self.input_output_frame, height=1, width=20)
-        self.text_path_to_input_combined.grid(row=5, column=1, sticky="W")
-
-        # choose files
-        self.selection_button = Button(self.input_output_frame, text="Choose directory", command=self.select_directory)
-        self.selection_button.grid(row=6, column=0, sticky="W")
 
         self.empty_label_3 = Label(self.input_output_frame, text="")
-        self.empty_label_3.grid(row=7, column=0, sticky="W")
+        self.empty_label_3.grid(row=9, column=0, sticky="W")
 
 
         # path to result folder
         self.label_results_directory = Label(self.input_output_frame, text="results directory")
-        self.label_results_directory.grid(row=8, column=0, sticky="W")
+        self.label_results_directory.grid(row=10, column=0, sticky="W")
         self.label_results_directory.config(bg='lightgray')
         self.text_results_directory = Text(self.input_output_frame, height=1, width=20)
-        self.text_results_directory.grid(row=9, column=0, sticky="W")
+        self.text_results_directory.grid(row=11, column=0, sticky="W")
         self.choose_results_directory_button = Button(self.input_output_frame, text="Choose a results directory",
                                                       command=self.choose_results_directory_clicked)
-        self.choose_results_directory_button.grid(row=10, column=0, sticky="W")
+        self.choose_results_directory_button.grid(row=12, column=0, sticky="W")
 
         #####################################################################################
 
@@ -520,6 +526,7 @@ class TDarts_GUI():
             # INPUT OUTPUT
             image_config = self.convert_image_config_to_number(config['input_output']['image_conf'])
             self.selected_image_configuration.set(image_config)
+#===
             if image_config == 2:  # two in one
                 combined_path = config["input_output"]["path_to_input_combined"]
                 self.text_path_to_input_combined.delete(1.0, END)
@@ -531,6 +538,29 @@ class TDarts_GUI():
                 channel2_path = config["input_output"]["path_to_input_2"]
                 self.text_single_path_to_input_channel2.delete(1.0, END)
                 self.text_single_path_to_input_channel2.insert(1.0, channel2_path)
+#=======
+
+            self.text_path.insert(1.0, config["inputoutput"]["input_path"])
+
+            #if config["properties"]["channel_format"] == "single":
+            #    channel1_path = config["inputoutput"]["path_to_input_channel1"]
+            #    self.text_single_path_to_input_channel1.delete(1.0, END)
+            #    self.text_single_path_to_input_channel1.insert(1.0, channel1_path)
+            #    channel2_path = config["inputoutput"]["path_to_input_channel2"]
+            #    self.text_single_path_to_input_channel2.delete(1.0, END)
+            #    self.text_single_path_to_input_channel2.insert(1.0, channel2_path)
+            #elif config["properties"]["channel_format"] == "two-in-one":
+            #    combined_path = config["inputoutput"]["path_to_input_combined"]
+            #    self.text_path_to_input_combined.delete(1.0, END)
+            #    self.text_path_to_input_combined.insert(1.0, combined_path)
+
+           # self.text_user.delete(1.0, END)
+          #  self.text_user.insert(1.0, config["inputoutput"]["user"])
+
+           # self.text_experiment_name.delete(1.0, END)
+           # self.text_experiment_name.insert(1.0, config["inputoutput"]["experiment_name"])
+
+#>>>>>>> main
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["input_output"]["results_dir"])
 
@@ -699,34 +729,49 @@ class TDarts_GUI():
             self.text_TDE_lambda_t.delete(1.0, END)
             self.text_TDE_lambda_t.config(state=DISABLED)
 
-    def select_directory(self):
-        chosen_image_configuration = self.get_image_configuration()
+    #def select_directory(self):
+    #    chosen_image_configuration = self.get_image_configuration()
 
-        if (chosen_image_configuration == "single"):
-            filename_channel1 = fd.askdirectory()
-            self.text_single_path_to_input_channel1.delete('1.0', END)
-            self.text_single_path_to_input_channel1.insert(1.0, filename_channel1)
-            filename_channel2 = fd.askdirectory()
-            self.text_single_path_to_input_channel2.delete('1.0', END)
-            self.text_single_path_to_input_channel2.insert(1.0, filename_channel2)
-            self.text_path_to_input_combined.delete('1.0', END)
+    #    if (chosen_image_configuration == "single"):
+    #        #filename_channel1 = fd.askdirectory()
+    #        filename_channel1 = fd.askopenfilename(title="Select a File or Directory",
+    #                                  filetypes=[("All files and directories", "*.*")])
+    #        #self.text_single_path_to_input_channel1.delete('1.0', END)
+    #        self.text_single_path_to_input_channel1.insert(1.0, filename_channel1)
+    #        filename_channel2 = fd.askopenfilename(title="Select a File or Directory",
+    #                                               filetypes=[("All files and directories", "*.*")])
+    #        #self.text_single_path_to_input_channel2.delete('1.0', END)
+    #        self.text_single_path_to_input_channel2.insert(1.0, filename_channel2)
+    #        #self.text_path_to_input_combined.delete('1.0', END)
 
-        elif (chosen_image_configuration == "two-in-one"):
-            filename_combined = fd.askdirectory()
-            self.text_path_to_input_combined.delete('1.0', END)
-            self.text_path_to_input_combined.insert(1.0, filename_combined)
-            self.text_single_path_to_input_channel1.delete('1.0', END)
-            self.text_single_path_to_input_channel2.delete('1.0', END)
+    #    elif (chosen_image_configuration == "two-in-one"):
+    #        #filename_combined = fd.askopenfilename(title="Select a File or Directory",
+    #        #                                       filetypes=[("All files and directories", "*.*")])
+    #        filename_combined = fd.askopenfilenames()
+    #        #filename_combined = fd.askdirectory()
+    #        self.text_path_to_input_combined.delete('1.0', END)
+    #        self.text_path_to_input_combined.insert(1.0, filename_combined)
+    #        self.text_single_path_to_input_channel1.delete('1.0', END)
+    #        self.text_single_path_to_input_channel2.delete('1.0', END)
 
-    def enable_text_boxes(self):
-        self.text_path_to_input_combined['state'] = 'normal'
-        self.text_single_path_to_input_channel1['state'] = 'normal'
-        self.text_single_path_to_input_channel2['state'] = 'normal'
+    def select_files_or_directory(self):
+        if self.select_mode.get() == "file":
+            paths = fd.askopenfilename(title="Select File")
+        else:
+            paths = fd.askdirectory(title="Select Directory")
 
-    def disable_text_boxes(self):
-        self.text_path_to_input_combined['state'] = 'disabled'
-        self.text_single_path_to_input_channel1['state'] = 'disabled'
-        self.text_single_path_to_input_channel2['state'] = 'disabled'
+        self.text_path.delete('1.0', END)
+        self.text_path.insert(1.0, paths)
+
+    #def enable_text_boxes(self):
+    #    self.text_path_to_input_combined['state'] = 'normal'
+    #    self.text_single_path_to_input_channel1['state'] = 'normal'
+    #    self.text_single_path_to_input_channel2['state'] = 'normal'
+
+    #def disable_text_boxes(self):
+    #    self.text_path_to_input_combined['state'] = 'disabled'
+    #    self.text_single_path_to_input_channel1['state'] = 'disabled'
+    #    self.text_single_path_to_input_channel2['state'] = 'disabled'
 
     def default_processing_settings(self):
         self.check_box_frame_by_frame_registration.deselect()
@@ -769,14 +814,15 @@ class TDarts_GUI():
             config = tomlkit.load(fp)
 
             config["properties"]["channel_format"] = self.get_image_configuration()
+            config["inputoutput"]["input_path"] = self.text_path.get("1.0", "end-1c")
 
-            if self.get_image_configuration() == "single":
-                config["inputoutput"]["path_to_input_channel1"] = self.text_single_path_to_input_channel1.get("1.0",
-                                                                                                              "end-1c")
-                config["inputoutput"]["path_to_input_channel2"] = self.text_single_path_to_input_channel2.get("1.0",
-                                                                                                              "end-1c")
-            elif self.get_image_configuration() == "two-in-one":
-                config["inputoutput"]["path_to_input_combined"] = self.text_path_to_input_combined.get("1.0", "end-1c")
+            #if self.get_image_configuration() == "single":
+            #    config["inputoutput"]["path_to_input_channel1"] = self.text_single_path_to_input_channel1.get("1.0",
+            #                                                                                                  "end-1c")
+            #    config["inputoutput"]["path_to_input_channel2"] = self.text_single_path_to_input_channel2.get("1.0",
+            #                                                                                                  "end-1c")
+            #elif self.get_image_configuration() == "two-in-one":
+            #    config["inputoutput"]["path_to_input_combined"] = self.text_path_to_input_combined.get("1.0", "end-1c")
 
             config["inputoutput"]["path_to_output"] = self.text_results_directory.get("1.0", "end-1c")
 
