@@ -14,9 +14,9 @@ class BeadContactGUI():
         self.image = io.imread(filepath)
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
-        if parameters["properties"]["channel_format"] == "two-in-one":
+        if parameters["input_output"]["image_conf"] == "two-in-one":
             self.channel_width = self.image_width*0.5
-        elif parameters["properties"]["channel_format"] == "single":
+        elif parameters["input_output"]["image_conf"] == "single":
             self.channel_width = self.image_width
 
         self.bead_contact_dict = bead_contact_dict

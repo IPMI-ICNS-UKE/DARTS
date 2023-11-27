@@ -29,13 +29,13 @@ def main(gui_enabled):
 
     info_saver = InfoToComputer(parameters)
 
-    if parameters["properties"]["channel_format"] == "two-in-one":
-        directory = parameters["inputoutput"]["path_to_input_combined"]
-    elif parameters["properties"]["channel_format"] == "single":
-        directory = parameters["inputoutput"]["path_to_input_channel1"]
+    if parameters["input_output"]["image_conf"] == "two-in-one":
+        directory = parameters["input_output"]["path_to_input_combined"]
+    elif parameters["input_output"]["image_conf"] == "single":
+        directory = parameters["input_output"]["path_to_input_1"]
     filename_list = os.listdir(directory)
     filename_list = [file for file in filename_list if os.fsdecode(file).endswith(".tif")]
-    if parameters["properties"]["channel_format"] == "single":
+    if parameters["input_output"]["image_conf"] == "single":
         filename_list = [os.path.basename(file) for file in glob.glob(directory + "/*1.tif")]# loop only over channel 1 files
 
     # definition of bead contacts for each file
@@ -53,22 +53,22 @@ def main(gui_enabled):
 
     for file in files_with_bead_contact:
         list_of_bead_contacts = info_saver.bead_contact_dict[file]
-        parameters["properties"]["list_of_bead_contacts"] = list_of_bead_contacts
+        parameters["properties_of_measurement"]["list_of_bead_contacts"] = list_of_bead_contacts
 
         # find out end point
         latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in list_of_bead_contacts])
-        end_frame_file = latest_time_of_bead_contact + parameters["properties"]["duration_of_measurement"] + 20  # not all frames need to be processed
-        parameters["inputoutput"]["end_frame"] = end_frame_file
+        end_frame_file = latest_time_of_bead_contact + parameters["properties_of_measurement"]["duration_of_measurement"] + 20  # not all frames need to be processed
+        parameters["input_output"]["end_frame"] = end_frame_file
 
         # find out filename
-        if parameters["properties"]["channel_format"] == "two-in-one":
-            filename = parameters["inputoutput"]["path_to_input_combined"] + '/' + file
-            parameters["inputoutput"]["filename"] = file
+        if parameters["input_output"]["image_conf"] == "two-in-one":
+            filename = parameters["input_output"]["path_to_input_combined"] + '/' + file
+            parameters["input_output"]["filename"] = file
             Processor = ImageProcessor.fromfilename_split(filename, parameters, logger)
-        elif parameters["properties"]["channel_format"] == "single":
-            filename_ch1 = parameters["inputoutput"]["path_to_input_channel1"] + '/' + file
-            filename_ch2 = parameters["inputoutput"]["path_to_input_channel1"] + '/' + file.replace("1.tif", "2.tif")
-            parameters["inputoutput"]["filename"] = file
+        elif parameters["input_output"]["image_conf"] == "single":
+            filename_ch1 = parameters["input_output"]["path_to_input_1"] + '/' + file
+            filename_ch2 = parameters["input_output"]["path_to_input_1"] + '/' + file.replace("1.tif", "2.tif")
+            parameters["input_output"]["filename"] = file
             Processor = ImageProcessor.fromfilename_combine(filename_ch1, filename_ch2, parameters, logger)
 
 

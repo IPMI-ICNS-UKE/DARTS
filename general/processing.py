@@ -62,16 +62,16 @@ class ImageProcessor:
 
     def __init__(self, image_ch1, image_ch2, parameterdict, logger=None):
         self.parameters = parameterdict
-        self.file_name = self.parameters["inputoutput"]["filename"]
+        self.file_name = self.parameters["input_output"]["filename"]
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
-        self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
+        self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
 
-        self.duration_of_measurement = self.parameters["properties"]["duration_of_measurement"]  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
+        self.duration_of_measurement = self.parameters["properties_of_measurement"]["duration_of_measurement"]  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
 
-        self.wl1 = self.parameters["properties"]["wavelength_1"]  # wavelength channel1
-        self.wl2 = self.parameters["properties"]["wavelength_2"]  # wavelength channel2
+        self.wl1 = self.parameters["properties_of_measurement"]["wavelength_1"]  # wavelength channel1
+        self.wl2 = self.parameters["properties_of_measurement"]["wavelength_2"]  # wavelength channel2
         if self.channel1.ndim == 3:
             self.t_max, self.y_max, self.x_max = self.channel1.shape
         elif self.channel1.ndim == 2:
@@ -92,12 +92,16 @@ class ImageProcessor:
 
         # ------------------------ setup methods postprocessing ----------------------------
         # registration
-        if self.parameters["properties"]["registration_method"] == "SITK" and sitk is not None:
-            self.registration = Registration_SITK()
+        if self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["registration_method"] == "SITK" and sitk is not None:
+                self.registration = Registration_SITK()
+            else:
+                self.registration = Registration_SR()
         else:
-            self.registration = Registration_SR()
+            self.registration = None
+
         # cell tracking & segmentation
-        self.scale_pixels_per_micron = self.parameters["properties"]["scale_pixels_per_micron"]
+        self.scale_pixels_per_micron = self.parameters["properties_of_measurement"]["scale"]
         self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
         self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
         self.segmentation = SegmentationSD(self.model)
@@ -105,20 +109,20 @@ class ImageProcessor:
         # background subtraction
         self.background_subtractor = BackgroundSubtractor(self.segmentation)
         # deconvolution
-        self.deconvolution_parameters = self.parameters["deconvolution"]
-        if self.deconvolution_parameters["decon"] == "TDE":
+        # self.deconvolution_parameters = self.parameters["deconvolution"]
+        if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "TDE":
             self.deconvolution = TDEDeconvolution()
-        elif self.deconvolution_parameters["decon"] == "LR":
+        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LR":
             self.deconvolution = LRDeconvolution()
         else:
             self.deconvolution = BaseDecon()
         # bleaching correction
-        if self.parameters["properties"]["bleaching_correction_in_pipeline"]:
-            if self.parameters["properties"]["bleaching_correction_algorithm"] == "additiv no fit":
+        if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"] == "additiv no fit":
                 self.bleaching = BleachingAdditiveNoFit()
-            elif self.parameters["properties"]["bleaching_correction_algorithm"] == "multiplicative simple ratio":
+            elif self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"] == "multiplicative simple ratio":
                 self.bleaching = BleachingMultiplicativeSimple()
-            elif self.parameters["properties"]["bleaching_correction_algorithm"] == "biexponential fit additiv":
+            elif self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"] == "biexponential fit additiv":
                 self.bleaching = BleachingBiexponentialFitAdditive()
             # further bleaching correction alternatives here...
 
@@ -128,21 +132,19 @@ class ImageProcessor:
             self.bleaching = None
         # ratio converter
         self.ratio_converter = RatioConverter()
-        self.median_filter_kernel = self.parameters["properties"]["median_filter_kernel"]
+        self.median_filter_kernel = self.parameters["processing_pipeline"]["postprocessing"]["median_filter_kernel"]
 
         # ------------------------ setup methods hotspots & dartboard ----------------------------
 
         self.microdomains_timelines_dict = {}
-        self.experiment_name = self.parameters["inputoutput"]["experiment_name"]
-        self.day_of_measurement = self.parameters["properties"]["day_of_measurement"]
+        self.experiment_name = self.parameters["properties_of_measurement"]["experiment_name"]
+        self.day_of_measurement = self.parameters["properties_of_measurement"]["day_of_measurement"]
         # self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
         self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
-        self.results_folder = self.parameters["inputoutput"]["path_to_output"]
+        self.results_folder = self.parameters["input_output"]["results_dir"]
         self.save_path = self.results_folder + '/' + self.measurement_name
         self.frame_number = len(self.channel1)
-        self.estimated_cell_diameter_in_pixels = self.parameters["properties"]["estimated_cell_diameter_in_pixels"]
-        self.estimated_cell_area = round((0.5 * self.estimated_cell_diameter_in_pixels) ** 2 * math.pi)
-        self.cell_type = self.parameters["properties"]["cell_type"]
+        self.cell_type = self.parameters["properties_of_measurement"]["cell_type"]
         self.spotHeight = None
         if self.cell_type == 'primary':
             self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
@@ -150,18 +152,18 @@ class ImageProcessor:
             self.spotHeight = 72
         elif self.cell_type == 'NK':
             self.spotHeight = 72  # needs to be checked
-        self.list_of_bead_contacts = self.parameters["properties"]["list_of_bead_contacts"]
+        self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
         # self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
         self.dartboard_number_of_sections = 12 # self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = 8 # self.parameters["properties"]["dartboard_number_of_areas_per_section"]
 
-        self.frames_per_second = self.parameters["properties"]["frames_per_second"]
+        self.frames_per_second = self.parameters["properties_of_measurement"]["frame_rate"]
         self.ratio_converter = RatioConverter()
         self.minimum_spotsize = 4
         self.min_ratio = 0.1
         self.max_ratio = 2.0
         # self.microdomain_signal_threshold = self.parameters["properties"]["microdomain_signal_threshold"]
-        self.excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
+        self.excel_filename_general = self.parameters["input_output"]["excel_filename_microdomain_data"]
         self.excel_filename_one_measurement = self.measurement_name + '_microdomain_data'
         self.hotspotdetector = HotSpotDetection.HotSpotDetector(self.save_path,
                                                                 self.results_folder,
@@ -181,7 +183,7 @@ class ImageProcessor:
     # alternative constructor to define image processor with filename
     @classmethod
     def fromfilename_split(cls, filename, parameterdict, logger=None):
-        end = parameterdict["inputoutput"]["end_frame"]
+        end = parameterdict["input_output"]["end_frame"]
         # !! for now, images need to start at 0 because of bleaching correction !!
         image = cut_image_frames(io.imread(filename), 0, end)
         # separate image into 2 channels: left half and right half
@@ -195,7 +197,7 @@ class ImageProcessor:
 
     @classmethod
     def fromfilename_combine(cls, filename_ch1, filename_ch2, parameterdict, logger=None):
-        end = parameterdict["inputoutput"]["end_frame"]
+        end = parameterdict["input_output"]["end_frame"]
         # !! for now, images need to start at 0 because of bleaching correction !!
         channel1 = cut_image_frames(io.imread(filename_ch1), 0, end)
         channel2 = cut_image_frames(io.imread(filename_ch2), 0, end)
@@ -279,12 +281,13 @@ class ImageProcessor:
     def start_postprocessing(self):
         # -- PROCESSING OF WHOLE IMAGE CHANNELS --
         # channel registration
-        self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
-                                                               self.parameters["properties"][
-                                                                   "registration_framebyframe"])
+        if not self.registration is None:
+            self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
+                                                                   self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"])
 
         # background subtraction
-        self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
+        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
         # segmentation of cells, tracking
         self.segmentation_result_dict = self.select_rois()
@@ -297,7 +300,8 @@ class ImageProcessor:
         self.assign_bead_contacts_to_cells()
 
         # deconvolution
-        self.deconvolve_cell_images()
+        if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
+            self.deconvolve_cell_images()
 
         # bleaching correction
         if not self.bleaching is None:
