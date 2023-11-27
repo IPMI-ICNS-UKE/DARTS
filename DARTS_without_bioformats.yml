@@ -1,0 +1,22 @@
+name: DARTS
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - stardist
+  - trackpy
+  - tomli
+  - pims
+  - pystackreg
+  - openpyxl
+  - tk
+  - alive-progress
+  - pip:
+      - Pillow @ file:///Users/runner/miniforge3/conda-bld/pillow_1680694433434/work
+      - PIMS @ file:///home/conda/feedstock_root/build_artifacts/pims_1653786845159/work
+      - pystackreg @ file:///Users/runner/miniforge3/conda-bld/pystackreg_1667038262783/work
+      - scikit-image @ file:///Users/runner/miniforge3/conda-bld/scikit-image_1681313349447/work/dist/scikit_image-0.20.0-cp310-cp310-macosx_10_9_x86_64.whl
+      - scipy @ file:///Users/runner/miniforge3/conda-bld/scipy-split_1683900476145/work/base/dist/scipy-1.10.1-cp310-cp310-macosx_10_9_x86_64.whl#sha256=41c2cc9c80896b9ecfa09db5a5cf89e82163e54035a4d90012597edc8a925f5f
+      - SimpleITK-SimpleElastix==2.0.0rc2.dev910
+      - tensorflow @ file:///Users/mark/git/feedstocks/tensorflow-feedstock/miniforge3/conda-bld/tensorflow-split_1679747518548/work/tensorflow_pkg/tensorflow-2.11.1-cp310-cp310-macosx_10_13_x86_64.whl
+      - tkcalendar==1.6.1
