@@ -185,8 +185,8 @@ class ImageProcessor:
     # alternative constructor to define image processor with filename
     @classmethod
     def fromfilename(cls, filename, parameterdict, logger=None):
-        end = parameterdict["inputoutput"]["end_frame"]
-        channel_format = parameterdict["properties"]["channel_format"]
+        end = parameterdict["input_output"]["end_frame"]
+        channel_format = parameterdict["input_output"]["image_conf"]
         if channel_format == "single":
             name, ext = os.path.splitext(filename)
             if name.endswith("_1"):
