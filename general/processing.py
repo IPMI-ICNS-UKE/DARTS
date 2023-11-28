@@ -25,6 +25,8 @@ from postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplica
 from general.RatioToConcentrationConverter import RatioConverter
 from postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
+from general.load_data import load_data
+
 try:
     import SimpleITK as sitk
 except ImportError:
@@ -181,6 +183,33 @@ class ImageProcessor:
                                                       self.results_folder)
 # ------------------------ alternative constructors --------------------------------
     # alternative constructor to define image processor with filename
+    @classmethod
+    def fromfilename(cls, filename, parameterdict, logger=None):
+        end = parameterdict["inputoutput"]["end_frame"]
+        channel_format = parameterdict["properties"]["channel_format"]
+        if channel_format == "single":
+            name, ext = os.path.splitext(filename)
+            if name.endswith("_1"):
+                name2 = name[:-2] + "_2"
+            filename2 = name2 + ext
+            try:
+                channel1 = load_data(filename, channel_format)
+                channel2 = load_data(filename2, channel_format)
+            except Exception as E:
+                print(E)
+                print("Error loading image ", filename)
+                return
+        else:
+            try:
+                channel1, channel2 = load_data(filename, channel_format, channel="both")
+            except Exception as E:
+                print(E)
+                print("Error loading image ", filename)
+                return
+        channel1 = cut_image_frames(channel1, 0, end)
+        channel2 = cut_image_frames(channel2, 0, end)
+        return cls(channel1, channel2, parameterdict, logger)
+
     @classmethod
     def fromfilename_split(cls, filename, parameterdict, logger=None):
         end = parameterdict["input_output"]["end_frame"]

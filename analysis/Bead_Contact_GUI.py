@@ -6,17 +6,26 @@ from tkinter import (Tk, Label, Scale, Listbox, Scrollbar, Frame, Button, Radiob
 
 import math
 import skimage.io as io
+from general.load_data import load_data
 
 
 class BeadContactGUI():
     def __init__(self, file, filepath, bead_contact_dict, parameters):
         self.file = file
+        self.channel_format = parameters["input_output"]["image_conf"]
         self.image = io.imread(filepath)
+        """
+        try:
+            self.image = load_data(filepath, self.channel_format)
+        except Exception as E:
+            print(E)
+            print("Error loading file ", filepath)
+        """
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
-        if parameters["input_output"]["image_conf"] == "two-in-one":
+        if self.channel_format == "two-in-one":
             self.channel_width = self.image_width*0.5
-        elif parameters["input_output"]["image_conf"] == "single":
+        elif self.channel_format == "single":
             self.channel_width = self.image_width
 
         self.bead_contact_dict = bead_contact_dict
