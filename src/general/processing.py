@@ -5,27 +5,24 @@ import numpy as np
 import skimage.measure
 from alive_progress import alive_bar
 import time
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.patches import Rectangle
 import pandas as pd
 import os
 import timeit
 from stardist.models import StarDist2D
 
-from general.cell import CellImage, ChannelImage
-from postprocessing.segmentation import SegmentationSD
-from postprocessing.CellTracker_ROI import CellTracker
-from postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
-from postprocessing.registration import Registration_SITK, Registration_SR
-from analysis import HotSpotDetection
-from shapenormalization.shapenormalization import ShapeNormalization
-from analysis.Dartboard import DartboardGenerator
-from postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
-from general.RatioToConcentrationConverter import RatioConverter
-from postprocessing.BackgroundSubtraction import BackgroundSubtractor
+from src.general.cell import CellImage, ChannelImage
+from src.postprocessing.segmentation import SegmentationSD
+from src.postprocessing.CellTracker_ROI import CellTracker
+from src.postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
+from src.postprocessing.registration import Registration_SITK, Registration_SR
+from src.analysis import HotSpotDetection
+from src.shapenormalization.shapenormalization import ShapeNormalization
+from src.analysis.Dartboard import DartboardGenerator
+from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
+from src.general.RatioToConcentrationConverter import RatioConverter
+from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
-from general.load_data import load_data
+from src.general.load_data import load_data
 
 try:
     import SimpleITK as sitk

@@ -5,8 +5,7 @@ from matplotlib.figure import Figure
 from tkinter import (Tk, Label, Scale, Listbox, Scrollbar, Frame, Button, Radiobutton, IntVar, Text, HORIZONTAL, END)
 
 import math
-import skimage.io as io
-from general.load_data import load_data
+from src.general.load_data import load_data
 
 
 class BeadContactGUI():

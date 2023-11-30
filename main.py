@@ -4,13 +4,12 @@ import os
 import json
 import time
 import argparse
-from general.processing import ImageProcessor
+from src.general.processing import ImageProcessor
 from GUI import TDarts_GUI
-from general.logger import Logger
-from analysis.Bead_Contact_GUI import BeadContactGUI
+from src.general.logger import Logger
+from src.analysis.Bead_Contact_GUI import BeadContactGUI
 import gc
-from general.InfoToComputer import InfoToComputer
-import glob
+from src.general.InfoToComputer import InfoToComputer
 import fnmatch
 try:
     import javabridge
