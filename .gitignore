@@ -6,6 +6,10 @@ config.toml
 *.jpg
 *.txt
 
+.DS_Store
+
+results/
+
 # Byte-compiled / optimized / DLL files
 /Data/
 __pycache__/
