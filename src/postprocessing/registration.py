@@ -1,4 +1,3 @@
-
 from alive_progress import alive_bar
 import time
 import numpy as np
