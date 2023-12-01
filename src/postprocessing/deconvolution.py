@@ -1,5 +1,5 @@
-from TDE.deconvolution import Deconvolution
-from psf.psf import PSF
+from src.TDEntropyDeconvolution.util.deconvolution import Deconvolution
+from src.TDEntropyDeconvolution.psf.psf import PSF
 from skimage import restoration
 import numpy as np
 
