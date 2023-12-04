@@ -6,13 +6,16 @@ config.toml
 *.jpg
 *.txt
 
+.DS_Store
+
+results/
+
 # Byte-compiled / optimized / DLL files
 /Data/
 __pycache__/
 *.py[cod]
 *$py.class
 .idea/*
-TransformParameters.0.txt
 # C extensions
 *.so
 

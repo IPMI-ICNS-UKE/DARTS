@@ -1,0 +1,3 @@
+[submodule "src/TDEntropyDeconvolution"]
+	path = src/TDEntropyDeconvolution
+	url = https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution
