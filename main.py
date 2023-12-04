@@ -94,18 +94,21 @@ def main(gui_enabled):
         Processor.start_postprocessing()
 
         # shape normalization
-        normalized_cells_dict = Processor.apply_shape_normalization()
+        if parameters["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
+            normalized_cells_dict = Processor.apply_shape_normalization()
 
-        # analysis: hotspot detection and dartboard projection
-        number_of_analyzed_cells, number_of_responding_cells, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
+            # analysis: hotspot detection and dartboard projection
+            if parameters["processing_pipeline"]["analysis"]["hotspot_detection"]:  # if hotspot detection in pipeline
+                number_of_analyzed_cells, number_of_responding_cells, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
 
-        info_saver.number_of_analyzed_cells_in_total += number_of_analyzed_cells
-        info_saver.number_of_responding_cells_in_total += number_of_responding_cells
+                info_saver.number_of_analyzed_cells_in_total += number_of_analyzed_cells
+                info_saver.number_of_responding_cells_in_total += number_of_responding_cells
 
-        info_saver.add_signal_information(microdomains_timelines_dict)
-        info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
+                info_saver.add_signal_information(microdomains_timelines_dict)
+                info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
 
-        Processor.dartboard(normalized_cells_dict, info_saver)
+                if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline
+                    Processor.dartboard(normalized_cells_dict, info_saver)
 
 
         # save image files
@@ -115,14 +118,15 @@ def main(gui_enabled):
         gc.collect()
 
     if files_with_bead_contact:  # if not empty
-        # save number of signals per confocal sublayer/frame for all files and cells
-        info_saver.save_number_of_signals()
+        if parameters["processing_pipeline"]["analysis"]["hotspot_detection"]:  # if hotspot detection in pipeline
+            # save number of signals per confocal sublayer/frame for all files and cells
+            info_saver.save_number_of_signals()
 
-        # save number of responding cells
-        info_saver.save_number_of_responding_cells()
+            # save number of responding cells
+            info_saver.save_number_of_responding_cells()
 
-        # save mean amplitudes to the computer
-        info_saver.save_mean_amplitudes()
+            # save mean amplitudes to the computer
+            info_saver.save_mean_amplitudes()
 
 
     end_time = time.time()

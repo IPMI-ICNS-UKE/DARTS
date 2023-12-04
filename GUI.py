@@ -360,10 +360,10 @@ class TDarts_GUI():
                                                       variable=self.shape_normalization_in_pipeline,
                                                       onvalue=1,
                                                       offvalue=0,
-                                                      command=None)
+                                                      command=self.update_settings_shape_normalization)
         self.check_box_shape_normalization.grid(column=2, row=25, sticky="W")
         self.check_box_shape_normalization.select()
-        self.check_box_shape_normalization.config(state=DISABLED)
+        # self.check_box_shape_normalization.config(state=DISABLED)
 
         self.empty_label_2 = Label(self.label_processing_pipeline, text="")
         self.empty_label_2.grid(column=1, row=26, sticky="W")
@@ -375,14 +375,14 @@ class TDarts_GUI():
         self.label_hotspot_detection = Label(self.label_processing_pipeline, text="Hotspot detection:  ")
         self.label_hotspot_detection.grid(column=1, row=28, sticky="W")
         self.hotspot_detection_in_pipeline = IntVar()
-        self.check_box_hotspot_detection= Checkbutton(self.label_processing_pipeline,
+        self.check_box_hotspot_detection = Checkbutton(self.label_processing_pipeline,
                                                       variable=self.hotspot_detection_in_pipeline,
                                                       onvalue=1,
                                                       offvalue=0,
-                                                      command=None)
+                                                      command=self.update_settings_for_analysis)
         self.check_box_hotspot_detection.grid(column=2, row=28, sticky="W")
         self.check_box_hotspot_detection.select()
-        self.check_box_hotspot_detection.config(state=DISABLED)
+        # self.check_box_hotspot_detection.config(state=DISABLED)
 
         self.label_dartboard_projection = Label(self.label_processing_pipeline, text="Dartboard projection:  ")
         self.label_dartboard_projection.grid(column=1, row=29, sticky="W")
@@ -394,7 +394,7 @@ class TDarts_GUI():
                                                        command=None)
         self.check_box_dartboard_projection.grid(column=2, row=29, sticky="W")
         self.check_box_dartboard_projection.select()
-        self.check_box_dartboard_projection.config(state=DISABLED)
+        # self.check_box_dartboard_projection.config(state=DISABLED)
 
         self.empty_label_3 = Label(self.label_processing_pipeline, text="")
         self.empty_label_3.grid(column=1, row=30, sticky="W")
@@ -687,6 +687,26 @@ class TDarts_GUI():
             self.check_box_frame_by_frame_registration.config(state=DISABLED)
         elif self.channel_alignment_in_pipeline.get() == 1:
             self.check_box_frame_by_frame_registration.config(state=NORMAL)
+
+    def update_settings_for_analysis(self):
+        if self.hotspot_detection_in_pipeline.get() == 0:
+            self.dartboard_projection_in_pipeline.set(0)
+            self.check_box_dartboard_projection.config(state=DISABLED)
+        elif self.channel_alignment_in_pipeline.get() == 1:
+            self.check_box_dartboard_projection.config(state=NORMAL)
+            self.dartboard_projection_in_pipeline.set(1)
+
+    def update_settings_shape_normalization(self):
+        if self.shape_normalization_in_pipeline.get() == 0:
+            self.hotspot_detection_in_pipeline.set(0)
+            self.dartboard_projection_in_pipeline.set(0)
+            self.check_box_hotspot_detection.config(state=DISABLED)
+            self.check_box_dartboard_projection.config(state=DISABLED)
+        elif self.shape_normalization_in_pipeline.get() == 1:
+            self.check_box_hotspot_detection.config(state=NORMAL)
+            self.check_box_dartboard_projection.config(state=NORMAL)
+            self.hotspot_detection_in_pipeline.set(1)
+            self.dartboard_projection_in_pipeline.set(1)
 
     def update_deconvolution(self):
         if self.deconvolution_in_pipeline.get() == 0:

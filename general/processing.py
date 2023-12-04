@@ -310,7 +310,7 @@ class ImageProcessor:
     def start_postprocessing(self):
         # -- PROCESSING OF WHOLE IMAGE CHANNELS --
         # channel registration
-        if not self.registration is None:
+        if self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
             self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                    self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"])
 
@@ -333,7 +333,7 @@ class ImageProcessor:
             self.deconvolve_cell_images()
 
         # bleaching correction
-        if not self.bleaching is None:
+        if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
             self.bleaching_correction()
 
         # first median filter
@@ -349,7 +349,8 @@ class ImageProcessor:
 
         # clear area outside the cells
         self.clear_outside_of_cells()
-        pass
+
+        self.save_ratio_images()
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
@@ -363,9 +364,16 @@ class ImageProcessor:
                 bar()
 
     def generate_ratio_images(self):
-        for cell in self.cells_with_bead_contact:
+        for i, cell in enumerate(self.cells_with_bead_contact):
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
+
+    def save_ratio_images(self):
+        savepath = self.save_path + '/ratio/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cells_with_bead_contact):
+            io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell.ratio)
 
     def medianfilter(self, channel):
        """"
@@ -654,7 +662,7 @@ class ImageProcessor:
                                   level=logging.ERROR, logger=self.logger)
                     continue
 
-                io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", ratio)
+                # io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", ratio)
                 io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio_normalized' + ".tif",
                           normalized_ratio)
 
