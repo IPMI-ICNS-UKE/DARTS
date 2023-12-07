@@ -1,5 +1,5 @@
 from tkinter import Tk, Text, Label, IntVar, Checkbutton, Button, filedialog, END
-from analysis.Dartboard import DartboardGenerator
+from src.analysis.Dartboard import DartboardGenerator
 
 
 root = Tk()
