@@ -24,13 +24,13 @@ class BaseDecon:
         else:
             xdims = None
 
-        psf_data = parameters['psf']
+        psf_data = parameters["processing_pipeline"]["postprocessing"]["psf"]
         psf_data['xysize'] = input_roi_channel1.shape[1]
 
-        psf_data_ch1 = psf_data
+        psf_data_ch1 = psf_data.copy()
         psf_data_ch1['lambdaEx'] = psf_data['lambdaEx_ch1']
         psf_data_ch1['lambdaEm'] = psf_data['lambdaEm_ch1']
-        psf_data_ch2 = psf_data
+        psf_data_ch2 = psf_data.copy()
         psf_data_ch2['lambdaEx'] = psf_data['lambdaEx_ch2']
         psf_data_ch2['lambdaEm'] = psf_data['lambdaEm_ch2']
 
@@ -46,8 +46,8 @@ class TDEDeconvolution(BaseDecon):
     def deconvolve(self, input_roi_channel1, input_roi_channel2, parameters):
         self.eps = 0.001
         self.N = 1
-        self.l = parameters['deconvolution']['lambda']
-        self.lt = parameters['deconvolution']['lambda_t']
+        self.l = parameters['processing_pipeline']['postprocessing']['TDE_lambda']
+        self.lt = parameters['processing_pipeline']['postprocessing']['TDE_lambda_t']
         psf_ch1, psf_ch2 = self.get_psf(input_roi_channel1, parameters)
 
         Decon1 = Deconvolution(psf_ch1.data, input_roi_channel1, self.l, self.lt, self.eps, self.N)

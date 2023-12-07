@@ -11,13 +11,15 @@ from src.general.load_data import load_data
 class BeadContactGUI():
     def __init__(self, file, filepath, bead_contact_dict, parameters):
         self.file = file
-        self.channel_format = parameters["properties"]["channel_format"]
-        #self.image = io.imread(filepath)
+        self.channel_format = parameters["input_output"]["image_conf"]
+        self.image = io.imread(filepath)
+        """
         try:
             self.image = load_data(filepath, self.channel_format)
         except Exception as E:
             print(E)
             print("Error loading file ", filepath)
+        """
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
         if self.channel_format == "two-in-one":

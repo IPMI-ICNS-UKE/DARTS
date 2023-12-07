@@ -8,14 +8,14 @@ class InfoToComputer:
         # self.dartboard_data_cumulated_all_cells = np.zeros(shape=(parameters["properties"]["dartboard_number_of_areas_per_section"],parameters["properties"]["dartboard_number_of_sections"])).astype(float)
         self.analyzed_seconds_cumulated = 0.0
         self.bead_contact_dict = {}
-        self.save_path = parameters["inputoutput"]["path_to_output"] + '/'
+        self.save_path = parameters["input_output"]["results_dir"] + '/'
         self.number_of_analyzed_cells_in_total = 0
         self.number_of_responding_cells_in_total = 0
         self.general_mean_amplitude_list = []
         self.parameters = parameters
 
         self.number_of_signals_per_frame = pd.DataFrame()
-        fps = parameters["properties"]["frames_per_second"]
+        fps = parameters["properties_of_measurement"]["frame_rate"]
         duration_of_measurement_in_frames = int(16 * fps)  # from 1s before bead contact to 15s after bead contact
         list_of_time_points = []
         for frame in range(duration_of_measurement_in_frames):
@@ -45,7 +45,7 @@ class InfoToComputer:
             f.write("Percentage of responding cells: " + str(percentage_of_responding_cells) + "%")
 
     def save_number_of_signals(self):
-        excel_filename_general = self.parameters["inputoutput"]["excel_filename_all_cells"]
+        excel_filename_general = self.parameters["input_output"]["excel_filename_microdomain_data"]
         with pd.ExcelWriter(self.save_path + excel_filename_general) as writer:
             sheet_name = "Number of signals in each frame"
             self.number_of_signals_per_frame.to_excel(writer, sheet_name=sheet_name, index=False)
