@@ -73,7 +73,7 @@ class TDarts_GUI():
                                                       variable=self.selected_image_configuration)
         self.image_config_radiobutton_2.grid(row=8, column=0, sticky="W")
         self.label_config2 = Label(self.input_output_frame, text="channels are side-by-side in the same frame or "
-                                                                 + "in the channel dimension of bioformats")
+                                                                 + "\n" +  "in the channel dimension of bioformats")
         self.label_config2.grid(column=1, row=8, sticky="W")
 
         self.empty_label_3 = Label(self.input_output_frame, text="")
@@ -304,10 +304,10 @@ class TDarts_GUI():
                                                           variable=self.bead_contacts_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
-                                                          command=None)
+                                                          command=self.update_bead_contact)
         self.check_box_bead_contacts.grid(column=2, row=21, sticky="W")
         self.check_box_bead_contacts.select()
-        self.check_box_bead_contacts.config(state=DISABLED)
+        # self.check_box_bead_contacts.config(state=DISABLED)
         #
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
@@ -699,14 +699,14 @@ class TDarts_GUI():
     def update_settings_shape_normalization(self):
         if self.shape_normalization_in_pipeline.get() == 0:
             self.hotspot_detection_in_pipeline.set(0)
-            self.dartboard_projection_in_pipeline.set(0)
             self.check_box_hotspot_detection.config(state=DISABLED)
+            self.dartboard_projection_in_pipeline.set(0)
             self.check_box_dartboard_projection.config(state=DISABLED)
-        elif self.shape_normalization_in_pipeline.get() == 1:
-            self.check_box_hotspot_detection.config(state=NORMAL)
-            self.check_box_dartboard_projection.config(state=NORMAL)
+        elif self.shape_normalization_in_pipeline.get() == 1 and self.bead_contacts_in_pipeline.get() == 1:
             self.hotspot_detection_in_pipeline.set(1)
+            self.check_box_hotspot_detection.config(state=NORMAL)
             self.dartboard_projection_in_pipeline.set(1)
+            self.check_box_dartboard_projection.config(state=NORMAL)
 
     def update_deconvolution(self):
         if self.deconvolution_in_pipeline.get() == 0:
@@ -719,6 +719,18 @@ class TDarts_GUI():
             self.option_menu_bleaching_correction.config(state=DISABLED)
         elif self.bleaching_correction_in_pipeline.get() == 1:
             self.option_menu_bleaching_correction.config(state=NORMAL)
+
+    def update_bead_contact(self):
+        if self.bead_contacts_in_pipeline.get() == 0:
+            self.hotspot_detection_in_pipeline.set(0)
+            self.check_box_hotspot_detection.config(state=DISABLED)
+            self.dartboard_projection_in_pipeline.set(0)
+            self.check_box_dartboard_projection.config(state=DISABLED)
+        elif self.bead_contacts_in_pipeline.get() == 1 and self.shape_normalization_in_pipeline.get()==1:
+            self.hotspot_detection_in_pipeline.set(1)
+            self.check_box_hotspot_detection.config(state=NORMAL)
+            self.dartboard_projection_in_pipeline.set(1)
+            self.check_box_dartboard_projection.config(state=NORMAL)
 
     def get_image_configuration(self):
         if self.selected_image_configuration.get() == 1:

@@ -68,7 +68,7 @@ class ImageProcessor:
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
-        self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
+        # self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
 
         self.duration_of_measurement = self.parameters["properties_of_measurement"]["duration_of_measurement"]  # from bead contact + maximum 600 frames (40fps and 600 frames => 15sec)
 
@@ -86,7 +86,7 @@ class ImageProcessor:
         self.cell_list = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
-        self.cells_with_bead_contact = None
+        self.cell_list_for_processing = self.cell_list
         self.excluded_cells_list = []
 
         self.ratio_list = []
@@ -154,7 +154,8 @@ class ImageProcessor:
             self.spotHeight = 72
         elif self.cell_type == 'NK':
             self.spotHeight = 72  # needs to be checked
-        self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
+        if self.parameters["processing_pipeline"]["postprocessing"]["bead_contact"]:
+            self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
         # self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
         self.dartboard_number_of_sections = 12 # self.parameters["properties"]["dartboard_number_of_sections"]
         self.dartboard_number_of_areas_per_section = 8 # self.parameters["properties"]["dartboard_number_of_areas_per_section"]
@@ -206,8 +207,9 @@ class ImageProcessor:
                 print(E)
                 print("Error loading image ", filename)
                 return
-        channel1 = cut_image_frames(channel1, 0, end)
-        channel2 = cut_image_frames(channel2, 0, end)
+        if not end is None: # if "no bead contacts" was elected in the GUI
+            channel1 = cut_image_frames(channel1, 0, end)
+            channel2 = cut_image_frames(channel2, 0, end)
         return cls(channel1, channel2, parameterdict, logger)
 
     @classmethod
@@ -248,9 +250,9 @@ class ImageProcessor:
     def deconvolve_cell_images(self):
 
             print("\n"+ self.deconvolution.give_name() + ": ")
-            with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
+            with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
                 time.sleep(.005)
-                for cell in self.cells_with_bead_contact:
+                for cell in self.cell_list_for_processing:
                     roi_channel1, roi_channel2 = cell.channel1.image, cell.channel2.image
 
                     roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
@@ -263,7 +265,7 @@ class ImageProcessor:
 
 
     def clear_outside_of_cells(self):
-        self.background_subtractor.clear_outside_of_cells(self.cells_with_bead_contact)
+        self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
 
     def background_subtraction(self, channel_1, channel_2):
         print("\nBackground subtraction: ")
@@ -325,8 +327,9 @@ class ImageProcessor:
         self.create_cell_images(self.segmentation_result_dict)
 
         # -- PROCESSING OF CELL IMAGES --
-        # assign bead contacts to cells
-        self.assign_bead_contacts_to_cells()
+        if self.parameters["processing_pipeline"]["postprocessing"]["bead_contact"]: # if "bead contacts" was elected in the GUI
+            # assign bead contacts to cells
+            self.assign_bead_contacts_to_cells()
 
         # deconvolution
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
@@ -354,8 +357,8 @@ class ImageProcessor:
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
-        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
-            for cell in self.cells_with_bead_contact:
+        with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+            for cell in self.cell_list_for_processing:
                 time.sleep(.005)
 
                 if self.bleaching is not None:
@@ -364,7 +367,7 @@ class ImageProcessor:
                 bar()
 
     def generate_ratio_images(self):
-        for i, cell in enumerate(self.cells_with_bead_contact):
+        for i, cell in enumerate(self.cell_list_for_processing):
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
 
@@ -372,7 +375,7 @@ class ImageProcessor:
         savepath = self.save_path + '/ratio/'
         os.makedirs(savepath, exist_ok=True)
 
-        for i, cell in enumerate(self.cells_with_bead_contact):
+        for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell.ratio)
 
     def medianfilter(self, channel):
@@ -381,8 +384,8 @@ class ImageProcessor:
         Pixelvalues of zeroes are excluded in median calculation
         """
        print("\n Medianfilter " + channel + ": ")
-       with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
-           for cell in self.cells_with_bead_contact:
+       with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+           for cell in self.cell_list_for_processing:
                 if channel == "channels":
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -444,14 +447,14 @@ class ImageProcessor:
                     cell.bead_contact_site = location_on_clock
                     cell.has_bead_contact = True
 
-        self.cells_with_bead_contact = [cell for cell in self.cell_list if cell.has_bead_contact]
+        self.cell_list_for_processing = [cell for cell in self.cell_list if cell.has_bead_contact]
 
     def hotspot_detection(self, normalized_cells_dict):
         number_of_analyzed_cells = 0
         number_of_responding_cells = 0
 
-        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
-            for i, cell in enumerate(self.cells_with_bead_contact):
+        with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+            for i, cell in enumerate(self.cell_list_for_processing):
                 try:
                     number_of_analyzed_cells += 1
                     hd_start = timeit.default_timer()
@@ -526,8 +529,8 @@ class ImageProcessor:
         return microdomains_timeline_for_cell
 
     def dartboard(self, normalized_cells_dict, info_saver):
-        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
-            for i, cell in enumerate(self.cells_with_bead_contact):
+        with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+            for i, cell in enumerate(self.cell_list_for_processing):
                 try:
                     db_start = timeit.default_timer()
 
@@ -640,8 +643,8 @@ class ImageProcessor:
 
         print("\n")
         self.logger.log_and_print(message="Processing now continues with: ", level=logging.INFO, logger=self.logger)
-        with alive_bar(len(self.cells_with_bead_contact), force_tty=True) as bar:
-            for i, cell in enumerate(self.cells_with_bead_contact):
+        with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+            for i, cell in enumerate(self.cell_list_for_processing):
                 time.sleep(.005)
                 ratio = cell.give_ratio_image()
                 try:
@@ -721,7 +724,7 @@ class ImageProcessor:
 
     def give_mean_amplitude_list(self):
         mean_amplitude_list_of_cells = []
-        for i, cell in enumerate(self.cells_with_bead_contact):
+        for i, cell in enumerate(self.cell_list_for_processing):
             cell_mean_signal_amplitude = cell.calculate_mean_amplitude_of_signals_after_bead_contact()
             if cell_mean_signal_amplitude is not None:
                 mean_amplitude_list_of_cells.append((self.file_name,i,cell_mean_signal_amplitude))
@@ -735,7 +738,7 @@ class ImageProcessor:
         """
         Saves the image files within the cells of the cell list
         """
-        for i, cell in enumerate(self.cells_with_bead_contact):
+        for i, cell in enumerate(self.cell_list_for_processing):
             save_path = self.save_path + '/cell_image_processed_files/'
             os.makedirs(save_path, exist_ok=True)
             io.imsave(save_path + '/' + self.measurement_name + cell.to_string(i) + '_channel_1' + '.tif',
@@ -749,7 +752,7 @@ class ImageProcessor:
     def save_ratio_image_files(self):
         save_path = self.save_path + '/cell_image_ratio_files/'
         os.makedirs(save_path, exist_ok=True)
-        for i, cell in enumerate(self.cells_with_bead_contact):
+        for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(save_path + '/'+ self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif', cell.give_ratio_image(), check_contrast=False)
 
 
