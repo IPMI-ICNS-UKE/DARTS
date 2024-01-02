@@ -1,5 +1,5 @@
 import pandas as pd
-
+import os
 
 
 class InfoToComputer:
@@ -16,13 +16,27 @@ class InfoToComputer:
 
         self.number_of_signals_per_frame = pd.DataFrame()
         fps = parameters["properties_of_measurement"]["frame_rate"]
-        duration_of_measurement_in_frames = int(16 * fps)  # from 1s before bead contact to 15s after bead contact
+        time_before = parameters["properties_of_measurement"]["time_of_measurement_before_starting_point"]
+        time_after = parameters["properties_of_measurement"]["time_of_measurement_after_starting_point"]
+        duration_of_measurement_in_seconds = time_before + time_after
+        duration_of_measurement_in_frames = int(duration_of_measurement_in_seconds * fps)
         list_of_time_points = []
         for frame in range(duration_of_measurement_in_frames):
-            time_in_seconds = (frame - fps) / fps
+            time_in_seconds = (frame - (time_before*fps)) / fps
             list_of_time_points.append(time_in_seconds)
 
         self.number_of_signals_per_frame['time_in_seconds'] = list_of_time_points
+
+        self.global_data = pd.DataFrame()
+        self.global_data['time_in_seconds'] = list_of_time_points.copy()
+
+    def save_global_data(self):
+        save_path = self.save_path + '/global_data'
+        os.makedirs(save_path, exist_ok=True)
+
+        with pd.ExcelWriter(save_path + '/global_data.xlsx') as writer:
+            sheet_name = "global data all cells"
+            self.global_data.to_excel(writer, sheet_name=sheet_name, index=False)
 
     def save_bead_contact_information(self):
         with open(self.save_path + 'Bead_contact_information.txt', 'w') as f:
@@ -57,7 +71,8 @@ class InfoToComputer:
             title_of_microdomains_timeline = filename + "_cell_" + str(cell_index)
 
             dataframe_series = microdomains_timelines_dict[filename_cell]
-            self.number_of_signals_per_frame[title_of_microdomains_timeline] = dataframe_series[title_of_microdomains_timeline].tolist()
+            self.number_of_signals_per_frame = pd.merge(self.number_of_signals_per_frame, dataframe_series, on='time_in_seconds', how='left')
+            pass
 
     def save_mean_amplitudes(self):
         with open(self.save_path + "Mean amplitudes of responding cells.txt", "a") as f:
