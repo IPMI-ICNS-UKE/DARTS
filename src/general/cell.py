@@ -106,8 +106,10 @@ class CellImage:
         Measures the mean ratio of this cell image series in every frame.
         :return:
         """
+        mean_ratio_list = list()
         for frame in range(self.frame_number):
-            self.measure_mean_ratio_single_frame(frame)
+            mean_ratio_list.append(self.measure_mean_ratio_single_frame(frame))
+        return mean_ratio_list
 
     def measure_mean_ratios_in_first_n_frames(self, number_of_frames):
         mean_values = []

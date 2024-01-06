@@ -9,6 +9,7 @@ import pandas as pd
 import os
 import timeit
 from stardist.models import StarDist2D
+from scipy.optimize import curve_fit
 
 from src.general.cell import CellImage, ChannelImage
 from src.postprocessing.segmentation import SegmentationSD
@@ -351,6 +352,10 @@ class ImageProcessor:
         # generation of ratio images
         self.generate_ratio_images()
 
+        # determine starting points for local imaging, if no beads
+        if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
+            self.determine_starting_points_local_no_beads()
+
         # second median filter
         if self.deconvolution.give_name() != "TDE Deconvolution":
             self.medianfilter("ratio")
@@ -443,6 +448,36 @@ class ImageProcessor:
 
     #----------------------------- Hotspots & Dartboard -------------------------
 
+
+    def determine_starting_points_local_no_beads(self):
+        for i, cell in enumerate(self.cell_list_for_processing):
+            frames = np.arange(0, cell.frame_number)
+
+            global_data = np.array(cell.measure_mean_ratio_in_all_frames())
+
+            # Find the index of the global maximum
+            max_index = np.argmax(global_data)
+            max_time = frames[max_index]
+
+            # Create a subset of data up to the global maximum
+            subset_frames = frames[:max_index + 1]
+            subset_global_data = global_data[:max_index + 1]
+
+            # Fit an Exponential Curve using a lambda function
+            exponential_func = lambda x, a, b, c: a * np.exp(b * x) + c
+            popt, pcov = curve_fit(exponential_func, subset_frames, subset_global_data)
+
+            # Identify the Transition Point using a lambda function for the derivative
+            derivative = lambda x, a, b, c: a * b * np.exp(b * x)
+            derivatives = derivative(frames, *popt)
+
+            # Find the index where the derivative changes significantly
+            threshold = 0.1  # Adjust based on your data characteristics
+            transition_index = np.argmax(np.diff(derivatives) > threshold)
+            transition_point = frames[transition_index]
+
+            # Set the Starting Point
+            cell.starting_point = transition_point
 
     def assign_bead_contacts_to_cells(self):
         for bead_contact in self.list_of_bead_contacts:
@@ -664,7 +699,7 @@ class ImageProcessor:
         for i, cell in enumerate(self.cell_list_for_processing):
             time.sleep(.005)
             ratio = cell.give_ratio_image()
-            mean_ratio_value_list, _ = self.extract_information_for_hotspot_detection(ratio)
+            mean_ratio_value_list, _ = self.extract_mean_ratio_and_radii(ratio)
             cells_dict[cell] = (ratio, mean_ratio_value_list)
             cell.mean_ratio_list = mean_ratio_value_list
         return cells_dict
@@ -685,7 +720,7 @@ class ImageProcessor:
                 try:
                     sh_start = timeit.default_timer()
                     normalized_ratio, centroid_coords_list = self.normalize_cell_shape(cell)
-                    mean_ratio_value_list, radii_after_normalization = self.extract_information_for_hotspot_detection(
+                    mean_ratio_value_list, radii_after_normalization = self.extract_mean_ratio_and_radii(
                         normalized_ratio)
                     normalized_cells_dict[cell] = (normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
 
@@ -729,7 +764,7 @@ class ImageProcessor:
         centroid_coords_list = SN.get_centroid_coords_list()
         return cell.normalized_ratio_image, centroid_coords_list
 
-    def extract_information_for_hotspot_detection(self, image_series):
+    def extract_mean_ratio_and_radii(self, image_series):
         mean_ratio_value_list = []
         radii_list = []
         frame_number = len(image_series)

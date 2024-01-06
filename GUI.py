@@ -681,6 +681,7 @@ class TDarts_GUI():
                 self.text_psf_ccdSize.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["ccdSize"])
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
+                self.option_menu_deconvolution.config(state=DISABLED)
 
             if config["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
                 self.check_box_bleaching_correction.select()
@@ -688,6 +689,7 @@ class TDarts_GUI():
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
+                self.option_menu_bleaching_correction.config(state=DISABLED)
             if config["processing_pipeline"]["postprocessing"]["ratio_images"]:
                 self.check_box_ratio_generation.select()
             else:
@@ -742,7 +744,7 @@ class TDarts_GUI():
         if self.hotspot_detection_in_pipeline.get() == 0:
             self.dartboard_projection_in_pipeline.set(0)
             self.check_box_dartboard_projection.config(state=DISABLED)
-        elif self.hotspot_detection_in_pipeline.get() == 1 and self.shape_normalization_in_pipeline.get() == 1:
+        elif self.hotspot_detection_in_pipeline.get() == 1 and self.shape_normalization_in_pipeline.get() == 1 and self.bead_contacts_in_pipeline.get()==1:
             self.check_box_dartboard_projection.config(state=NORMAL)
             self.dartboard_projection_in_pipeline.set(1)
 
@@ -776,14 +778,10 @@ class TDarts_GUI():
 
     def update_bead_contact(self):
         if self.bead_contacts_in_pipeline.get() == 0:
-            self.hotspot_detection_in_pipeline.set(0)
-            self.check_box_hotspot_detection.config(state=DISABLED)
             self.dartboard_projection_in_pipeline.set(0)
             self.check_box_dartboard_projection.config(state=DISABLED)
         elif self.bead_contacts_in_pipeline.get():
-            self.hotspot_detection_in_pipeline.set(1)
-            self.check_box_hotspot_detection.config(state=NORMAL)
-            if self.shape_normalization_in_pipeline.get() == 1:
+            if self.shape_normalization_in_pipeline.get() == 1 and self.hotspot_detection_in_pipeline.get() == 1:
                 self.dartboard_projection_in_pipeline.set(1)
                 self.check_box_dartboard_projection.config(state=NORMAL)
 

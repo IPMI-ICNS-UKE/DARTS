@@ -99,7 +99,7 @@ def main(gui_enabled):
             parameters["input_output"]["end_frame"] = None
             if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
                 time_of_addition = time_of_addition_dict[file]
-            else:
+            else:  # local measurement + no beads => definition in Processor.start_postprocessing() for each cell individually
                 time_of_addition = None
 
         parameters["input_output"]["filename"] = file
