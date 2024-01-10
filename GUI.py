@@ -153,6 +153,43 @@ class TDarts_GUI():
         self.text_experiment_name = Text(self.properties_of_measurement_frame, height=1, width=20)
         self.text_experiment_name.grid(column=1, row=7, sticky="W")
 
+        # global or local measurement
+        self.label_global_or_local = Label(self.properties_of_measurement_frame, text="Imaging intention")
+        self.label_global_or_local.grid(column=0, row=8, sticky="W")
+        self.local_or_global = StringVar(value="local")
+        self.choose_local = Radiobutton(self.properties_of_measurement_frame, text="local imaging (microdomains)", variable=self.local_or_global,
+                                         value="local", command=self.set_default_settings_for_local_imaging)
+        self.choose_local.grid(column=0, row=9, sticky="W")
+
+        self.choose_global = Radiobutton(self.properties_of_measurement_frame, text="global imaging (ratio)", variable=self.local_or_global,
+                                      value="global", command=self.set_default_settings_for_global_imaging)
+        self.choose_global.grid(column=1, row=9, sticky="W")
+
+        # Bead contacts involved
+        self.label_bead_contact_sites = Label(self.properties_of_measurement_frame, text="Bead contact:  ")
+        self.label_bead_contact_sites.grid(column=0, row=10, sticky="W")
+        self.bead_contacts_in_pipeline = IntVar()
+        self.check_box_bead_contacts = Checkbutton(self.properties_of_measurement_frame,
+                                                   variable=self.bead_contacts_in_pipeline,
+                                                   onvalue=1,
+                                                   offvalue=0,
+                                                   command=self.update_bead_contact)
+        self.check_box_bead_contacts.grid(column=1, row=10, sticky="W")
+        self.check_box_bead_contacts.select()
+        # self.check_box_bead_contacts.config(state=DISABLED)
+
+        # duration of measurement before bead contact/starting point
+        self.label_duration_before = Label(self.properties_of_measurement_frame, text="Measured seconds before starting" + "\n" +"point, e.g. bead contact:")
+        self.label_duration_before.grid(column=0, row=11, sticky="W")
+        self.text_duration_before = Text(self.properties_of_measurement_frame, height=1, width=20)
+        self.text_duration_before.grid(column=1, row=11, sticky="W")
+
+        # duration of measurement after bead contact/starting point
+        self.label_duration_after = Label(self.properties_of_measurement_frame, text="Measured seconds after starting" + "\n" +"point, e.g. bead contact:")
+        self.label_duration_after.grid(column=0, row=12, sticky="W")
+        self.text_duration_after = Text(self.properties_of_measurement_frame, height=1, width=20)
+        self.text_duration_after.grid(column=1, row=12, sticky="W")
+
         ###################################################################################
 
         # create Pipeline frame to place our grid
@@ -230,95 +267,94 @@ class TDarts_GUI():
         # self.option_menu_deconvolution.config(state=DISABLED)
         self.option_menu_deconvolution.grid(column=3, row=16, sticky="W")
 
+        self.deconvolution_text_boxes = []
+
         self.label_TDE_lambda = Label(self.label_processing_pipeline, text="lambda (TDE)")
         self.label_TDE_lambda.grid(column=3, row=17, sticky="W")
         self.text_TDE_lambda = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_TDE_lambda.grid(column=4, row=17, sticky="W")
         self.text_TDE_lambda.config(state=DISABLED)
+        self.deconvolution_text_boxes.append(self.text_TDE_lambda)
 
         self.label_TDE_lambda_t = Label(self.label_processing_pipeline, text="lambda t (TDE)")
         self.label_TDE_lambda_t.grid(column=5, row=17, sticky="W")
         self.text_TDE_lambda_t = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_TDE_lambda_t.grid(column=6, row=17, sticky="W")
         self.text_TDE_lambda_t.config(state=DISABLED)
+        self.deconvolution_text_boxes.append(self.text_TDE_lambda_t)
 
         self.label_psf_type = Label(self.label_processing_pipeline, text="psf: type")
         self.label_psf_type.grid(column=7, row=17, sticky="W")
         self.text_psf_type = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_type.grid(column=8, row=17, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_type)
 
 
         self.label_psf_lambdaEx_ch1 = Label(self.label_processing_pipeline, text="psf: lambdaEx_ch1")
         self.label_psf_lambdaEx_ch1.grid(column=3, row=18, sticky="W")
         self.text_psf_lambdaEx_ch1 = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_lambdaEx_ch1.grid(column=4, row=18, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_lambdaEx_ch1)
 
         self.label_psf_lambdaEm_ch1 = Label(self.label_processing_pipeline, text="psf: lambdaEm_ch1")
         self.label_psf_lambdaEm_ch1.grid(column=5, row=18, sticky="W")
         self.text_psf_lambdaEm_ch1 = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_lambdaEm_ch1.grid(column=6, row=18, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_lambdaEm_ch1)
 
         self.label_psf_lambdaEx_ch2 = Label(self.label_processing_pipeline, text="psf: lambdaEx_ch2")
         self.label_psf_lambdaEx_ch2.grid(column=7, row=18, sticky="W")
         self.text_psf_lambdaEx_ch2 = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_lambdaEx_ch2.grid(column=8, row=18, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_lambdaEx_ch2)
 
         self.label_psf_lambdaEm_ch2 = Label(self.label_processing_pipeline, text="psf: lambdaEm_ch2")
         self.label_psf_lambdaEm_ch2.grid(column=3, row=19, sticky="W")
         self.text_psf_lambdaEm_ch2 = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_lambdaEm_ch2.grid(column=4, row=19, sticky="W")
-
+        self.deconvolution_text_boxes.append(self.text_psf_lambdaEm_ch2)
 
         self.label_psf_numAper = Label(self.label_processing_pipeline, text="psf: numAper")
         self.label_psf_numAper.grid(column=5, row=19, sticky="W")
         self.text_psf_numAper= Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_numAper.grid(column=6, row=19, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_numAper)
 
         self.label_psf_magObj = Label(self.label_processing_pipeline, text="psf: magObj")
         self.label_psf_magObj.grid(column=7, row=19, sticky="W")
         self.text_psf_magObj = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_magObj.grid(column=8, row=19, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_magObj)
 
         self.label_psf_rindexObj = Label(self.label_processing_pipeline, text="psf: rindexObj")
         self.label_psf_rindexObj.grid(column=3, row=20, sticky="W")
         self.text_psf_rindexObj = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_rindexObj.grid(column=4, row=20, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_rindexObj)
 
         self.label_psf_rindexSp = Label(self.label_processing_pipeline, text="psf: rindexSp")
         self.label_psf_rindexSp.grid(column=5, row=20, sticky="W")
         self.text_psf_rindexSp = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_rindexSp.grid(column=6, row=20, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_rindexSp)
 
         self.label_psf_ccdSize = Label(self.label_processing_pipeline, text="psf: ccdSize")
         self.label_psf_ccdSize.grid(column=7, row=20, sticky="W")
         self.text_psf_ccdSize = Text(self.label_processing_pipeline, height=1, width=10)
         self.text_psf_ccdSize.grid(column=8, row=20, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_psf_ccdSize)
 
-
-
-        #
-        self.label_bead_contact_sites = Label(self.label_processing_pipeline, text="Bead contact:  ")
-        self.label_bead_contact_sites.grid(column=1, row=21, sticky="W")
-        self.bead_contacts_in_pipeline = IntVar()
-        self.check_box_bead_contacts = Checkbutton(self.label_processing_pipeline,
-                                                          variable=self.bead_contacts_in_pipeline,
-                                                          onvalue=1,
-                                                          offvalue=0,
-                                                          command=self.update_bead_contact)
-        self.check_box_bead_contacts.grid(column=2, row=21, sticky="W")
-        self.check_box_bead_contacts.select()
-        # self.check_box_bead_contacts.config(state=DISABLED)
         #
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
-        self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
+        self.label_bleaching_correction.grid(column=1, row=21, sticky="W")
         self.bleaching_correction_in_pipeline = IntVar()
         self.check_box_bleaching_correction = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.bleaching_correction_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=self.update_bleaching_correction)
-        self.check_box_bleaching_correction.grid(column=2, row=22, sticky="W")
+        self.check_box_bleaching_correction.grid(column=2, row=21, sticky="W")
         self.check_box_bleaching_correction.select()
         # self.check_box_bleaching_correction.config(state=DISABLED)
 
@@ -333,25 +369,25 @@ class TDarts_GUI():
         self.option_menu_bleaching_correction = OptionMenu(self.label_processing_pipeline, self.bleaching_correction_algorithm,
                                                     *bleaching_correction_algorithms)
         # self.option_menu_bleaching_correction.config(state=DISABLED)
-        self.option_menu_bleaching_correction.grid(column=3, row=22, sticky="W")
+        self.option_menu_bleaching_correction.grid(column=3, row=21, sticky="W")
         #
         self.label_ratio_generation = Label(self.label_processing_pipeline, text="Ratio images:  ")
-        self.label_ratio_generation.grid(column=1, row=23, sticky="W")
+        self.label_ratio_generation.grid(column=1, row=22, sticky="W")
         self.ratio_generation_in_pipeline = IntVar()
         self.check_box_ratio_generation = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.ratio_generation_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=None)
-        self.check_box_ratio_generation.grid(column=2, row=23, sticky="W")
+        self.check_box_ratio_generation.grid(column=2, row=22, sticky="W")
         self.check_box_ratio_generation.select()
         self.check_box_ratio_generation.config(state=DISABLED)
 
         self.empty_label = Label(self.label_processing_pipeline, text="")
-        self.empty_label.grid(column=1, row=24, sticky="W")
+        self.empty_label.grid(column=1, row=23, sticky="W")
 
         self.label_shape_normalization = Label(self.label_processing_pipeline, text="Shape Normalization")
-        self.label_shape_normalization.grid(column=1, row=25, sticky="W")
+        self.label_shape_normalization.grid(column=1, row=24, sticky="W")
         self.label_shape_normalization.config(bg='lightgray')
 
 
@@ -361,47 +397,49 @@ class TDarts_GUI():
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=self.update_settings_shape_normalization)
-        self.check_box_shape_normalization.grid(column=2, row=25, sticky="W")
+        self.check_box_shape_normalization.grid(column=2, row=24, sticky="W")
         self.check_box_shape_normalization.select()
         # self.check_box_shape_normalization.config(state=DISABLED)
 
         self.empty_label_2 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_2.grid(column=1, row=26, sticky="W")
+        self.empty_label_2.grid(column=1, row=25, sticky="W")
 
         self.label_analysis = Label(self.label_processing_pipeline, text="Analysis")
-        self.label_analysis.grid(column=1, row=27, sticky="W")
+        self.label_analysis.grid(column=1, row=26, sticky="W")
         self.label_analysis.config(bg='lightgray')
 
         self.label_hotspot_detection = Label(self.label_processing_pipeline, text="Hotspot detection:  ")
-        self.label_hotspot_detection.grid(column=1, row=28, sticky="W")
+        self.label_hotspot_detection.grid(column=1, row=27, sticky="W")
         self.hotspot_detection_in_pipeline = IntVar()
         self.check_box_hotspot_detection = Checkbutton(self.label_processing_pipeline,
                                                       variable=self.hotspot_detection_in_pipeline,
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=self.update_settings_for_analysis)
-        self.check_box_hotspot_detection.grid(column=2, row=28, sticky="W")
+        self.check_box_hotspot_detection.grid(column=2, row=27, sticky="W")
         self.check_box_hotspot_detection.select()
         # self.check_box_hotspot_detection.config(state=DISABLED)
 
         self.label_dartboard_projection = Label(self.label_processing_pipeline, text="Dartboard projection:  ")
-        self.label_dartboard_projection.grid(column=1, row=29, sticky="W")
+        self.label_dartboard_projection.grid(column=1, row=28, sticky="W")
         self.dartboard_projection_in_pipeline = IntVar()
         self.check_box_dartboard_projection = Checkbutton(self.label_processing_pipeline,
                                                        variable=self.dartboard_projection_in_pipeline,
                                                        onvalue=1,
                                                        offvalue=0,
                                                        command=None)
-        self.check_box_dartboard_projection.grid(column=2, row=29, sticky="W")
+        self.check_box_dartboard_projection.grid(column=2, row=28, sticky="W")
         self.check_box_dartboard_projection.select()
         # self.check_box_dartboard_projection.config(state=DISABLED)
 
         self.empty_label_3 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_3.grid(column=1, row=30, sticky="W")
+        self.empty_label_3.grid(column=1, row=29, sticky="W")
+
+        self.set_default_settings_for_local_imaging()
 
         # select all/default settings button
-        self.default_settings_button = Button(self.label_processing_pipeline, text='Default settings', command=self.default_processing_settings)
-        self.default_settings_button.grid(column=1, row=31, sticky="W")
+        # self.default_settings_button = Button(self.label_processing_pipeline, text='Default settings', command=self.default_processing_settings)
+        # self.default_settings_button.grid(column=1, row=30, sticky="W")
 
         ##################################################################################
         """
@@ -480,9 +518,13 @@ class TDarts_GUI():
                 'day_of_measurement': str(self.entry_time.get()),
                 'user': str(self.text_user.get("1.0", "end-1c")),
                 'experiment_name': str(self.text_experiment_name.get("1.0", "end-1c")),
-                'duration_of_measurement': 600,
+                'imaging_local_or_global': self.local_or_global.get(),
+                'bead_contact': self.bead_contacts_in_pipeline.get() == 1,
+                'duration_of_measurement': (float(self.text_duration_before.get("1.0", END)) + float(self.text_duration_after.get("1.0", END)))*float(self.text_fps.get("1.0", END)),
                 'wavelength_1': 488,
-                'wavelength_2': 561
+                'wavelength_2': 561,
+                'time_of_measurement_before_starting_point': float(self.text_duration_before.get("1.0", END)),
+                'time_of_measurement_after_starting_point': float(self.text_duration_after.get("1.0", END))
             },
             'processing_pipeline': {
                 'postprocessing': {
@@ -512,7 +554,6 @@ class TDarts_GUI():
                         'nor': 0,
                         'xysize': 150
                     },
-                    'bead_contact': self.bead_contacts_in_pipeline.get() == 1,
                     'bleaching_correction_in_pipeline': self.bleaching_correction_in_pipeline.get() == 1,
                     'bleaching_correction_algorithm': self.bleaching_correction_algorithm.get(),
                     'ratio_images': self.ratio_generation_in_pipeline.get() == 1,
@@ -572,9 +613,19 @@ class TDarts_GUI():
             self.text_user.insert(1.0, config["properties_of_measurement"]["user"])
             self.text_experiment_name.delete(1.0, END)
             self.text_experiment_name.insert(1.0, config["properties_of_measurement"]["experiment_name"])
+            self.local_or_global.set(config["properties_of_measurement"]["imaging_local_or_global"])
+
+            if config["properties_of_measurement"]["bead_contact"]:
+                self.check_box_bead_contacts.select()
+            else:
+                self.check_box_bead_contacts.deselect()
             self.duration_of_measurement = config["properties_of_measurement"]["duration_of_measurement"]
             self.wavelength_1 = config["properties_of_measurement"]["wavelength_1"]
             self.wavelength_2 = config["properties_of_measurement"]["wavelength_2"]
+            self.text_duration_before.delete(1.0, END)
+            self.text_duration_before.insert(1.0, config["properties_of_measurement"]["time_of_measurement_before_starting_point"])
+            self.text_duration_after.delete(1.0, END)
+            self.text_duration_after.insert(1.0, config["properties_of_measurement"]["time_of_measurement_after_starting_point"])
 
             # PROCESSING PIPELINE
             ## POSTPROCESSING
@@ -630,17 +681,15 @@ class TDarts_GUI():
                 self.text_psf_ccdSize.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["ccdSize"])
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
+                self.option_menu_deconvolution.config(state=DISABLED)
 
-            if config["processing_pipeline"]["postprocessing"]["bead_contact"]:
-                self.check_box_bead_contacts.select()
-            else:
-                self.check_box_bead_contacts.deselect()
             if config["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
                 self.check_box_bleaching_correction.select()
                 self.bleaching_correction_algorithm.set(config["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"])
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
+                self.option_menu_bleaching_correction.config(state=DISABLED)
             if config["processing_pipeline"]["postprocessing"]["ratio_images"]:
                 self.check_box_ratio_generation.select()
             else:
@@ -649,6 +698,7 @@ class TDarts_GUI():
 
             ## SHAPE NORMALIZATION
             if config["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
+                self.check_box_shape_normalization.config(state=NORMAL)
                 self.check_box_shape_normalization.select()
             else:
                 self.check_box_shape_normalization.deselect()
@@ -656,11 +706,13 @@ class TDarts_GUI():
             ## ANALYSIS
             if config["processing_pipeline"]["analysis"]["hotspot_detection"]:
                 self.check_box_hotspot_detection.select()
+                self.check_box_hotspot_detection.config(state=NORMAL)
             else:
                 self.check_box_hotspot_detection.deselect()
 
             if config["processing_pipeline"]["analysis"]["dartboard_projection"]:
                 self.check_box_dartboard_projection.select()
+                self.check_box_dartboard_projection.config(state=NORMAL)
             else:
                 self.check_box_dartboard_projection.deselect()
 
@@ -692,14 +744,14 @@ class TDarts_GUI():
         if self.hotspot_detection_in_pipeline.get() == 0:
             self.dartboard_projection_in_pipeline.set(0)
             self.check_box_dartboard_projection.config(state=DISABLED)
-        elif self.channel_alignment_in_pipeline.get() == 1:
+        elif self.hotspot_detection_in_pipeline.get() == 1 and self.shape_normalization_in_pipeline.get() == 1 and self.bead_contacts_in_pipeline.get()==1:
             self.check_box_dartboard_projection.config(state=NORMAL)
             self.dartboard_projection_in_pipeline.set(1)
 
     def update_settings_shape_normalization(self):
         if self.shape_normalization_in_pipeline.get() == 0:
-            self.hotspot_detection_in_pipeline.set(0)
-            self.check_box_hotspot_detection.config(state=DISABLED)
+            # self.hotspot_detection_in_pipeline.set(0)
+            # self.check_box_hotspot_detection.config(state=DISABLED)
             self.dartboard_projection_in_pipeline.set(0)
             self.check_box_dartboard_projection.config(state=DISABLED)
         elif self.shape_normalization_in_pipeline.get() == 1 and self.bead_contacts_in_pipeline.get() == 1:
@@ -711,8 +763,12 @@ class TDarts_GUI():
     def update_deconvolution(self):
         if self.deconvolution_in_pipeline.get() == 0:
             self.option_menu_deconvolution.config(state=DISABLED)
+            for textbox in self.deconvolution_text_boxes:
+                textbox.config(state=DISABLED)
         elif self.deconvolution_in_pipeline.get() == 1:
             self.option_menu_deconvolution.config(state=NORMAL)
+            for textbox in self.deconvolution_text_boxes:
+                textbox.config(state=NORMAL)
 
     def update_bleaching_correction(self):
         if self.bleaching_correction_in_pipeline.get() == 0:
@@ -722,15 +778,12 @@ class TDarts_GUI():
 
     def update_bead_contact(self):
         if self.bead_contacts_in_pipeline.get() == 0:
-            self.hotspot_detection_in_pipeline.set(0)
-            self.check_box_hotspot_detection.config(state=DISABLED)
             self.dartboard_projection_in_pipeline.set(0)
             self.check_box_dartboard_projection.config(state=DISABLED)
-        elif self.bead_contacts_in_pipeline.get() == 1 and self.shape_normalization_in_pipeline.get()==1:
-            self.hotspot_detection_in_pipeline.set(1)
-            self.check_box_hotspot_detection.config(state=NORMAL)
-            self.dartboard_projection_in_pipeline.set(1)
-            self.check_box_dartboard_projection.config(state=NORMAL)
+        elif self.bead_contacts_in_pipeline.get():
+            if self.shape_normalization_in_pipeline.get() == 1 and self.hotspot_detection_in_pipeline.get() == 1:
+                self.dartboard_projection_in_pipeline.set(1)
+                self.check_box_dartboard_projection.config(state=NORMAL)
 
     def get_image_configuration(self):
         if self.selected_image_configuration.get() == 1:
@@ -802,11 +855,40 @@ class TDarts_GUI():
     #    self.text_single_path_to_input_channel1['state'] = 'disabled'
     #    self.text_single_path_to_input_channel2['state'] = 'disabled'
 
-    def default_processing_settings(self):
+    def set_default_settings_for_global_imaging(self):
+        self.check_box_channel_alignment.select()
         self.check_box_frame_by_frame_registration.deselect()
-        self.deconvolution_algorithm.set('LR')
-        self.bleaching_correction_algorithm.set('additiv no fit')
+        self.check_box_background_subtraction_in_pipeline.deselect()
+        self.check_box_deconvolution_in_pipeline.deselect()
+        self.update_deconvolution()
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.check_box_bleaching_correction.deselect()
+        self.update_bleaching_correction()
+        # self.option_menu_bleaching_correction.config(state=DISABLED)
+        self.check_box_shape_normalization.deselect()
+        self.update_settings_shape_normalization()
+        self.check_box_hotspot_detection.deselect()
+        self.check_box_dartboard_projection.deselect()
 
+    def set_default_settings_for_local_imaging(self):
+        self.check_box_channel_alignment.select()
+        self.check_box_frame_by_frame_registration.deselect()
+        self.check_box_background_subtraction_in_pipeline.select()
+        self.set_default_decon_parameters()
+        self.check_box_bleaching_correction.select()
+        self.option_menu_bleaching_correction.config(state=NORMAL)
+        self.bleaching_correction_algorithm.set('additiv no fit')
+        self.check_box_shape_normalization.select()
+        self.update_settings_shape_normalization()
+        self.check_box_hotspot_detection.select()
+        self.check_box_dartboard_projection.select()
+        self.check_box_bead_contacts.select()
+        self.update_bead_contact()
+
+    def set_default_decon_parameters(self):
+        self.check_box_deconvolution_in_pipeline.select()
+        self.option_menu_deconvolution.config(state=NORMAL)
+        self.deconvolution_algorithm.set('LR')
 
         self.text_psf_type.delete(1.0, END)
         self.text_psf_type.insert(1.0, "confocal")
@@ -828,6 +910,8 @@ class TDarts_GUI():
         self.text_psf_rindexSp.insert(1.0, "1.518")
         self.text_psf_ccdSize.delete(1.0, END)
         self.text_psf_ccdSize.insert(1.0, "6450")
+
+
 
 
     def choose_results_directory_clicked(self):

@@ -58,13 +58,12 @@ class HotSpotDetector():
             threshold_list.append(threshold_ratio)
         return threshold_list
 
-
-    def measure_microdomains(self, image_series, start_frame, end_frame, mean_ratio_value_list, spotHeight, lower_limit_area, upper_limit_area, cell_type, time_before_bead_contact):
+    def measure_microdomains(self, image_series, start_frame, end_frame, mean_ratio_value_list, spotHeight, lower_limit_area, upper_limit_area, cell_type, frames_before_starting_point):
         """
         Measures the number and the intensites of microdomains in each frame of the ratio image and returns a dataframe
         :return:
         """
-        image_series_in_analysis_range = image_series[start_frame:end_frame,:,:].copy()
+        image_series_in_analysis_range = image_series[start_frame:end_frame, :, :].copy()
         hotspot_threshold_list = self.calculate_hotspot_threshold_for_each_frame(mean_ratio_value_list, cell_type, spotHeight)
 
         thresholded_image_series = self.threshold_image_series(hotspot_threshold_list, image_series_in_analysis_range)
@@ -78,7 +77,7 @@ class HotSpotDetector():
                     features = features._append([{'y': region.centroid_weighted[0],
                                                   'x': region.centroid_weighted[1],
                                                   'frame': num,
-                                                  'time_in_seconds': float(num-time_before_bead_contact)/self.frames_per_second,
+                                                  'time_in_seconds': float(num-frames_before_starting_point)/self.frames_per_second,
                                                   'area in (µm)^2': region.area / (self.scale_pixels_per_micron**2),
                                                   'max_intensity': region.intensity_max,
                                                   'min_intensity': region.intensity_min,
@@ -130,56 +129,37 @@ class HotSpotDetector():
         subset = dataframe.loc[dataframe['time_in_seconds'] == time_in_seconds]
         return len(subset)
 
-    # def save_dataframe_in_excel_file(self,dataframe,sheet_number, save_path):
-    #     if dataframe is not None:
-    #         dataframe.to_excel(self.excelwriter,sheet_name="Cell_image_" + str(sheet_number))
-    #         dataframe.to_csv(save_path + "/Cell_image" + str(sheet_number))
-
-    def count_microdomains_in_each_frame(self, i, dataframe, number_of_frames, time_before_bead_contact, duration_of_measurement):
+    def count_microdomains_in_each_frame(self, i, dataframe, start_frame, end_frame, duration_of_measurement, frames_before_starting_point, time_of_measurement_after_starting_point):
         microdomains_in_each_frame = pd.DataFrame()
-        microdomains_timeline_for_cell = pd.DataFrame()
-
-        for frame in range(time_before_bead_contact + duration_of_measurement):  # normally, 640 Frames
-            if frame < number_of_frames:
-                current_time_in_seconds = float(frame-time_before_bead_contact)/self.frames_per_second
+        # microdomains_timeline_for_cell = pd.DataFrame()
+        title_microdomains_timeline = self.file_name + "_cell_" + str(i)
+        for frame in range(start_frame, end_frame):
+            normalized_frame = frame-start_frame
+            current_time_in_seconds = float((normalized_frame - (frames_before_starting_point))/ self.frames_per_second)
+            if not dataframe.empty:
                 number_of_microdomains = len(dataframe[dataframe["time_in_seconds"] == current_time_in_seconds])
-                microdomains_in_each_frame = microdomains_in_each_frame._append([{'time_in_seconds':
-                                                                                      current_time_in_seconds,
-                                                                                  'number_of_microdomains': number_of_microdomains,
-                                                                                }, ])
-                microdomains_timeline_for_cell = microdomains_timeline_for_cell._append([{self.file_name + "_cell_" + str(i): number_of_microdomains,
-                                                                                }, ])
             else:
-                current_time_in_seconds = float(frame - time_before_bead_contact) / self.frames_per_second
                 number_of_microdomains = 0.0
-                microdomains_in_each_frame = microdomains_in_each_frame._append([{'time_in_seconds':
-                                                                                      current_time_in_seconds,
-                                                                                  'number_of_microdomains': number_of_microdomains,
-                                                                                  }, ])
-                microdomains_timeline_for_cell = microdomains_timeline_for_cell._append(
-                    [{self.file_name + "_cell_" + str(i): number_of_microdomains,
-                      }, ])
+            microdomains_in_each_frame = microdomains_in_each_frame._append([{'time_in_seconds':
+                                                                                  current_time_in_seconds,
+                                                                              title_microdomains_timeline: number_of_microdomains,
+                                                                            }, ])
+        return microdomains_in_each_frame
 
-        return microdomains_in_each_frame, microdomains_timeline_for_cell
-# filename + "_cell_" + str(cell_index)
-
-    def save_dataframes(self, file_name, index, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact, duration_of_measurement):
+    def save_dataframes(self, file_name, index, cell_signal_data, start_frame, end_frame, duration_of_measurement, frames_before_starting_point, time_of_measurement_after_starting_point):
         # Write to Multiple Sheets
         if not cell_signal_data.empty:
             with pd.ExcelWriter(self.save_path + "/" + self.excel_filename_one_measurement + '_cell_' + str(index) + '.xlsx') as writer:
 
                 sheet_name = "Microdomains, cell " + str(index)
                 cell_signal_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                number_of_microdomains, microdomains_timeline_for_cell = self.count_microdomains_in_each_frame(index, cell_signal_data, number_of_analyzed_frames, time_before_bead_contact, duration_of_measurement)
+                microdomains_in_each_frame = self.count_microdomains_in_each_frame(index, cell_signal_data, start_frame, end_frame, duration_of_measurement, frames_before_starting_point, time_of_measurement_after_starting_point)
                 sheet_name = "Microdomains per frame, cell " + str(index)
-                number_of_microdomains.to_excel(writer, sheet_name=sheet_name, index=False)
-                return microdomains_timeline_for_cell
+                microdomains_in_each_frame.to_excel(writer, sheet_name=sheet_name, index=False)
+                return microdomains_in_each_frame
         else:
-            dataframe_with_zeros = pd.DataFrame()
-            column_name = self.file_name + "_cell_" + str(index)
-            for i in range(number_of_analyzed_frames):
-                dataframe_with_zeros = dataframe_with_zeros._append(
-                    [{column_name: 0,
-                      }, ])
-            return dataframe_with_zeros
+            microdomains_in_each_frame = self.count_microdomains_in_each_frame(index, cell_signal_data, start_frame, end_frame, duration_of_measurement, frames_before_starting_point, time_of_measurement_after_starting_point)
+
+
+            return microdomains_in_each_frame
 

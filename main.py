@@ -8,6 +8,7 @@ from src.general.processing import ImageProcessor
 from GUI import TDarts_GUI
 from src.general.logger import Logger
 from src.analysis.Bead_Contact_GUI import BeadContactGUI
+from src.analysis.GUI_no_beads import GUInoBeads
 import gc
 from src.general.InfoToComputer import InfoToComputer
 import fnmatch
@@ -61,7 +62,7 @@ def main(gui_enabled):
     if parameters["input_output"]["image_conf"] == "single":
         files_for_further_processing = [f for f in files_for_further_processing if fnmatch.fnmatch(f, '*_1.*')]  # loop only over channel 1 files
 
-    if parameters["processing_pipeline"]["postprocessing"]["bead_contact"]:  # if bead contacts are defined
+    if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined
         # definition of bead contacts for each file
         for file in files_for_further_processing:
             file_path = os.path.join(input_directory, file)
@@ -72,23 +73,39 @@ def main(gui_enabled):
         # save bead contacts on computer
         info_saver.save_bead_contact_information()
         files_for_further_processing = [file for file in files_for_further_processing if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
-
+    else:  # no bead contacts
+        if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
+            time_of_addition_dict = dict()
+            for file in files_for_further_processing:
+                file_path = os.path.join(input_directory, file)
+                gui_no_beads = GUInoBeads(file, file_path, parameters)
+                gui_no_beads.run_main_loop()
+                time_of_addition_dict[file] = gui_no_beads.get_time_of_addition()
+                del gui_no_beads
+        elif parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
+            pass
 
     for file in files_for_further_processing:
-        if parameters["processing_pipeline"]["postprocessing"]["bead_contact"]:
+        if parameters["properties_of_measurement"]["bead_contact"]:
             list_of_bead_contacts = info_saver.bead_contact_dict[file]
             parameters["properties_of_measurement"]["list_of_bead_contacts"] = list_of_bead_contacts
 
             # find out end point
             latest_time_of_bead_contact = max([bead_contact.time_of_bead_contact for bead_contact in list_of_bead_contacts])
-            end_frame_file = latest_time_of_bead_contact + parameters["properties_of_measurement"]["duration_of_measurement"] + 20  # not all frames need to be processed
+            end_frame_file = int(latest_time_of_bead_contact + parameters["properties_of_measurement"]["duration_of_measurement"])
             parameters["input_output"]["end_frame"] = end_frame_file
+            time_of_addition = None
         else:
             parameters["input_output"]["end_frame"] = None
+            if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
+                time_of_addition = time_of_addition_dict[file]
+            else:  # local measurement + no beads => definition in Processor.start_postprocessing() for each cell individually
+                time_of_addition = None
 
         parameters["input_output"]["filename"] = file
         filename = os.path.join(input_directory, file)
-        Processor = ImageProcessor.fromfilename(filename, parameters, logger)
+        Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition)
+
 
         print("Now processing the following file: " + file)
         # Postprocessing pipeline
@@ -96,25 +113,28 @@ def main(gui_enabled):
 
         # shape normalization
         if parameters["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
-            normalized_cells_dict = Processor.apply_shape_normalization()
+            cells_dict = Processor.apply_shape_normalization()  # cells_dict[cell] = (normalized_ratio, mean_ratio_value_list, radii_after_normalization, centroid_coords_list)
+        else:
+            cells_dict = Processor.generate_cell_dict_without_shape_normalization()
 
-            # analysis: hotspot detection and dartboard projection
-            if parameters["processing_pipeline"]["analysis"]["hotspot_detection"]:  # if hotspot detection in pipeline
-                number_of_analyzed_cells, number_of_responding_cells, microdomains_timelines_dict = Processor.hotspot_detection(normalized_cells_dict)
+        if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
+            # save global measurement data (mean ratio values for each cell)
+            Processor.global_measurement(info_saver)
 
-                info_saver.number_of_analyzed_cells_in_total += number_of_analyzed_cells
-                info_saver.number_of_responding_cells_in_total += number_of_responding_cells
+        # analysis: hotspot detection and dartboard projection
+        if parameters["processing_pipeline"]["analysis"]["hotspot_detection"]:  # if hotspot detection in pipeline
 
-                info_saver.add_signal_information(microdomains_timelines_dict)
-                info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
+            number_of_analyzed_cells, number_of_responding_cells, microdomains_timelines_dict = Processor.hotspot_detection(cells_dict)
 
-                if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline
-                    Processor.dartboard(normalized_cells_dict, info_saver)
+            info_saver.number_of_analyzed_cells_in_total += number_of_analyzed_cells
+            info_saver.number_of_responding_cells_in_total += number_of_responding_cells
 
+            info_saver.add_signal_information(microdomains_timelines_dict)
+            info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
 
-        # save image files
-        # Processor.save_image_files()
-        # Processor.save_ratio_image_files()
+        if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline; only possible if shape normlization in pipeline
+            Processor.dartboard(cells_dict, info_saver)
+
         del Processor
         gc.collect()
 
@@ -128,6 +148,8 @@ def main(gui_enabled):
 
             # save mean amplitudes to the computer
             info_saver.save_mean_amplitudes()
+        if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
+            info_saver.save_global_data()
 
 
     end_time = time.time()

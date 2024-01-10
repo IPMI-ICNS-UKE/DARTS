@@ -28,15 +28,15 @@ class CellImage:
         self.signal_data = None
         self.dartboard_timeline_data = None
         self.normalized_dartboard_data_table = None
-        self.time_of_bead_contact = 0  # start_frame
+        self.starting_point = 0  # start_frame; former time of bead contact
         self.bead_contact_site = 0  # init value
         self.has_bead_contact = False
-
         self.is_excluded = False
+        self.mean_ratio_list = []  # a list of the mean ratio values for all the frames of the image series
 
 
     def to_string(self, index):
-        return "cell_image_" + str(index)+"_time_of_bead_contact_" + str(self.time_of_bead_contact) + "_bead_contact_site_" + str(self.bead_contact_site)
+        return "cell_image_" + str(index)+"_starting_point_" + str(self.starting_point) + "_bead_contact_site_" + str(self.bead_contact_site)
 
     def calculate_mean_value_in_channel_frame(self,frame,channel):
         inverted_frame_mask = ~self.frame_masks[frame]
@@ -99,15 +99,17 @@ class CellImage:
         :param clock_index:
         """
         self.bead_contact_site = clock_index
-        self.time_of_bead_contact = start_frame
+        self.starting_point = start_frame
 
     def measure_mean_ratio_in_all_frames(self):
         """
         Measures the mean ratio of this cell image series in every frame.
         :return:
         """
+        mean_ratio_list = list()
         for frame in range(self.frame_number):
-            self.measure_mean_ratio_single_frame(frame)
+            mean_ratio_list.append(self.measure_mean_ratio_single_frame(frame))
+        return mean_ratio_list
 
     def measure_mean_ratios_in_first_n_frames(self, number_of_frames):
         mean_values = []
