@@ -1,4 +1,5 @@
 # DARTS
+[![DOI](https://zenodo.org/badge/611219620.svg)](https://zenodo.org/doi/10.5281/zenodo.10459242)
 
 ![overview](/docs/assets/img/Figure_1_dart.png)
 
