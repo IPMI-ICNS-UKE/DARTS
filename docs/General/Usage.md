@@ -121,7 +121,7 @@ The output of the script consists of various files:
 - if the shape normalization was selected, also the shape normalized ratio images are saved in the results folder. 
 - if you chose the analysis of local signals, you will find Excel sheets with all the detected hotspots. Based on the measurement of local hotspots (e.g. Calcium microdomain detection), you will find information regarding the number of responding cells (percentage of cells, that have at least one Calcium microdomain after the bead contact) and the mean amplitude of the responding cells (mean amplitude of the calcium signals in the responding cells). Otherwise, the global data will be saved for each cell. You can also generate both types of data (local measurement + global data).
 - if the dartboard projection was selected, you will find Excel sheets with the dartboard data based on the hotspot detection. To create dartboards, read the Analysis->Dartboard section of the Documentation.
-- 
+
 
 Example for results (local imaging, bead contacts):
 
