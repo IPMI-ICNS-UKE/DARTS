@@ -286,7 +286,7 @@ class DartboardGenerator:
         white_to_red_cmap = colors.LinearSegmentedColormap.from_list("", ["white","red"])
 
         fig = plt.figure()
-        ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
+        ax = fig.add_axes([0, 0.1, 0.7, 0.7], polar=True)
 
 
         height_of_annuli = [2, 1.544, 1.3049]  # manually calculated, so that the areas of the dartboard areas all have the area 2pi
@@ -316,6 +316,8 @@ class DartboardGenerator:
                 ax.bar(x=center_angle, height=height_of_annuli[n], width=2 * np.pi / (number_of_sections), bottom=bottom_list[n],
                            color=color, edgecolor='white')
 
+
+
         plt.ylim(0, 9.85)
 
         ax.grid(False)  # test
@@ -335,17 +337,26 @@ class DartboardGenerator:
 
         sm = plt.cm.ScalarMappable(cmap=white_to_red_cmap, norm=normalized_color)
         sm.set_clim(vmin=vmin, vmax=vmax)
-        plt.colorbar(sm, pad=0.3, label="number of hotspots per second and area unit; \naveraged over cells")
+
+        # 0.85 is the left position, placing the colorbar 85% to the right of the figure.
+        # 0.05 is the bottom position, placing the colorbar 5% above the bottom of the figure.
+        # 0.05 is the width, specifying a width of 5% of the figure.
+        # 0.9 is the height, specifying a height of 90% of the figure.
+        cax = fig.add_axes([0.85, 0.05, 0.03, 0.9])
+        plt.colorbar(sm, pad=0.3, label="number of hotspots per second and area unit; \naveraged over cells", cax=cax)
+
 
 
         ax.annotate('Bead contact',
                     xy=(math.radians(45), 9.85),  # theta, radius
-                    xytext=(0.6, 0.85),  # fraction, fraction
+                    xytext=(0.6, 0.8),  # fraction, fraction
                     textcoords='figure fraction',
-                    arrowprops=dict(facecolor='black', shrink=0.05, width=0.5),
+                    arrowprops=dict(facecolor='black', shrink=0.01, width=0.5),
                     horizontalalignment='left',
                     verticalalignment='bottom',
                     )
+
+
 
         directory = self.save_path + '/Dartboards/Dartboard_plots/'
 
