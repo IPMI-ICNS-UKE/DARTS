@@ -68,7 +68,7 @@ Finally, after providing all the necessary information, you can save time in the
 To start the analysis, you need to click on the Start button. To abort, the Cancel button. 
 
 #### images
-![image](../assets/img/Bildschirmfoto%202024-01-11%20um%2011.35.04.png)
+![main gui](../assets/img/main_gui.png)
 
 An example for a source directory: 
 
@@ -100,7 +100,7 @@ We now have to define the bead contacts, which consist of a position and time po
 6. Repeat the steps 1 - 5 for other bead contacts in this file. If you have defined all the bead contacts, go ahead and click on the "Continue"-button.
 7. Now, go ahead with the next files. If you have reached the last file, the script will automatically start with the analysis of all files.
 
-![Bildschirmfoto 2023-10-21 um 16 30 45](https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/1ae79491-7ae9-49c6-a37c-3679a0590a82)
+![definition of bead contacts](../assets/img/bead_contact_definition.png)
 
 ### hotspot detection, without beads 
 In this case, no further manual user input is required, as the starting points for the cells are determined automatically. 
@@ -119,15 +119,10 @@ The output of the script consists of various files:
 - if beads were used, information about the defined bead contacts (Bead_contact_information.txt)
 - normal (not shape normalized) ratio image files for all detected cells
 - if the shape normalization was selected, also the shape normalized ratio images are saved in the results folder. 
-- if you chose the analysis of local signals, you will find excel sheets with all the detected hotspots. Based on the measurement of local hotspots (e.g. Calcium microdomain detection), you will find information regarding the number of responding cells (percentage of cells, that have at least one Calcium microdomain after the bead contact) and the mean amplitude of the responding cells (mean amplitude of the calcium signals in the responding cells). Otherwise, the global data will be saved for each cell. You can also generate both types of data (local measurement + global data).
-- if the dartboard projection was selected, you will find excel sheets with the dartboard data based on the hotspot detection. To create dartboards, read the Analysis->Dartboard section of the Documentation.
+- if you chose the analysis of local signals, you will find Excel sheets with all the detected hotspots. Based on the measurement of local hotspots (e.g. Calcium microdomain detection), you will find information regarding the number of responding cells (percentage of cells, that have at least one Calcium microdomain after the bead contact) and the mean amplitude of the responding cells (mean amplitude of the calcium signals in the responding cells). Otherwise, the global data will be saved for each cell. You can also generate both types of data (local measurement + global data).
+- if the dartboard projection was selected, you will find Excel sheets with the dartboard data based on the hotspot detection. To create dartboards, read the Analysis->Dartboard section of the Documentation.
 - 
 
-Example for output:
+Example for results (local imaging, bead contacts):
 
-<img width="788" alt="Bildschirmfoto 2023-09-23 um 13 51 10" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/1e14a989-5e52-48ce-bae4-9ec0a4cf9921">
-
-Example for dartboard data table for one cell:
-
-<img width="1119" alt="Bildschirmfoto 2023-09-23 um 13 52 43" src="https://github.com/IPMI-ICNS-UKE/DARTS/assets/127941319/92ca8474-bb14-4c83-8e60-49cecbc46b31">
-
+![example results](../assets/img/results_example.png)
