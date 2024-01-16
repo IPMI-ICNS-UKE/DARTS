@@ -371,7 +371,6 @@ class ImageProcessor:
         # determine starting points for local imaging, if no beads
         if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
             self.determine_starting_points_local_no_beads()
-            self.cell_list_for_processing = [cell for cell in self.cell_list_for_processing if cell.starting_point >= 0]
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
@@ -456,6 +455,16 @@ class ImageProcessor:
 
 
     def determine_starting_points_local_no_beads(self):
+        # Specify the desired slope threshold per unit change in frame rate
+        slope_threshold_per_fps = 0.0025
+
+        # Get the actual frame rate
+        actual_fps = self.frames_per_second
+
+        # Adjust the slope threshold based on the actual frame rate
+        slope_threshold = slope_threshold_per_fps * (40.0/actual_fps)
+
+
         for i, cell in enumerate(self.cell_list_for_processing):
             time_points = np.arange(cell.frame_number)
             global_signal = np.array(cell.mean_ratio_list)
@@ -469,11 +478,17 @@ class ImageProcessor:
             # Smooth the slope using a Savitzky-Golay filter
             smoothed_slope = savgol_filter(slope, window_length=15, polyorder=3)
 
-            # Define a threshold for the slope to identify the transition point
-            slope_threshold = 0.0025  # Adjust based on your data characteristics
-
             # Find the point where the slope surpasses the threshold
-            transition_point = np.argmax(smoothed_slope > slope_threshold)
+            transition_point = 0
+
+            # Specify the consecutive frames threshold
+            consecutive_frames_threshold = 50
+
+            # Check if the slope exceeds the threshold for at least 25 frames
+            for t in range(len(time_points)-consecutive_frames_threshold):
+                if np.all(smoothed_slope[t:t+consecutive_frames_threshold] > slope_threshold):
+                    transition_point = t
+                    break
 
             # Plot the original data, smoothed data, and the slope
             """
@@ -489,9 +504,21 @@ class ImageProcessor:
             print("Transition Point:", transition_point)
             """
             if transition_point > 0:
-                cell.starting_point = transition_point
+                cell.starting_point = transition_point  # individual starting point
             else:
-                cell.starting_point = -1
+                cell.starting_point = -1  # no individual starting point
+
+        # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
+        # B. First, the mean starting point of cells with starting point > 0 is calculated.
+        # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
+        #    point of  A.
+        individual_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if cell.starting_point > 0]
+        mean_individual_starting_point = sum(individual_starting_points)/len(individual_starting_points)
+        cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
+        for cell in cells_without_individual_starting_point:
+            cell.starting_point = int(mean_individual_starting_point)
+
+
 
     def assign_bead_contacts_to_cells(self):
         for bead_contact in self.list_of_bead_contacts:
