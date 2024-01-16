@@ -9,7 +9,6 @@ import pandas as pd
 import os
 import timeit
 from stardist.models import StarDist2D
-from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
 from src.general.cell import CellImage, ChannelImage
