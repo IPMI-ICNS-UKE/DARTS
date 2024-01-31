@@ -1,5 +1,5 @@
 from tkinter import Tk, Text, Label, IntVar, Checkbutton, Button, filedialog, END
-from Dartboard import DartboardGenerator
+from Dartboard import DartboardGenerator # import changed
 
 root = Tk()
 root.geometry(str(700) + "x" + str(300))
