@@ -461,7 +461,7 @@ class ImageProcessor:
         actual_fps = self.frames_per_second
 
         # Adjust the slope threshold based on the actual frame rate
-        slope_threshold = slope_threshold_per_fps * (40.0/actual_fps)
+        slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
 
 
         for i, cell in enumerate(self.cell_list_for_processing):
@@ -481,11 +481,11 @@ class ImageProcessor:
             transition_point = 0
 
             # Specify the consecutive frames threshold
-            consecutive_frames_threshold = 50
+            consecutive_frames_threshold = self.frames_per_second
 
-            # Check if the slope exceeds the threshold for at least 25 frames
-            for t in range(len(time_points)-consecutive_frames_threshold):
-                if np.all(smoothed_slope[t:t+consecutive_frames_threshold] > slope_threshold):
+            # Check if the slope exceeds the threshold for at least x frames
+            for t in range(len(time_points)-int(consecutive_frames_threshold)):
+                if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_threshold):
                     transition_point = t
                     break
 
