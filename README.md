@@ -72,6 +72,7 @@ There are other cases, such as the hotspot detection without beads or global mea
 ## License
 This code runs under the Apache 2.0 license.
 
+
 ## References and Citing
 If DARTS is useful for a project that leads to publication, please acknowledge DARTS by citing it.
 
