@@ -7,32 +7,26 @@ warning: true
 ---
 
 # Installation
+## without bioformats
+To install DARTS without bioformats on your computer, a few steps need to be executed. Ideally, you are using a Mac computer with macOS Catalina (10.15) or higher and Intel processor. These settings have been tested extensively. After the installation, the import of .tif-files is possible.
 
-We recommend using [anaconda](https://www.anaconda.com/download) to install python and the necessary packages.
-Make sure to install correctly and to include the correct python executable in your path. 
-For more information, see for example [here](https://docs.anaconda.com/free/anaconda/install/index.html).
-
-
-Make sure git is installed on your system, then clone the repository by running 
-
-``
-git clone https://github.com/IPMI-ICNS-UKE/DARTS.git
-``
-
-in your command line.
-
-## Installation with bioformats
-
-Verify you are in the folder containing the `DARTS.yml` file and run 
-
+- Install Python 3.10.0, following the instructions on the official website (https://www.python.org/downloads/release/python-3100/)
+- Install Anaconda (https://docs.anaconda.com/free/anaconda/install/index.html)
+- Install the latest git version via your terminal (see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- In the terminal window, navigate to the folder where you want to save the required code. 
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git”``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
+- In the terminal window, create a conda environment DARTS: ```conda create --name DARTS```
+- Activate the conda environment: ```conda activate DARTS```
+- Install the necessary packages and their dependencies by executing this command in the terminal:
 ```
-conda env create -f DARTS.yml
-conda activate DARTS
+pip install matplotlib stardist trackpy tomli tensorflow alive-progress openpyxl pystackreg tkcalendar tomlkit simpleitk-simpleelastix
 ```
 
-This includes the [bioformats library](http://www.openmicroscopy.org/bio-formats/), which allows processing of common microscopy imaging formats.
+## with bioformats
+This includes the [bioformats library](http://www.openmicroscopy.org/bio-formats/), which allows the import and processing of common microscopy imaging formats.
 
-For this, the following prerequisites also need to be fulfilled:
+After running the steps in the section "without bioformats", follow these steps to install python-bioformats: 
+
 1. Java Development Kit (JDK) needs to be installed. 
 You can download the JDK from the official Oracle website or use OpenJDK. 
    
@@ -44,7 +38,12 @@ On Linux or MacOS you can set it temporarily with
 On Windows, you'd set it via the System Properties > Environment Variables dialog. To point to a specific version:
 Make sure to point to the correct version of jdk, since newer ones are not compatible. We tested successfully using v8. 
 
-### Complete example installation on MacOS using homebrew
+After installing the JDK and setting the environment variable correctly, execute the following code in the terminal while 
+the conda environment "DARTS" is still activated:
+
+```pip install python-bioformats```
+
+### JDK installation on MacOS using homebrew
 
 As an example, we provide here a step-by-step guide to install the java dependencies for bioformats using [homebrew](https://brew.sh/).
 
@@ -86,12 +85,3 @@ Now you can switch with
 jenv global 8
 ```
 
-## Installation without bioformats
-
-If the image data you are working with is in `.tif` format, or you convert it beforehand, for example using ImageJ,
-you don't need to install bioformats and java. In this case, install the packages by 
-
-``
-conda env create -f DARTS_without_bioformats.yml
-conda activate DARTS
-``
