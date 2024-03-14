@@ -40,7 +40,7 @@ pip install matplotlib stardist trackpy tomli tensorflow alive-progress openpyxl
 - Install bioformats for python
   - Make sure that a Java Runtime Environment is installed on your computer (https://www.oracle.com/de/java/technologies/downloads/ )
   - Make sure to set the JAVA_HOME correctly to the JRE-path. 
-  - Next, execute ```pip install bioformats``` in the terminal.
+  - Next, execute ```pip install python-bioformats``` in the terminal.
 
     
 For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
