@@ -22,25 +22,27 @@ It combines the following modules:
 
 Most of these modules can be switched on or off, depending on the individual analysis (see Usage).
 
-## Installation 
-We recommend using [anaconda](https://www.anaconda.com/download) to install the necessary packages.
+## Installation
+To install DARTS on your computer, a few steps need to be executed. Ideally, you are using a Mac computer with macOS Catalina (10.15) or higher and Intel processor. These settings have been tested extensively. 
 
-Download and install anaconda and python and either clone the DARTS code with 
-``
-git clone https://github.com/IPMI-ICNS-UKE/DARTS.git
-``
-
-or download the .zip file via the download button. Before continuing, please check the prerequisites on the Installation page in the [Documentation](https://ipmi-icns-uke.github.io/DARTS/General/Installation.html).
-
-Navigate to the folder containing the `DARTS.yml` file and run 
-
+- Install Python 3.10.0, following the instructions on the official website (https://www.python.org/downloads/release/python-3100/)
+- Install Anaconda (https://docs.anaconda.com/free/anaconda/install/index.html)
+- Install the latest git version via your terminal (see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- In the terminal window, navigate to the folder where you want to save the required code. 
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git”``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
+- In the terminal window, create a conda environment DARTS: ```conda create --name DARTS```
+- Activate the conda environment: ```conda activate DARTS```
+- Install the necessary packages and their dependencies by executing this command in the terminal:
 ```
-conda env create -f DARTS.yml
-conda activate DARTS
+pip install matplotlib stardist trackpy tomli tensorflow alive-progress openpyxl pystackreg tkcalendar tomlkit simpleitk-simpleelastix
 ```
 
-in the command line. 
+- Install bioformats for python
+  - Make sure that a Java Runtime Environment is installed on your computer (https://www.oracle.com/de/java/technologies/downloads/ )
+  - Make sure to set the JAVA_HOME correctly to the JRE-path. 
+  - Next, execute ```pip install bioformats``` in the terminal.
 
+    
 For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
 
