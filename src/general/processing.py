@@ -131,7 +131,7 @@ class ImageProcessor:
         else:
             self.bleaching = None
         # ratio converter
-        self.ratio_converter = RatioConverter()
+        self.ratio_converter = RatioConverter(self.parameters["properties_of_measurement"]["calibration_parameters_cell_type"])
         self.median_filter_kernel = self.parameters["processing_pipeline"]["postprocessing"]["median_filter_kernel"]
 
         # ------------------------ setup methods hotspots & dartboard ----------------------------
@@ -163,8 +163,6 @@ class ImageProcessor:
         self.time_of_measurement_after_starting_point = self.parameters["properties_of_measurement"]["time_of_measurement_after_starting_point"]
         self.duration_of_measurement = self.parameters["properties_of_measurement"]["duration_of_measurement"]
 
-
-        self.ratio_converter = RatioConverter()
         self.minimum_spotsize = 4
         self.min_ratio = 0.1
         self.max_ratio = 2.0

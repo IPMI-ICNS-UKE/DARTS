@@ -1,7 +1,7 @@
 import tkinter.filedialog
 from tkinter import (Tk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
                     Radiobutton, IntVar,StringVar, Text, END, Entry, Toplevel, Checkbutton,
-                     DISABLED, NORMAL)
+                     DISABLED, NORMAL, Listbox, LEFT, BOTH, simpledialog, messagebox)
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
 import tomlkit
@@ -15,7 +15,7 @@ class TDarts_GUI():
         self.window = Tk()
         # self.window.resizable(False, False)
         width = 1650
-        height = 900
+        height = 1000
         self.window.geometry(str(width) + "x" + str(height))
 
 
@@ -123,15 +123,21 @@ class TDarts_GUI():
         # cell types
         self.label_cell_type = Label(self.properties_of_measurement_frame, text="Cell type:  ")
         self.label_cell_type.grid(row=4, column=0, sticky="W")
-        cell_types = [
+        self.cell_types = [
             "jurkat",
             "primary",
             "NK"
         ]
         self.cell_type = StringVar(self.properties_of_measurement_frame)
-        self.cell_type.set(cell_types[0])
-        self.option_menu_cell_types = OptionMenu(self.properties_of_measurement_frame, self.cell_type, *cell_types)
+        self.cell_type.set(self.cell_types[0])
+        self.option_menu_cell_types = OptionMenu(self.properties_of_measurement_frame, self.cell_type, *self.cell_types)
         self.option_menu_cell_types.grid(row=4, column=1, sticky="W")
+
+        self.manage_cell_types_button = Button(self.properties_of_measurement_frame, text="Manage cell types", command=self.manage_cell_types)
+        self.manage_cell_types_button.grid(row=4, column=2, sticky="W")
+
+        self.cell_type_manager = CellTypeManager(self.window, self.cell_types, self.option_menu_cell_types,
+                                                 self.cell_type)
 
         # time
         self.label_time = Label(self.properties_of_measurement_frame, text="day of measurement :  ")
@@ -515,6 +521,7 @@ class TDarts_GUI():
                 'frame_rate': float(self.text_fps.get("1.0", END)),
                 'resolution': int(self.text_resolution.get("1.0", END)),
                 'cell_type': self.cell_type.get(),
+                'calibration_parameters_cell_type': self.cell_type_manager.parameters_dict[self.cell_type.get()],
                 'day_of_measurement': str(self.entry_time.get()),
                 'user': str(self.text_user.get("1.0", "end-1c")),
                 'experiment_name': str(self.text_experiment_name.get("1.0", "end-1c")),
@@ -855,6 +862,10 @@ class TDarts_GUI():
     #    self.text_single_path_to_input_channel1['state'] = 'disabled'
     #    self.text_single_path_to_input_channel2['state'] = 'disabled'
 
+    def manage_cell_types(self):
+        self.cell_type_manager.open_manage_window()
+
+
     def set_default_settings_for_global_imaging(self):
         self.check_box_channel_alignment.select()
         self.check_box_frame_by_frame_registration.deselect()
@@ -936,3 +947,127 @@ class TDarts_GUI():
 
     def close_window(self):
         self.window.destroy()
+
+
+
+class CellTypeManager:
+    def __init__(self, root, cell_types, option_menu_cell_types, selected_cell_type):
+        self.root = root
+        self.cell_types = cell_types
+        self.option_menu_cell_types = option_menu_cell_types
+        self.selected_cell_type = selected_cell_type
+        self.parameters_dict = {}
+
+    def open_manage_window(self):
+        manage_window = Toplevel(self.root)
+        manage_window.title("Manage Cell Types")
+
+        self.listbox = Listbox(manage_window, width=30)
+        self.listbox.pack(padx=10, pady=10, side=LEFT, fill=BOTH)
+
+        for cell_type in self.cell_types:
+            self.listbox.insert(END, cell_type)
+
+        add_button = Button(manage_window, text="Add Cell Type", command=self.add_cell_type)
+        add_button.pack(pady=5)
+
+        view_button = Button(manage_window, text="View Parameters", command=self.view_parameters)
+        view_button.pack(pady=5)
+
+        save_button = Button(manage_window, text="Save", command=self.save_cell_types)
+        save_button.pack(pady=5)
+
+        # Create a Text widget to display parameter explanations
+        text = Text(manage_window, height=25, width=40)
+        text.pack()
+
+        # Define the explanations
+        explanations = {
+            "corresponding_Ca_value": "The corresponding calcium value for a given pixel intensity or ratio",
+            "threshold_Calcium": "The threshold value for calcium microdomain detection: corresponding_Ca_value + spotHeight",
+            "threshold_ratio": "The threshold ratio for the cell type",
+            "spotHeight": "Pixels inside a Ca2+ microdomain have to be greater than (mean calcium concentration of a frame + spotHeight)"
+        }
+
+        # Insert the explanations into the Text widget
+        for parameter, explanation in explanations.items():
+            text.insert(END, f"{parameter}: {explanation}\n\n")
+
+        text.config(state=DISABLED)
+
+    def add_cell_type(self):
+        cell_type = simpledialog.askstring("Add Cell Type", "Enter the name of the cell type:")
+        if cell_type:
+            if cell_type not in self.cell_types:
+                parameters = self.get_cell_type_parameters(cell_type)
+                if parameters:
+                    self.cell_types.append(cell_type)
+                    self.parameters_dict[cell_type] = parameters
+                    self.listbox.insert(END, cell_type)
+                else:
+                    messagebox.showerror("Error", "Failed to get parameters for the cell type!")
+            else:
+                messagebox.showwarning("Duplicate Cell Type", "Cell type already exists!")
+
+
+    def get_cell_type_parameters(self, cell_type):
+        parameter_values = {}
+        parameter_names = ["KD value (of Ca2+ dye)", "minimum ratio", "maximum ratio", "minimum fluorescence intensity", "maximum fluorescence intensity", "spot Height Ca2+ microdomains"]
+        for param in parameter_names:
+            value = simpledialog.askfloat(f"Enter {param} value for {cell_type}", f"Enter value for parameter {param}:")
+            if value is not None:
+                parameter_values[param] = value
+            else:
+                return None
+        return parameter_values
+
+    def view_parameters(self):
+        selected_index = self.listbox.curselection()
+        if selected_index:
+            selected_cell_type = self.listbox.get(selected_index)
+            parameters = self.parameters_dict.get(selected_cell_type)
+            if parameters:
+                view_window = Toplevel(self.root)
+                view_window.title(f"{selected_cell_type} Parameters")
+
+                entry_boxes = {}
+                for i, (param, value) in enumerate(parameters.items()):
+                    label = Label(view_window, text=param)
+                    label.grid(row=i, column=0, padx=10, pady=5)
+
+                    entry = Entry(view_window)
+                    entry.insert(0, str(value))
+                    entry.grid(row=i, column=1, padx=10, pady=5)
+
+                    entry_boxes[param] = entry
+
+                def save_changes():
+                    for param, entry in entry_boxes.items():
+                        try:
+                            parameters[param] = float(entry.get())
+                        except ValueError:
+                            messagebox.showerror("Error", f"Invalid value for {param}!")
+
+                save_button = Button(view_window, text="Save Changes", command=save_changes)
+                save_button.grid(row=len(parameters), columnspan=2, padx=10, pady=10)
+
+            else:
+                messagebox.showerror("Error", "Parameters not available for this cell type!")
+
+    def save_cell_types(self):
+        # Clear current menu
+        self.option_menu_cell_types['menu'].delete(0, END)
+
+        # Update options
+        for cell_type in self.cell_types:
+            self.option_menu_cell_types['menu'].add_command(label=cell_type, command=tkinter._setit(self.selected_cell_type, cell_type))
+
+        # Set default value to the first option in the new list
+        self.selected_cell_type.set(self.cell_types[0])
+
+
+
+
+
+
+
