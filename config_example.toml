@@ -1,50 +1,64 @@
 [input_output]
 file_or_directory = "dir"
 image_conf = "two-in-one"
-path = "/Users/testuser/Documents/GitHub/DARTS/Data/debug/test_file"
-results_dir = "/Users/testuser/Documents/GitHub/DARTS/results/debug"
+path = "/Users/testuser/Documents/GitHub/DARTS/Data"
+results_dir = "/Users/testuser/Documents/GitHub/DARTS/results"
 excel_filename_microdomain_data = "microdomain_data.xlsx"
 
 [properties_of_measurement]
-used_microscope = "left"
-scale = 6.5359
-frame_rate = 40.0
+used_microscope = "test"
+scale = 0.0
+frame_rate = 3.0
 resolution = 3
-cell_type = "test"
-day_of_measurement = "2023-12-16"
-user = "testuser"
-experiment_name = "hotspot_startpoint_def_no_beads"
+cell_type = "test1"
+cell_types_options = ["jurkat", "primary", "NK", "test1", "test2"]
+day_of_measurement = "2024-03-20"
+user = "test"
+experiment_name = "test"
 imaging_local_or_global = "local"
-bead_contact = false
-duration_of_measurement = 1280.0
+bead_contact = true
+duration_of_measurement = 48.0
 wavelength_1 = 488
 wavelength_2 = 561
-time_of_measurement_before_starting_point = 2.0
-time_of_measurement_after_starting_point = 30.0
+time_of_measurement_before_starting_point = 1.0
+time_of_measurement_after_starting_point = 15.0
 
-[properties_of_measurement.calibration_parameters_cell_type]
-a = 1.0
-b = 1.0
-c = 1.0
-d = 1.0
-aInv = 1.0
-bInv = 1.0
-cInv = 1.0
-dInv = 1.0
-spotHeight = 100.0
+[properties_of_measurement.calibration_parameters_cell_types]
+[properties_of_measurement.calibration_parameters_cell_types.jurkat]
+
+[properties_of_measurement.calibration_parameters_cell_types.NK]
+
+[properties_of_measurement.calibration_parameters_cell_types.primary]
+
+[properties_of_measurement.calibration_parameters_cell_types.test1]
+"KD value (of Ca2+ dye)" = 1.0
+"minimum ratio" = 1.0
+"maximum ratio" = 1.0
+"minimum fluorescence intensity" = 1.0
+"maximum fluorescence intensity" = 1.0
+"spot Height Ca2+ microdomains" = 1.0
+
+[properties_of_measurement.calibration_parameters_cell_types.test2]
+"KD value (of Ca2+ dye)" = 2.0
+"minimum ratio" = 2.0
+"maximum ratio" = 2.0
+"minimum fluorescence intensity" = 2.0
+"maximum fluorescence intensity" = 2.0
+"spot Height Ca2+ microdomains" = 2.0
+
 
 [processing_pipeline]
 [processing_pipeline.postprocessing]
-channel_alignment_in_pipeline = false
+channel_alignment_in_pipeline = true
 channel_alignment_each_frame = false
 registration_method = "SITK"
-background_sub_in_pipeline = false
+background_sub_in_pipeline = true
 cell_segmentation_tracking_in_pipeline = true
-deconvolution_in_pipeline = false
+deconvolution_in_pipeline = true
 deconvolution_algorithm = "LR"
 TDE_lambda = ""
 TDE_lambda_t = ""
-bleaching_correction_in_pipeline = false
+bleaching_correction_in_pipeline = true
 bleaching_correction_algorithm = "additiv no fit"
 ratio_images = true
 median_filter_kernel = 3
@@ -67,8 +81,8 @@ nor = 0
 xysize = 150
 
 [processing_pipeline.shape_normalization]
-shape_normalization = false
+shape_normalization = true
 
 [processing_pipeline.analysis]
 hotspot_detection = true
-dartboard_projection = false
+dartboard_projection = true
