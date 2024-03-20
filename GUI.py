@@ -521,7 +521,8 @@ class TDarts_GUI():
                 'frame_rate': float(self.text_fps.get("1.0", END)),
                 'resolution': int(self.text_resolution.get("1.0", END)),
                 'cell_type': self.cell_type.get(),
-                'calibration_parameters_cell_type': self.cell_type_manager.parameters_dict[self.cell_type.get()],
+                'cell_types_options': self.cell_types,
+                'calibration_parameters_cell_types': self.cell_type_manager.parameters_dict,
                 'day_of_measurement': str(self.entry_time.get()),
                 'user': str(self.text_user.get("1.0", "end-1c")),
                 'experiment_name': str(self.text_experiment_name.get("1.0", "end-1c")),
@@ -614,6 +615,20 @@ class TDarts_GUI():
             self.text_resolution.delete(1.0, END)
             self.text_resolution.insert(1.0, config["properties_of_measurement"]["resolution"])
             self.cell_type.set(config["properties_of_measurement"]["cell_type"])
+            self.cell_types = list(config["properties_of_measurement"]["cell_types_options"])
+            # Clear current menu
+            self.option_menu_cell_types['menu'].delete(0, END)
+
+            # Update options in cell type option menu
+            for cell_type in self.cell_types:
+                self.option_menu_cell_types['menu'].add_command(label=cell_type,
+                                                                command=tkinter._setit(self.cell_type,
+                                                                                       cell_type))
+            self.cell_type_manager.cell_types = self.cell_types
+
+            # calibration parameters for cell type
+            self.cell_type_manager.parameters_dict = dict(config["properties_of_measurement"]["calibration_parameters_cell_types"])
+
             self.entry_time.delete(0, END)
             self.entry_time.insert(0, config["properties_of_measurement"]["day_of_measurement"])
             self.text_user.delete(1.0, END)
@@ -956,7 +971,9 @@ class CellTypeManager:
         self.cell_types = cell_types
         self.option_menu_cell_types = option_menu_cell_types
         self.selected_cell_type = selected_cell_type
-        self.parameters_dict = {}
+        self.parameters_dict = {"jurkat": {},
+                                "NK": {},
+                                "primary": {}}
 
     def open_manage_window(self):
         manage_window = Toplevel(self.root)
