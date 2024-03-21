@@ -5,8 +5,11 @@ from tkinter import (Tk, Label, Frame, Button, LabelFrame,INSERT, OptionMenu,
 from tkinter import filedialog as fd
 from tkcalendar import Calendar
 import tomlkit
-
-
+import matplotlib.pyplot as plt
+import numpy as np
+import tkinter as tk
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg)
 
 class TDarts_GUI():
 
@@ -988,12 +991,19 @@ class CellTypeManager:
         add_button = Button(manage_window, text="Add Cell Type", command=self.add_cell_type)
         add_button.pack(pady=5)
 
+        delete_button = Button(manage_window, text="Delete Cell Type", command=self.delete_cell_type)
+        delete_button.pack(pady=5)
+
         view_button = Button(manage_window, text="View Parameters", command=self.view_parameters)
         view_button.pack(pady=5)
 
-        save_button = Button(manage_window, text="Save", command=self.save_cell_types)
-        save_button.pack(pady=5)
+        plot_button = Button(manage_window, text="Plot calibration curve", command=self.plot_calibration_curve)
+        plot_button.pack(pady=5)
 
+        # save_button = Button(manage_window, text="Save", command=self.save_cell_types)
+        # save_button.pack(pady=5)
+
+        """
         # Create a Text widget to display parameter explanations
         text = Text(manage_window, height=25, width=40)
         text.pack()
@@ -1011,6 +1021,7 @@ class CellTypeManager:
             text.insert(END, f"{parameter}: {explanation}\n\n")
 
         text.config(state=DISABLED)
+        """
 
     def add_cell_type(self):
         cell_type = simpledialog.askstring("Add Cell Type", "Enter the name of the cell type:")
@@ -1025,7 +1036,15 @@ class CellTypeManager:
                     messagebox.showerror("Error", "Failed to get parameters for the cell type!")
             else:
                 messagebox.showwarning("Duplicate Cell Type", "Cell type already exists!")
+            self.save_cell_types()
 
+    def delete_cell_type(self):
+        selected_index = self.listbox.curselection()
+        if selected_index:
+            selected_cell_type = self.listbox.get(selected_index)
+            self.listbox.delete(selected_index)
+            self.cell_types.remove(selected_cell_type)
+        self.save_cell_types()
 
     def get_cell_type_parameters(self, cell_type):
         parameter_values = {}
@@ -1070,6 +1089,43 @@ class CellTypeManager:
 
             else:
                 messagebox.showerror("Error", "Parameters not available for this cell type!")
+
+    def plot_calibration_curve(self):
+        selected_index = self.listbox.curselection()
+        selected_cell_type = self.listbox.get(selected_index)
+        params_for_cell_type = self.parameters_dict[selected_cell_type]
+        parameter_names = ["KD value (of Ca2+ dye)", "minimum ratio", "maximum ratio", "minimum fluorescence intensity",
+                           "maximum fluorescence intensity", "spot Height Ca2+ microdomains"]
+
+        # Convert parameter values to float
+        kd_value = float(params_for_cell_type["KD value (of Ca2+ dye)"])
+        min_ratio = float(params_for_cell_type["minimum ratio"])
+        max_ratio = float(params_for_cell_type["maximum ratio"])
+        min_intensity = float(params_for_cell_type["minimum fluorescence intensity"])
+        max_intensity = float(params_for_cell_type["maximum fluorescence intensity"])
+
+        # Generate ratio values
+        ratio_values = np.linspace(min_ratio, max_ratio, num=100, endpoint=False)
+
+        # Calculate corresponding Ca2+ values
+        corresponding_Ca_values = [
+            kd_value * ((ratio - min_ratio) / (max_ratio - ratio)) * (min_intensity / max_intensity) for ratio in
+            ratio_values]
+
+        # Create a new Tkinter window
+        plot_window = tk.Toplevel(self.root)
+        plot_window.title("Calibration Curve")
+
+        # Create a Matplotlib figure and plot the calibration curve
+        fig, ax = plt.subplots()
+        ax.plot(ratio_values, corresponding_Ca_values)
+        ax.set_xlabel('Ratio Value')
+        ax.set_ylabel('Corresponding Ca2+ Value (nM)')
+
+        # Embed the Matplotlib plot within the Tkinter window
+        canvas = FigureCanvasTkAgg(fig, master=plot_window)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
 
     def save_cell_types(self):
         # Clear current menu
