@@ -131,7 +131,7 @@ class ImageProcessor:
         else:
             self.bleaching = None
         # ratio converter
-        self.ratio_converter = RatioConverter(self.parameters["properties_of_measurement"]["calibration_parameters_cell_type"])
+        self.ratio_converter = RatioConverter(self.parameters["properties_of_measurement"]["calibration_parameters_cell_types"])
         self.median_filter_kernel = self.parameters["processing_pipeline"]["postprocessing"]["median_filter_kernel"]
 
         # ------------------------ setup methods hotspots & dartboard ----------------------------
