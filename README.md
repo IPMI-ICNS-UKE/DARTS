@@ -55,7 +55,7 @@ For more information regarding the installation, see the [Documentation](https:/
 6. Depending on the analysis mode (local/global, beads/no beads), you might be asked to provide information regarding the starting point (t=0) of the measurement for each file. For local measurements with beads, the starting point is the time of bead contact, for example. All cases are explained in the [Documentation](https://ipmi-icns-uke.github.io/DARTS/).
 7. Eventually, after providing all the information, DARTS automatically analyzes the data, putting out multiple data (explained in the Documentation). 
 
-![Main](docs/assets/img/main_gui.png)
+![Main](docs/assets/img/main_gui_new.png)
 
 In this case, we decided to analyze the local hotspots in a measurement, where cells were stimulated with stimulatory antibody-coated beads. 
 We now have to define the bead contacts, which consist of a position and time point as well as the information about the stimulated cell. 

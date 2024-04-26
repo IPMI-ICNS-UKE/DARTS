@@ -1056,7 +1056,7 @@ class CellTypeManager:
 
     def get_cell_type_parameters(self, cell_type):
         parameter_values = {}
-        parameter_names = ["KD value (of Ca2+ dye)", "minimum ratio", "maximum ratio", "minimum fluorescence intensity", "maximum fluorescence intensity", "spot Height Ca2+ microdomains"]
+        parameter_names = ["KD value (of Ca2+ dye) [nM]", "minimum ratio", "maximum ratio", "minimum fluorescence intensity", "maximum fluorescence intensity", "spot Height Ca2+ microdomains"]
         for param in parameter_names:
             value = simpledialog.askfloat(f"Enter {param} value for {cell_type}", f"Enter value for parameter {param}:")
             if value is not None:
@@ -1102,11 +1102,11 @@ class CellTypeManager:
         selected_index = self.listbox.curselection()
         selected_cell_type = self.listbox.get(selected_index)
         params_for_cell_type = self.parameters_dict[selected_cell_type]
-        parameter_names = ["KD value (of Ca2+ dye)", "minimum ratio", "maximum ratio", "minimum fluorescence intensity",
+        parameter_names = ["KD value (of Ca2+ dye) [nM]", "minimum ratio", "maximum ratio", "minimum fluorescence intensity",
                            "maximum fluorescence intensity", "spot Height Ca2+ microdomains"]
 
         # Convert parameter values to float
-        kd_value = float(params_for_cell_type["KD value (of Ca2+ dye)"])
+        kd_value = float(params_for_cell_type["KD value (of Ca2+ dye) [nM]"])
         min_ratio = float(params_for_cell_type["minimum ratio"])
         max_ratio = float(params_for_cell_type["maximum ratio"])
         min_intensity = float(params_for_cell_type["minimum fluorescence intensity"])

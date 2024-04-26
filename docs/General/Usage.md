@@ -36,7 +36,7 @@ In this section, you should provide relevant information for the analysis. Some 
 - Scale (Pixels per micron): Important for calculating the actual size of the hotspots, for example. In our case, 6.5359 was the default value.
 - frame rate (fps): How many frames were measured per second? A crucial parameter for the analysis.
 - spatial resolution in pixels: optional 
-- cell type: so far, you can choose between Jurkat T cells, primary T cells and NK cells, as their calibration data was incorporated into the script.
+- cell type: so far, you can choose between Jurkat T cells, primary T cells and NK cells, as their calibration data was incorporated into the script. You can add cell types yourself. Simply click on the button and follow the instructions. The corresponding calcium concentration for a given ratio value: Ca2+ concentration = (Kd value calcium dye in nM) x ((Ratio - Ratio_min)/(Ratio_max - Ratio)) x (minimum fluorescence intensity / maximum fluorescence intensity)
 - day of measurement; User; Name of experiment: further meta data
 - imaging intention: either local imaging for hotspot detection or global imaging for the mean ratio value. An important setting.
 - Bead contact: Activate the check box, if you used beads to stimulate the cells. Otherwise, uncheck it (e.g., soluble compounds).
@@ -68,7 +68,7 @@ Finally, after providing all the necessary information (all the entry boxes shou
 To start the analysis, you need to click on the Start button. To abort, the Cancel button. 
 
 #### images
-![main gui](../assets/img/main_gui.png)
+![main gui](../assets/img/main_gui_new.png)
 
 An example for a source directory: 
 
