@@ -63,7 +63,7 @@ class RatioConverter():
 
         else:
 
-            kd_value = self.parameter_dict['KD value (of Ca2+ dye)']
+            kd_value = self.parameter_dict['KD value (of Ca2+ dye) [nM]']
             min_ratio = self.parameter_dict['minimum ratio']
             max_ratio = self.parameter_dict['maximum ratio']
             min_intensity = self.parameter_dict['minimum fluorescence intensity']
