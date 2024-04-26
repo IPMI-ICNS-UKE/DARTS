@@ -63,7 +63,7 @@ Tick the dartboard projection check box, if dartboard data should be generated.
 Not all check boxes are activated all the time. For example, the dartboard projection requires (1) a shape normalization, (2) bead contacts and (3) a previous hotspot detection. 
 
 ### Control buttons 
-Finally, after providing all the necessary information, you can save time in the future by saving your settings onto your local machine. You can then load these settings from your computer. 
+Finally, after providing all the necessary information (all the entry boxes should be filled correctly), you can save time in the future by saving your settings onto your local machine. You can then load these settings from your computer. 
 
 To start the analysis, you need to click on the Start button. To abort, the Cancel button. 
 
@@ -92,13 +92,15 @@ After clicking on "Start", there will appear a GUI for each image file, so that 
 
 In this case, we chose to analyze the local hotspots in a measurement, where cells were stimulated with stimulatory antibody-coated beads. 
 We now have to define the bead contacts, which consist of a position and time point as well as the information about the stimulated cell. 
-1. Use the slider, to find the time of contact between a bead and a cell of interest.
+1. Use the slider, to find the time of contact between a bead and a cell of interest. For a precise definition of the exact frame, click onto the sliding bar but outside the actual slider/box.
 2. In the option menu on the right hand side, select "bead contact: x, y, t"
 3. Click on the position in the left half of the image, where the contact between the cell and the bead contact is located at.
 4. Next, select "Choose cell by clicking a point inside". Click on the cell that is stimulated by this bead, preferably in the middle.
 5. Click on "ADD bead contact". 
 6. Repeat the steps 1 - 5 for other bead contacts in this file. If you have defined all the bead contacts, go ahead and click on the "Continue"-button.
 7. Now, go ahead with the next files. If you have reached the last file, the script will automatically start with the analysis of all files.
+
+Information: For each file, there might be several bead contacts. In order to save time, the time series will be cropped, so that the frames after the last starting point (e.g. bead contact at 600) + the measurement interval (e.g. 600 frames interval, so 1200 frames cutoff) are deleted as they are not needed.
 
 ![definition of bead contacts](../assets/img/bead_contact_definition.png)
 

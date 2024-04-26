@@ -51,21 +51,23 @@ For more information regarding the installation, see the [Documentation](https:/
 2. Store raw image files in a source directory. All common microscopy image formats can be opened, e.g. ics- or tif-files. 
 3. Define whether it is a local measurement (interested in local hotspots) or just a global measurement (mean ratio over time).
 4. Run `python main.py` in the terminal/ shell/ powershell or IDE of your choice.
-5. Enter relevant information in the GUI (see [Documentation](https://ipmi-icns-uke.github.io/DARTS/) for more extensive explanation). Then click on start. You can also save the settings to your local machine and access it later.
+5. Enter all the information in the GUI (see [Documentation](https://ipmi-icns-uke.github.io/DARTS/) for more extensive explanation). Most of the information are crucial for the program to work properly. Then click on start. You can also save the settings to your local machine and access it later.
 6. Depending on the analysis mode (local/global, beads/no beads), you might be asked to provide information regarding the starting point (t=0) of the measurement for each file. For local measurements with beads, the starting point is the time of bead contact, for example. All cases are explained in the [Documentation](https://ipmi-icns-uke.github.io/DARTS/).
 7. Eventually, after providing all the information, DARTS automatically analyzes the data, putting out multiple data (explained in the Documentation). 
 
 ![Main](docs/assets/img/main_gui.png)
 
-In this case, we chose to analyze the local hotspots in a measurement, where cells were stimulated with stimulatory antibody-coated beads. 
+In this case, we decided to analyze the local hotspots in a measurement, where cells were stimulated with stimulatory antibody-coated beads. 
 We now have to define the bead contacts, which consist of a position and time point as well as the information about the stimulated cell. 
-1. Use the slider, to find the time of contact between a bead and a cell of interest.
+1. Use the slider, to find the time of contact between a bead and a cell of interest. For a precise definition of the exact frame, click onto the sliding bar but outside the actual slider/box.  
 2. In the option menu on the right hand side, select "bead contact: x, y, t"
 3. Click on the position in the left half of the image, where the contact between the cell and the bead contact is located at.
 4. Next, select "Choose cell by clicking a point inside". Click on the cell that is stimulated by this bead, preferably in the middle.
 5. Click on "ADD bead contact". 
 6. Repeat the steps 1 - 5 for other bead contacts in this file. If you have defined all the bead contacts, go ahead and click on the "Continue"-button.
 7. Now, go ahead with the next files. If you have reached the last file, the script will automatically start with the analysis of all files.
+
+Information: For each file, there might be several bead contacts. In order to save time, the time series will be cropped, so that the frames after the last starting point (e.g. bead contact at 600) + the measurement interval (e.g. 600 frames interval, so 1200 frames cutoff) are deleted as they are not needed.
 
 ![Bead contacts](docs/assets/img/bead_contact_definition.png)
 
