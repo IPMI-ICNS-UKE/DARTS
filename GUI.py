@@ -10,6 +10,7 @@ import numpy as np
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
+import webbrowser
 
 class TDarts_GUI():
 
@@ -487,6 +488,9 @@ class TDarts_GUI():
         self.cancel_button = Button(self.label_control_buttons, text='Cancel', command=self.cancel)
         self.cancel_button.grid(row=3, column=1, sticky="W")
 
+        # About DARTS button
+        self.about_DARTS_button = Button(self.label_control_buttons, text='About DARTS', command=self.open_github_page)
+        self.about_DARTS_button.grid(row=4, column=1, sticky="W")
 
     def pick_date(self, event):
         global calendar, date_window
@@ -505,6 +509,10 @@ class TDarts_GUI():
         calendar.place(x=0, y=0)
         submit_button = Button(date_window, text='submit', command=self.grab_date)
         submit_button.place(x=80, y=190)
+
+    def open_github_page(self):
+        website = "https://github.com/IPMI-ICNS-UKE/DARTS"
+        webbrowser.open(website)
 
     def get_parameters(self):
         data = {
