@@ -24,6 +24,8 @@ except Exception as E:
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = Logger()
 
+version_DARTS = "main branch 2024-4-26"
+
 
 def main(gui_enabled):
     start_time = time.time()
@@ -49,6 +51,7 @@ def main(gui_enabled):
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
 
     info_saver = InfoToComputer(parameters)
+    info_saver.save_version_DARTS(version_DARTS)
 
     input_path = parameters["input_output"]["path"]
 

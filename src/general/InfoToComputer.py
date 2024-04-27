@@ -46,6 +46,11 @@ class InfoToComputer:
                     f.write(" Bead contact: " + bead_contact.to_string() + "\n")
                 f.write("\n")
 
+
+    def save_version_DARTS(self, version_DARTS):
+        with open(self.save_path + 'DARTS_version.txt', 'w') as f:
+            f.write(version_DARTS)
+
     def save_number_of_responding_cells(self):
         with open(self.save_path + 'Number of responding cells.txt', 'w') as f:
             f.write("Number of analyzed cells in total: " + str(self.number_of_analyzed_cells_in_total) + "\n")
