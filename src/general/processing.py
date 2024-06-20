@@ -463,6 +463,8 @@ class ImageProcessor:
 
 
         for i, cell in enumerate(self.cell_list_for_processing):
+            cell.starting_point = 0
+            """"
             time_points = np.arange(cell.frame_number)
             global_signal = np.array(cell.mean_ratio_list)
 
@@ -488,18 +490,18 @@ class ImageProcessor:
                     break
 
             # Plot the original data, smoothed data, and the slope
-            """
-            plt.plot(time_points, global_signal, label='Original Data')
-            plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
-            plt.plot(time_points, slope, label='Slope')
-            plt.axvline(x=transition_point, color='r', linestyle='--', label='Transition Point')
-            plt.xlabel('Time Points')
-            plt.ylabel('Global Signal')
-            plt.legend()
-            plt.show()
+            
+            # plt.plot(time_points, global_signal, label='Original Data')
+            # plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
+            # plt.plot(time_points, slope, label='Slope')
+            # plt.axvline(x=transition_point, color='r', linestyle='--', label='Transition Point')
+            # plt.xlabel('Time Points')
+            # plt.ylabel('Global Signal')
+            # plt.legend()
+            # plt.show()
 
-            print("Transition Point:", transition_point)
-            """
+            # print("Transition Point:", transition_point)
+            
             if transition_point > 0:
                 cell.starting_point = transition_point  # individual starting point
             else:
@@ -514,6 +516,7 @@ class ImageProcessor:
         cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
         for cell in cells_without_individual_starting_point:
             cell.starting_point = int(mean_individual_starting_point)
+        """
 
 
 
