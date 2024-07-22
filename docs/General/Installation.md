@@ -8,19 +8,21 @@ warning: true
 
 # Installation
 ## without bioformats
-To install DARTS without bioformats on your computer, a few steps need to be executed. Ideally, you are using a Mac computer with macOS Catalina (10.15) or higher and Intel processor. These settings have been tested extensively. After the installation, the import of .tif-files is possible.
-
 - Install Python 3.10.0, following the instructions on the official website (https://www.python.org/downloads/release/python-3100/)
 - Install Anaconda (https://docs.anaconda.com/free/anaconda/install/index.html)
 - Install the latest git version via your terminal (see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - In the terminal window, navigate to the folder where you want to save the required code. 
-- Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git”``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
+- In the terminal window, navigate to the subfolder "src/TDEntropyDeconvolution" inside the DARTS folder
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution``` to clone this module to your computer
 - In the terminal window, create a conda environment DARTS: ```conda create --name DARTS```
 - Activate the conda environment: ```conda activate DARTS```
 - Install the necessary packages and their dependencies by executing this command in the terminal:
+
 ```
 pip install matplotlib stardist trackpy tomli tensorflow alive-progress openpyxl pystackreg tkcalendar tomlkit simpleitk-simpleelastix
 ```
+- Alternatively, install the packages separately (pip install <package>)
 
 ## with bioformats
 This includes the [bioformats library](http://www.openmicroscopy.org/bio-formats/), which allows the import and processing of common microscopy imaging formats.
