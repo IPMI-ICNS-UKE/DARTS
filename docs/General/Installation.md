@@ -14,7 +14,7 @@ warning: true
 - In the terminal window, navigate to the folder where you want to save the required code. 
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
 - In the terminal window, navigate to the subfolder "src/TDEntropyDeconvolution" inside the DARTS folder
-- Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution``` to clone this module to your computer
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your computer
 - In the terminal window, create a conda environment DARTS: ```conda create --name DARTS```
 - Activate the conda environment: ```conda activate DARTS```
 - Install the necessary packages and their dependencies by executing this command in the terminal:
