@@ -29,11 +29,11 @@ To install DARTS on your computer, a few steps need to be executed. Ideally, you
 - Install Anaconda (https://docs.anaconda.com/free/anaconda/install/index.html)
 - Install the latest git version via your terminal (see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - In the terminal window, navigate to the folder where you want to save the required code. 
-- Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git``` into the terminal window and press enter. The GitHub repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
 - In your file explorer, go to the folder "DARTS/src" and delete the (empty) folder 'TDEntropyDeconvolution'
 - In the terminal window, navigate to the subfolder "src" inside the DARTS folder
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your 'src' folder
-- In the terminal window, create a conda environment DARTS: ```conda create --name DARTS```
+- In the terminal window, create a conda environment DARTS with a specific python version: ```conda create --name DARTS python=3.10.0```
 - Activate the conda environment: ```conda activate DARTS```
 - Install the necessary packages and their dependencies by executing this command in the terminal:
 ```
