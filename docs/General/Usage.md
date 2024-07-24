@@ -6,6 +6,7 @@ nav_order: 2
 ---
 
 # Usage
+0. Make sure that you navigated to the DARTS folder in the terminal using the cd command. (To skip one folder layer up, use the command 'cd ../')
 
 ## Starting the script
 After installing the necessary packages, activate the environment
