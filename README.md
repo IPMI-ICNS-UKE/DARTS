@@ -30,8 +30,9 @@ To install DARTS on your computer, a few steps need to be executed. Ideally, you
 - Install the latest git version via your terminal (see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - In the terminal window, navigate to the folder where you want to save the required code. 
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/DARTS.git``` into the terminal window and press enter. The github repository should now be cloned to your local machine. Alternatively, download the .zip file on the github-page.
-- In the terminal window, navigate to the subfolder "src/TDEntropyDeconvolution" inside the DARTS folder
-- Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your computer
+- In your file explorer, go to the folder "DARTS/src" and delete the (empty) folder 'TDEntropyDeconvolution'
+- In the terminal window, navigate to the subfolder "src" inside the DARTS folder
+- Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your 'src' folder
 - In the terminal window, create a conda environment DARTS: ```conda create --name DARTS```
 - Activate the conda environment: ```conda activate DARTS```
 - Install the necessary packages and their dependencies by executing this command in the terminal:
@@ -50,6 +51,7 @@ For more information regarding the installation, see the [Documentation](https:/
 
 
 ## Usage
+0. Make sure that you navigated to the DARTS folder in the terminal. (To skip one folder layer up, use the command 'cd ../')
 1. DARTS is designed for the analysis of dual-channel fluorescence microscopy. Make sure, that the raw data are suitable (see [Documentation](https://ipmi-icns-uke.github.io/DARTS/))
 2. Store raw image files in a source directory. All common microscopy image formats can be opened, e.g. ics- or tif-files. 
 3. Define whether it is a local measurement (interested in local hotspots) or just a global measurement (mean ratio over time).
