@@ -87,3 +87,9 @@ Now you can switch with
 jenv global 8
 ```
 
+# Update DARTS
+How to update DARTS:
+1. Navigate to the DARTS folder in the terminal
+2. Activate the conda env: “conda activate DARTS”
+3. git checkout main
+4. git pull origin main

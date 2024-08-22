@@ -49,6 +49,12 @@ pip install matplotlib stardist trackpy tomli tensorflow alive-progress openpyxl
     
 For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
+## Update DARTS
+How to update DARTS:
+1. Navigate to the DARTS folder in the terminal
+2. Activate the conda env: “conda activate DARTS”
+3. git checkout main
+4. git pull origin main
 
 ## Usage
 0. Make sure that you navigated to the DARTS folder in the terminal. (To skip one folder layer up, use the command 'cd ../')
