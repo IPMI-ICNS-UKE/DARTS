@@ -73,7 +73,7 @@ def main(gui_enabled):
             bead_contact_gui.run_main_loop()
             del bead_contact_gui
 
-        # save bead contacts on computer
+        # save bead contacts on compute
         info_saver.save_bead_contact_information()
         files_for_further_processing = [file for file in files_for_further_processing if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
     else:  # no bead contacts
