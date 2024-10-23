@@ -455,16 +455,15 @@ class ImageProcessor:
         # Specify the desired slope threshold per unit change in frame rate
         slope_threshold_per_fps = 0.0025
 
-        # Get the actual frame rate
-        actual_fps = self.frames_per_second
+        slope_treshold_per_second = slope_threshold_per_fps * self.frames_per_second
 
-        # Adjust the slope threshold based on the actual frame rate
-        slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
+        # Adjust the slope threshold based on the actual frame rate, 40.0
+        # slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
 
 
         for i, cell in enumerate(self.cell_list_for_processing):
             cell.starting_point = 0
-            """"
+
             time_points = np.arange(cell.frame_number)
             global_signal = np.array(cell.mean_ratio_list)
 
@@ -485,7 +484,7 @@ class ImageProcessor:
 
             # Check if the slope exceeds the threshold for at least x frames
             for t in range(len(time_points)-int(consecutive_frames_threshold)):
-                if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_threshold):
+                if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_treshold_per_second):
                     transition_point = t
                     break
 
@@ -516,7 +515,7 @@ class ImageProcessor:
         cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
         for cell in cells_without_individual_starting_point:
             cell.starting_point = int(mean_individual_starting_point)
-        """
+
 
 
 
