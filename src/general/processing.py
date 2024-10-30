@@ -61,13 +61,14 @@ class ImageProcessor:
 
     # ------------------------------------- initialization ----------------------------------
 
-    def __init__(self, image_ch1, image_ch2, parameterdict, logger=None, time_of_addition=None):
+    def __init__(self, image_ch1, image_ch2, parameterdict, logger=None, time_of_addition=None, cell_positions_dict=None):
         self.parameters = parameterdict
         self.file_name = self.parameters["input_output"]["filename"]
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
         self.time_of_addition = time_of_addition
+        self.cell_positions_dict = cell_positions_dict
         # self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
 
         self.wl1 = self.parameters["properties_of_measurement"]["wavelength_1"]  # wavelength channel1
@@ -186,7 +187,7 @@ class ImageProcessor:
     # ------------------------ alternative constructors --------------------------------
     # alternative constructor to define image processor with filename
     @classmethod
-    def fromfilename(cls, filename, parameterdict, logger=None, time_of_addition = None):
+    def fromfilename(cls, filename, parameterdict, logger=None, time_of_addition = None, cell_positions_dict = None):
         end = parameterdict["input_output"]["end_frame"]
         channel_format = parameterdict["input_output"]["image_conf"]
         if channel_format == "single":
@@ -211,7 +212,7 @@ class ImageProcessor:
         if not end is None: # if "no bead contacts" was elected in the GUI
             channel1 = cut_image_frames(channel1, 0, end)
             channel2 = cut_image_frames(channel2, 0, end)
-        return cls(channel1, channel2, parameterdict, logger, time_of_addition)
+        return cls(channel1, channel2, parameterdict, logger, time_of_addition, cell_positions_dict)
 
     @classmethod
     def fromfilename_split(cls, filename, parameterdict, logger=None):
@@ -452,6 +453,7 @@ class ImageProcessor:
 
 
     def determine_starting_points_local_no_beads(self):
+        cell_position_dict = self.cell_positions_dict  # TODO: generate subset of cell list: only cells that have click information
         # Specify the desired slope threshold per unit change in frame rate
         slope_threshold_per_fps = 0.0025
 
@@ -505,6 +507,8 @@ class ImageProcessor:
                 cell.starting_point = transition_point  # individual starting point
             else:
                 cell.starting_point = -1  # no individual starting point
+
+        # TODO: GUI for individual cells (global signal, start point, manual or automated, image, slider)
 
         # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
         # B. First, the mean starting point of cells with starting point > 0 is calculated.
