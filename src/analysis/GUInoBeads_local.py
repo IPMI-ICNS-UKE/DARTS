@@ -1,155 +1,175 @@
 import tkinter
-
+from tkinter import (Tk, Scale, Frame, Button, Toplevel, Label, Entry, IntVar, Radiobutton, HORIZONTAL)
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from tkinter import (Tk, Label, Scale, Listbox, Scrollbar, Frame, Button, Radiobutton, IntVar, Text, HORIZONTAL, END)
 import skimage.io as io
 import math
 from src.general.load_data import load_data
 
 
 class GUInoBeads_local():
-    def __init__(self, file, filepath, parameters):
-        self.file = file
+    def __init__(self, cell, cell_index, parameters):
         self.channel_format = parameters["input_output"]["image_conf"]
-        self.image = io.imread(filepath)
+        self.image = cell.ratio
+        self.mean_ratio_list = cell.mean_ratio_list  # Using mean_ratio_list for the global signal
 
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
-        self.GUI_width, self.GUI_height = 1200, 800  # round(self.image_width * 2.2), round(self.image_height * 1.2)
-        if self.channel_format == "two-in-one":
-            self.channel_width = self.image_width*0.5
-        elif self.channel_format == "single":
-            self.channel_width = self.image_width
+        self.GUI_width, self.GUI_height = 1200, 800
 
         self.root = Tk()
         self.root.resizable(False, False)
-        self.root.geometry(str(self.GUI_width) + "x" + str(self.GUI_height))
-        self.root.title("GUI no beads local, " + file)
+        self.root.geometry(f"{self.GUI_width}x{self.GUI_height}")
+        self.root.title("GUI no beads local, cell number: " + str(cell_index))
 
-        self.figure = Figure()
-        self.subplot_image = self.figure.add_subplot(111)
-        self.subplot_image.imshow(self.image[0])
-        # self.subplot_image.set_axis_off()
+        # Set up the figure with increased spacing between subplots
+        self.figure = Figure(figsize=(10, 5))
+        self.figure.subplots_adjust(wspace=0.6)  # Increase horizontal space between subplots
+
+        # Image display subplot with color bar
+        self.subplot_image = self.figure.add_subplot(121)
+        im = self.subplot_image.imshow(self.image[0], cmap='viridis', vmin=0.1, vmax=2.0)
+        self.colorbar = self.figure.colorbar(im, ax=self.subplot_image, orientation='vertical', fraction=0.046,
+                                             pad=0.04)
+        self.colorbar.set_label("Ratio")
+
+        # Global signal subplot on the right
+        self.global_signal_subplot = self.figure.add_subplot(122)
+        self.global_signal_subplot.plot(self.mean_ratio_list, color='blue')
+        self.global_signal_subplot.set_title("Global Signal")
+        self.global_signal_subplot.set_xlabel("Frame")
+        self.global_signal_subplot.set_ylabel("Mean Intensity")
+        self.global_signal_subplot.set_ylim(0.1, 2.0)
+
+        # Add a vertical line to indicate the current frame
+        self.vertical_line = self.global_signal_subplot.axvline(x=0, color='red', linestyle='--')
+
+        # Set up canvas to display figure in Tkinter
         self.canvas_frame = Frame(self.root, width=600, height=600)
         self.canvas_frame.place(x=10, y=10)
-
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.canvas_frame)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=1)
-        self.canvas.mpl_connect('button_press_event', self.mouse_clicked)
+
+        # Slider for frame selection
         self.start_frame = 0
-        self.end_frame = len(self.image)-1
-
+        self.end_frame = len(self.image) - 1
         self.slider = Scale(self.root, from_=self.start_frame, to=self.end_frame, orient=HORIZONTAL,
-                           command=self.update_image, length=500)
-
+                            command=self.update_image, length=500)
         self.slider.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.65)
 
+        # Accept and Deny Buttons
+        self.accept_button = Button(self.root, text="Accept cell", command=self.accept_cell)
+        self.accept_button.place(x=self.GUI_width * 0.3, y=self.GUI_height * 0.75)
 
-        self.input_frame = Frame(self.root)
-        self.input_frame.place(x=750, y=50)
+        self.deny_button = Button(self.root, text="Deny cell", command=self.deny_cell)
+        self.deny_button.place(x=self.GUI_width * 0.55, y=self.GUI_height * 0.75)
 
+        # Text field for showing current starting frame
+        self.starting_frame_label = Label(self.root, text="Current Starting Frame: Not Set", width=30, anchor='w')
+        self.starting_frame_label.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.8)
 
-        self.label_position_inside_cell = Label(self.input_frame, text="Position inside cell: x,y")
-        self.label_position_inside_cell.grid(row=1, column=0, sticky="W")
-        self.text_position_inside_cell = Text(self.input_frame, height=1, width=30)
-        self.text_position_inside_cell.grid(row=2, column=0, sticky="W")
+        # Close button to finalize the selection and close GUI
+        self.close_button = Button(self.root, text="Close", command=self.close_gui)
+        self.close_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.85)
 
-        self.add_cell_button = Button(self.input_frame, bg='red', text="ADD cell",
-                                                 command=self.add_cell)
-        self.add_cell_button.grid(row=3, column=0, sticky="W")
+        self.cancel_button = Button(self.root, text='Cancel', command=self.cancel)
+        self.cancel_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.9)
 
-
-
-        self.cell_frame = Frame(self.input_frame)
-        self.cell_frame.grid(row=5, column=0, sticky="W")
-        self.cell_list_label = Label(self.cell_frame,
-                                             text="list of cells")
-        self.cell_list_label.grid(row=1, column=0, sticky="W")
-        self.listbox_frame = Frame(self.cell_frame)
-        self.listbox_frame.grid(row=2, column=0, sticky="W")
-
-
-        self.cell_position_list = Listbox(self.listbox_frame, width=60, height=10, font=("Helvetica", 12))
-        self.cell_position_list.pack(side="left", fill="y")
-        # self.cell_position_list.bind("<<ListboxSelect>>", self.cell_position_list_selection_changed)
-        scrollbar = Scrollbar(self.listbox_frame, orient="vertical")
-        scrollbar.config(command=self.cell_position_list.yview)
-        scrollbar.pack(side="right", fill="y")
-
-        self.cell_position_list.config(yscrollcommand=scrollbar.set)
-        self.cells = []
-
-        self.remove_cell_button = Button(self.cell_frame, text="Remove cell", command=self.remove_cell)
-        self.remove_cell_button.grid(row=3, column=0, sticky="W")
-
-
-        self.close_button = Button(self.input_frame, text="Continue with next image or processing, respectively", command=self.close_gui)
-        self.close_button.grid(row=10, column=0, sticky="W")
-        self.user_info_given = False
-
-        self.cancel_button = Button(self.input_frame, text='Cancel', command=self.cancel)
-        self.cancel_button.grid(row=11, column=0, sticky="W")
+        # Initialize starting frame to None (default value if not set manually)
+        self.starting_frame = None
 
     def cancel(self):
         self.root.destroy()
         quit()
 
-
     def update_image(self, new_frame):
+        # Update the displayed image
         new_image = self.image[int(new_frame)]
-        self.figure.delaxes(self.figure.axes[0])
-        self.subplot_image = self.figure.add_subplot(111)
-        self.subplot_image.imshow(new_image)
+        self.subplot_image.clear()
+        im = self.subplot_image.imshow(new_image, cmap='viridis', vmin=0.1, vmax=2.0)
+        self.colorbar.update_normal(im)
 
-        # self.subplot_image.set_axis_off()
+        # Move the vertical line to the new frame position
+        self.vertical_line.set_xdata(int(new_frame))
 
+        # Refresh both subplots on the canvas
         self.canvas.draw()
-        # self.canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=1)
 
-    def remove_cell(self):
-        selected_item = self.cell_position_list.curselection()
-        if(self.cell_position_list.size()>0 and selected_item!= ()):
-            self.cell_position_list.delete(selected_item[0])
-            self.cell_position_list.selection_set(END, END)
-            self.cells.pop(selected_item[0])
+    def accept_cell(self):
+        # Create pop-up window
+        self.popup = Toplevel(self.root)
+        self.popup.title("Define Starting Point")
+        self.popup.geometry("300x200")
 
-    def add_cell(self):  # idea: RegEx für die Textboxen
-        try:
-            position_inside_cell = self.text_position_inside_cell.get("1.0", "end-1c").split(",")
-            x_position_inside_cell = int(position_inside_cell[0])
-            y_position_inside_cell = int(position_inside_cell[1])
-            position_inside_cell = (x_position_inside_cell, y_position_inside_cell)
+        # Question prompt
+        question_label = Label(self.popup, text="Determine starting point:")
+        question_label.pack(pady=10)
 
-            self.cells.append(position_inside_cell)
-            self.cell_position_list.insert(END, str(position_inside_cell))
+        # Options for manual or automatic
+        self.determination_choice = IntVar()
+        manual_radio = Radiobutton(self.popup, text="Manual Definition", variable=self.determination_choice, value=1,
+                                   command=self.show_entry_field)
+        automatic_radio = Radiobutton(self.popup, text="Automatic Determination", variable=self.determination_choice,
+                                      value=2, command=self.hide_entry_field)
+        manual_radio.pack()
+        automatic_radio.pack()
 
-            self.text_position_inside_cell.delete(1.0, END)
-        except Exception as E:
-            print(E)
+        # Entry field for manual definition, initially hidden
+        self.entry_label = Label(self.popup, text="Enter starting frame (0 to {})".format(self.number_of_frames - 1))
+        self.frame_entry = Entry(self.popup)
+        self.entry_label.pack_forget()  # Hide initially
+        self.frame_entry.pack_forget()
 
+        # Confirm button to process the entry or choice
+        confirm_button = Button(self.popup, text="Confirm", command=self.process_starting_point)
+        confirm_button.pack(pady=10)
 
-    def mouse_clicked(self, event):
-        if event.xdata is not None and event.ydata is not None:
-            x_location = round(event.xdata)
-            y_location = round(event.ydata)
+    def show_entry_field(self):
+        # Display the entry field if manual definition is selected
+        self.entry_label.pack(pady=5)
+        self.frame_entry.pack()
 
-            if(self.channel_width >= x_location >= 0 and self.image_height >= y_location >= 0):
-                position_inside_cell_text = str(x_location) + "," + str(y_location)
-                self.text_position_inside_cell.delete(1.0, END)
-                self.text_position_inside_cell.insert(1.0, position_inside_cell_text)
+    def hide_entry_field(self):
+        # Hide the entry field if automatic determination is selected
+        self.entry_label.pack_forget()
+        self.frame_entry.pack_forget()
 
+    def process_starting_point(self):
+        if self.determination_choice.get() == 1:  # Manual
+            try:
+                # Retrieve and validate the entered frame
+                frame = int(self.frame_entry.get())
+                if 0 <= frame <= self.number_of_frames - 1:
+                    self.starting_frame = frame  # Store the valid frame number
+                    print(f"Starting frame set to: {frame}")
+                    # Update the starting frame label
+                    self.starting_frame_label.config(text=f"Current Starting Frame: {frame}")
+                else:
+                    print("Invalid frame. Please enter a value within the valid range.")
+            except ValueError:
+                print("Invalid input. Please enter an integer.")
+        elif self.determination_choice.get() == 2:  # Automatic
+            print("Automatic starting point determination selected.")
+            self.starting_frame = "automatic"  # Or set to an appropriate automatic value
+            self.starting_frame_label.config(text="Current Starting Frame: Automatic")
 
+        # Close the pop-up
+        self.popup.destroy()
+
+    def deny_cell(self):
+        print("Cell denied.")
+        # Add further processing if needed for "deny cell" action
+
+    def close_gui(self):
+        if self.starting_frame is None:
+            print("No starting frame defined.")
+        else:
+            print(f"Starting frame: {self.starting_frame}")
+        self.root.destroy()
 
     def run_main_loop(self):
         self.root.mainloop()
 
-    def get_cell_positions(self):
-        return self.cells
-
     def close_gui(self):
+        self.root.quit()
         self.root.destroy()
-
-
-
-

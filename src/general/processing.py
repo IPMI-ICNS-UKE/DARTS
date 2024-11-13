@@ -25,6 +25,7 @@ from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
+from src.analysis.GUInoBeads_local import GUInoBeads_local
 
 try:
     import SimpleITK as sitk
@@ -61,14 +62,14 @@ class ImageProcessor:
 
     # ------------------------------------- initialization ----------------------------------
 
-    def __init__(self, image_ch1, image_ch2, parameterdict, logger=None, time_of_addition=None, cell_positions_dict=None):
+    def __init__(self, image_ch1, image_ch2, parameterdict, logger=None, time_of_addition=None):
         self.parameters = parameterdict
         self.file_name = self.parameters["input_output"]["filename"]
         self.channel1 = image_ch1
         self.channel2 = image_ch2
         self.logger = logger
         self.time_of_addition = time_of_addition
-        self.cell_positions_dict = cell_positions_dict
+
         # self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
 
         self.wl1 = self.parameters["properties_of_measurement"]["wavelength_1"]  # wavelength channel1
@@ -187,7 +188,7 @@ class ImageProcessor:
     # ------------------------ alternative constructors --------------------------------
     # alternative constructor to define image processor with filename
     @classmethod
-    def fromfilename(cls, filename, parameterdict, logger=None, time_of_addition = None, cell_positions_dict = None):
+    def fromfilename(cls, filename, parameterdict, logger=None, time_of_addition = None):
         end = parameterdict["input_output"]["end_frame"]
         channel_format = parameterdict["input_output"]["image_conf"]
         if channel_format == "single":
@@ -212,7 +213,7 @@ class ImageProcessor:
         if not end is None: # if "no bead contacts" was elected in the GUI
             channel1 = cut_image_frames(channel1, 0, end)
             channel2 = cut_image_frames(channel2, 0, end)
-        return cls(channel1, channel2, parameterdict, logger, time_of_addition, cell_positions_dict)
+        return cls(channel1, channel2, parameterdict, logger, time_of_addition)
 
     @classmethod
     def fromfilename_split(cls, filename, parameterdict, logger=None):
@@ -453,7 +454,6 @@ class ImageProcessor:
 
 
     def determine_starting_points_local_no_beads(self):
-        cell_position_dict = self.cell_positions_dict  # TODO: generate subset of cell list: only cells that have click information
         # Specify the desired slope threshold per unit change in frame rate
         slope_threshold_per_fps = 0.0025
 
@@ -462,8 +462,14 @@ class ImageProcessor:
         # Adjust the slope threshold based on the actual frame rate, 40.0
         # slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
 
-
         for i, cell in enumerate(self.cell_list_for_processing):
+            cell_GUI_no_beads_local = GUInoBeads_local(cell, i, self.parameters)
+            cell_GUI_no_beads_local.run_main_loop()
+            manual_starting_frame = cell_GUI_no_beads_local.starting_frame
+            del cell_GUI_no_beads_local
+
+            if manual_starting_frame is None:  # TODO continue
+
             cell.starting_point = 0
 
             time_points = np.arange(cell.frame_number)
@@ -491,7 +497,7 @@ class ImageProcessor:
                     break
 
             # Plot the original data, smoothed data, and the slope
-            
+
             # plt.plot(time_points, global_signal, label='Original Data')
             # plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
             # plt.plot(time_points, slope, label='Slope')
@@ -502,7 +508,7 @@ class ImageProcessor:
             # plt.show()
 
             # print("Transition Point:", transition_point)
-            
+
             if transition_point > 0:
                 cell.starting_point = transition_point  # individual starting point
             else:
@@ -871,5 +877,4 @@ class ImageProcessor:
             io.imsave(save_path + '/'+ self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif', cell.give_ratio_image(), check_contrast=False)
 
 
-        
-    
+

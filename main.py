@@ -9,7 +9,6 @@ from GUI import TDarts_GUI
 from src.general.logger import Logger
 from src.analysis.Bead_Contact_GUI import BeadContactGUI
 from src.analysis.GUI_no_beads import GUInoBeads
-from src.analysis.GUInoBeads_local import GUInoBeads_local
 import gc
 from src.general.InfoToComputer import InfoToComputer
 import fnmatch
@@ -88,13 +87,14 @@ def main(gui_enabled):
                 time_of_addition_dict[file] = gui_no_beads.get_time_of_addition()
                 del gui_no_beads
         elif parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
-            cell_positions_dict = dict()
-            for file in files_for_further_processing:
-                file_path = os.path.join(input_directory, file)
-                gui_no_beads_local = GUInoBeads_local(file, file_path, parameters)
-                gui_no_beads_local.run_main_loop()
-                cell_positions_dict[file] = gui_no_beads_local.get_cell_positions()
-                del gui_no_beads_local
+            # cell_positions_dict = dict()
+            # for file in files_for_further_processing:
+            #     file_path = os.path.join(input_directory, file)
+            #     gui_no_beads_local = GUInoBeads_local(file, file_path, parameters)
+            #     gui_no_beads_local.run_main_loop()
+            #     cell_positions_dict[file] = gui_no_beads_local.get_cell_positions()
+            #     del gui_no_beads_local
+            pass
 
     for file in files_for_further_processing:
         if parameters["properties_of_measurement"]["bead_contact"]:
@@ -116,7 +116,7 @@ def main(gui_enabled):
 
         parameters["input_output"]["filename"] = file
         filename = os.path.join(input_directory, file)
-        Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition, cell_positions_dict)
+        Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition)
 
 
         print("Now processing the following file: " + file)
