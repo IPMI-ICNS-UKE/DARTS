@@ -13,6 +13,8 @@ class GUInoBeads_local():
         self.image = cell.ratio
         self.mean_ratio_list = cell.mean_ratio_list  # Using mean_ratio_list for the global signal
 
+        self.cell_denied_flag = False
+
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 800
 
@@ -69,7 +71,7 @@ class GUInoBeads_local():
         self.starting_frame_label.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.8)
 
         # Close button to finalize the selection and close GUI
-        self.close_button = Button(self.root, text="Close", command=self.close_gui)
+        self.close_button = Button(self.root, text="Close & Continue", command=self.close_and_continue_gui)
         self.close_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.85)
 
         self.cancel_button = Button(self.root, text='Cancel', command=self.cancel)
@@ -150,7 +152,7 @@ class GUInoBeads_local():
                 print("Invalid input. Please enter an integer.")
         elif self.determination_choice.get() == 2:  # Automatic
             print("Automatic starting point determination selected.")
-            self.starting_frame = "automatic"  # Or set to an appropriate automatic value
+            self.starting_frame = None
             self.starting_frame_label.config(text="Current Starting Frame: Automatic")
 
         # Close the pop-up
@@ -158,9 +160,11 @@ class GUInoBeads_local():
 
     def deny_cell(self):
         print("Cell denied.")
-        # Add further processing if needed for "deny cell" action
+        self.cell_denied_flag = True
+        self.close_gui()
 
-    def close_gui(self):
+
+    def close_and_continue_gui(self):
         if self.starting_frame is None:
             print("No starting frame defined.")
         else:

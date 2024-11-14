@@ -462,69 +462,82 @@ class ImageProcessor:
         # Adjust the slope threshold based on the actual frame rate, 40.0
         # slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
 
-        for i, cell in enumerate(self.cell_list_for_processing):
+        for i, cell in enumerate(self.cell_list):
             cell_GUI_no_beads_local = GUInoBeads_local(cell, i, self.parameters)
             cell_GUI_no_beads_local.run_main_loop()
             manual_starting_frame = cell_GUI_no_beads_local.starting_frame
+            cell_denied = cell_GUI_no_beads_local.cell_denied_flag
+
             del cell_GUI_no_beads_local
 
-            if manual_starting_frame is None:  # TODO continue
+            if cell_denied:
+                self.cell_list.remove(cell)
+                continue
 
-            cell.starting_point = 0
+            if manual_starting_frame is None:
+                cell.starting_point = 0
 
-            time_points = np.arange(cell.frame_number)
-            global_signal = np.array(cell.mean_ratio_list)
+                time_points = np.arange(cell.frame_number)
+                global_signal = np.array(cell.mean_ratio_list)
 
-            # Smooth the global signal
-            smoothed_global_signal = savgol_filter(global_signal, window_length=15, polyorder=3)
+                # Smooth the global signal
+                smoothed_global_signal = savgol_filter(global_signal, window_length=15, polyorder=3)
 
-            # Calculate the first derivative (slope)
-            slope = np.gradient(smoothed_global_signal)
+                # Calculate the first derivative (slope)
+                slope = np.gradient(smoothed_global_signal)
 
-            # Smooth the slope using a Savitzky-Golay filter
-            smoothed_slope = savgol_filter(slope, window_length=15, polyorder=3)
+                # Smooth the slope using a Savitzky-Golay filter
+                smoothed_slope = savgol_filter(slope, window_length=15, polyorder=3)
 
-            # Find the point where the slope surpasses the threshold
-            transition_point = 0
+                # Find the point where the slope surpasses the threshold
+                transition_point = 0
 
-            # Specify the consecutive frames threshold
-            consecutive_frames_threshold = self.frames_per_second
+                # Specify the consecutive frames threshold
+                consecutive_frames_threshold = self.frames_per_second
 
-            # Check if the slope exceeds the threshold for at least x frames
-            for t in range(len(time_points)-int(consecutive_frames_threshold)):
-                if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_treshold_per_second):
-                    transition_point = t
-                    break
+                # Check if the slope exceeds the threshold for at least x frames
+                for t in range(len(time_points)-int(consecutive_frames_threshold)):
+                    if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_treshold_per_second):
+                        transition_point = t
+                        break
 
-            # Plot the original data, smoothed data, and the slope
+                # Plot the original data, smoothed data, and the slope
 
-            # plt.plot(time_points, global_signal, label='Original Data')
-            # plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
-            # plt.plot(time_points, slope, label='Slope')
-            # plt.axvline(x=transition_point, color='r', linestyle='--', label='Transition Point')
-            # plt.xlabel('Time Points')
-            # plt.ylabel('Global Signal')
-            # plt.legend()
-            # plt.show()
+                # plt.plot(time_points, global_signal, label='Original Data')
+                # plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
+                # plt.plot(time_points, slope, label='Slope')
+                # plt.axvline(x=transition_point, color='r', linestyle='--', label='Transition Point')
+                # plt.xlabel('Time Points')
+                # plt.ylabel('Global Signal')
+                # plt.legend()
+                # plt.show()
 
-            # print("Transition Point:", transition_point)
+                # print("Transition Point:", transition_point)
 
-            if transition_point > 0:
-                cell.starting_point = transition_point  # individual starting point
+                if transition_point > 0:
+                    cell.starting_point = transition_point  # individual starting point
+                else:
+                    cell.starting_point = -1  # no individual starting point
             else:
-                cell.starting_point = -1  # no individual starting point
-
-        # TODO: GUI for individual cells (global signal, start point, manual or automated, image, slider)
+                cell.starting_point = manual_starting_frame
 
         # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
         # B. First, the mean starting point of cells with starting point > 0 is calculated.
         # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
         #    point of  A.
-        individual_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if cell.starting_point > 0]
-        mean_individual_starting_point = sum(individual_starting_points)/len(individual_starting_points)
-        cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
-        for cell in cells_without_individual_starting_point:
-            cell.starting_point = int(mean_individual_starting_point)
+
+        try:
+            individual_valid_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if
+                                                cell.starting_point > 0]
+            mean_individual_starting_point = sum(individual_valid_starting_points) / len(individual_valid_starting_points)
+            cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
+            for cell in cells_without_individual_starting_point:
+                cell.starting_point = int(mean_individual_starting_point)
+        except Exception as E:
+            print(E)
+            self.logger.log_and_print(message="Exception occurred: Error in starting point definition !",
+                                      level=logging.ERROR, logger=self.logger)
+
 
 
 
