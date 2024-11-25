@@ -456,6 +456,7 @@ class ImageProcessor:
     def determine_starting_points_local_no_beads(self):
         # Specify the desired slope threshold per unit change in frame rate
         slope_threshold_per_fps = 0.0025
+        # test
 
         slope_treshold_per_second = slope_threshold_per_fps * self.frames_per_second
 
