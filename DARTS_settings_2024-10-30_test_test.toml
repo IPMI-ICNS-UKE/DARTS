@@ -1,0 +1,72 @@
+[input_output]
+file_or_directory = "file"
+image_conf = "two-in-one"
+path = "C:/Users/admin/Desktop/data/DARTS_testdata/DARTS_testfile.tif"
+results_dir = "C:/Users/admin/Desktop/data/DARTS_testdata/Darts_res"
+excel_filename_microdomain_data = "microdomain_data.xlsx"
+
+[properties_of_measurement]
+used_microscope = "test"
+scale = 6.5
+frame_rate = 40.0
+resolution = 3
+cell_type = "jurkat"
+cell_types_options = ["jurkat", "primary", "NK"]
+day_of_measurement = "2024-10-30"
+user = "test"
+experiment_name = "test"
+imaging_local_or_global = "local"
+bead_contact = false
+duration_of_measurement = 640.0
+wavelength_1 = 488
+wavelength_2 = 561
+time_of_measurement_before_starting_point = 1.0
+time_of_measurement_after_starting_point = 15.0
+
+[properties_of_measurement.calibration_parameters_cell_types]
+[properties_of_measurement.calibration_parameters_cell_types.jurkat]
+
+[properties_of_measurement.calibration_parameters_cell_types.NK]
+
+[properties_of_measurement.calibration_parameters_cell_types.primary]
+
+
+[processing_pipeline]
+[processing_pipeline.postprocessing]
+channel_alignment_in_pipeline = false
+channel_alignment_each_frame = false
+registration_method = "SITK"
+background_sub_in_pipeline = false
+cell_segmentation_tracking_in_pipeline = true
+deconvolution_in_pipeline = false
+deconvolution_algorithm = "LR"
+TDE_lambda = ""
+TDE_lambda_t = ""
+bleaching_correction_in_pipeline = false
+bleaching_correction_algorithm = "additiv no fit"
+ratio_images = true
+median_filter_kernel = 3
+
+[processing_pipeline.postprocessing.psf]
+type = "confocal"
+lambdaEx_ch1 = 488
+lambdaEm_ch1 = 520
+lambdaEx_ch2 = 488
+lambdaEm_ch2 = 600
+numAper = 1.4
+magObj = 100
+rindexObj = 1.518
+ccdSize = 6450
+dz = 0
+nslices = 1
+depth = 0
+rindexSp = 1.518
+nor = 0
+xysize = 150
+
+[processing_pipeline.shape_normalization]
+shape_normalization = true
+
+[processing_pipeline.analysis]
+hotspot_detection = true
+dartboard_projection = true

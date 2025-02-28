@@ -25,6 +25,7 @@ from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
 
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
+from src.analysis.GUInoBeads_local import GUInoBeads_local
 
 try:
     import SimpleITK as sitk
@@ -68,6 +69,7 @@ class ImageProcessor:
         self.channel2 = image_ch2
         self.logger = logger
         self.time_of_addition = time_of_addition
+
         # self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
 
         self.wl1 = self.parameters["properties_of_measurement"]["wavelength_1"]  # wavelength channel1
@@ -452,71 +454,97 @@ class ImageProcessor:
 
 
     def determine_starting_points_local_no_beads(self):
-        # Specify the desired slope threshold per unit change in frame rate
-        slope_threshold_per_fps = 0.0025
 
-        slope_treshold_per_second = slope_threshold_per_fps * self.frames_per_second
-
-        # Adjust the slope threshold based on the actual frame rate, 40.0
-        # slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
+        for i, cell in enumerate(self.cell_list):
+            cell.starting_point_auto = self.automated_starting_point(cell)
 
 
-        for i, cell in enumerate(self.cell_list_for_processing):
-            cell.starting_point = 0
+        for i, cell in enumerate(self.cell_list):
+            cell_GUI_no_beads_local = GUInoBeads_local(cell, i, self.parameters,self.ratio_converter)
+            cell_GUI_no_beads_local.run_main_loop()
+            manual_starting_frame = cell_GUI_no_beads_local.starting_frame
+            cell_denied = cell_GUI_no_beads_local.cell_denied_flag
 
-            time_points = np.arange(cell.frame_number)
-            global_signal = np.array(cell.mean_ratio_list)
+            del cell_GUI_no_beads_local
 
-            # Smooth the global signal
-            smoothed_global_signal = savgol_filter(global_signal, window_length=15, polyorder=3)
-
-            # Calculate the first derivative (slope)
-            slope = np.gradient(smoothed_global_signal)
-
-            # Smooth the slope using a Savitzky-Golay filter
-            smoothed_slope = savgol_filter(slope, window_length=15, polyorder=3)
-
-            # Find the point where the slope surpasses the threshold
-            transition_point = 0
-
-            # Specify the consecutive frames threshold
-            consecutive_frames_threshold = self.frames_per_second
-
-            # Check if the slope exceeds the threshold for at least x frames
-            for t in range(len(time_points)-int(consecutive_frames_threshold)):
-                if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_treshold_per_second):
-                    transition_point = t
-                    break
-
-            # Plot the original data, smoothed data, and the slope
-            
-            # plt.plot(time_points, global_signal, label='Original Data')
-            # plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
-            # plt.plot(time_points, slope, label='Slope')
-            # plt.axvline(x=transition_point, color='r', linestyle='--', label='Transition Point')
-            # plt.xlabel('Time Points')
-            # plt.ylabel('Global Signal')
-            # plt.legend()
-            # plt.show()
-
-            # print("Transition Point:", transition_point)
-            
-            if transition_point > 0:
-                cell.starting_point = transition_point  # individual starting point
-            else:
-                cell.starting_point = -1  # no individual starting point
+            if cell_denied:
+                self.cell_list.remove(cell)
+                continue
 
         # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
         # B. First, the mean starting point of cells with starting point > 0 is calculated.
         # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
         #    point of  A.
-        individual_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if cell.starting_point > 0]
-        mean_individual_starting_point = sum(individual_starting_points)/len(individual_starting_points)
-        cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
-        for cell in cells_without_individual_starting_point:
-            cell.starting_point = int(mean_individual_starting_point)
+
+        try:
+            individual_valid_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if
+                                                cell.starting_point > 0]
+            mean_individual_starting_point = sum(individual_valid_starting_points) / len(individual_valid_starting_points)
+            cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
+            for cell in cells_without_individual_starting_point:
+                cell.starting_point = int(mean_individual_starting_point)
+        except Exception as E:
+            print(E)
+            self.logger.log_and_print(message="Exception occurred: Error in starting point definition !",
+                                      level=logging.ERROR, logger=self.logger)
 
 
+    def automated_starting_point(self, cell):
+
+        # Specify the desired slope threshold per unit change in frame rate
+        slope_threshold_per_fps = 0.0025
+        # test
+
+        slope_threshold_per_second = slope_threshold_per_fps * self.frames_per_second
+
+        # Adjust the slope threshold based on the actual frame rate, 40.0
+        # slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
+
+        cell.starting_point = 0
+
+        time_points = np.arange(cell.frame_number)
+        global_signal = np.array(cell.mean_ratio_list)
+
+        # Smooth the global signal
+        smoothed_global_signal = savgol_filter(global_signal, window_length=5, polyorder=3)
+
+        # Calculate the first derivative (slope)
+        slope = np.gradient(smoothed_global_signal)
+
+        # Smooth the slope using a Savitzky-Golay filter
+        smoothed_slope = savgol_filter(slope, window_length=5, polyorder=3)
+
+        # Find the point where the slope surpasses the threshold
+        transition_point = []
+
+        # Specify the consecutive frames threshold
+        consecutive_frames_threshold = 15
+
+        # Check if the slope exceeds the threshold for at least x frames
+        for t in range(len(time_points) - int(consecutive_frames_threshold)):
+            if np.all(smoothed_slope[t:t + int(consecutive_frames_threshold)] > slope_threshold_per_fps):
+                transition_point.append(t)
+                break
+
+        # Plot the original data, smoothed data, and the slope
+        # plt.plot(time_points, global_signal, label='Original Data')
+        #plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
+        #plt.plot(time_points, slope, label='Slope')
+        #for tp in transition_point:
+        #    plt.axvline(x=tp, color='r', linestyle='--', label='Transition Point')
+        #plt.xlabel('Time Points')
+        #plt.ylabel('Global Signal')
+        #plt.legend()
+        # plt.show()
+
+        # print("Transition Point:", transition_point)
+
+        if len(transition_point) > 0 and transition_point[0]>0:
+            cell.starting_point = transition_point[0]  # individual starting point
+        else:
+            cell.starting_point = -1  # no individual starting point
+
+        return cell.starting_point
 
 
     def assign_bead_contacts_to_cells(self):
@@ -867,5 +895,4 @@ class ImageProcessor:
             io.imsave(save_path + '/'+ self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif', cell.give_ratio_image(), check_contrast=False)
 
 
-        
-    
+
