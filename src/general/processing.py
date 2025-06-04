@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from src.general.cell import CellImage, ChannelImage
 from src.postprocessing.segmentation import SegmentationSD
 from src.postprocessing.CellTracker_ROI import CellTracker
-from src.postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
+from src.postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon, LWDeconvolution
 from src.postprocessing.registration import Registration_SITK, Registration_SR
 from src.analysis import HotSpotDetection
 from src.shapenormalization.shapenormalization import ShapeNormalization
@@ -22,6 +22,7 @@ from src.analysis.Dartboard import DartboardGenerator
 from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
 from src.general.RatioToConcentrationConverter import RatioConverter
 from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
+from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, SpatialUpsampling
 
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
@@ -108,12 +109,27 @@ class ImageProcessor:
 
         # background subtraction
         self.background_subtractor = BackgroundSubtractor(self.segmentation)
+
+        #UpSampling:
+        
+        if self.parameter["processing_pipeline"]["postprocessing"]["upsampling"] == "SU":
+            self.upsample() = SpatialUpsampling()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling"] == "FU":
+            self.upsample() = FourierUpsampling()
+            
+
+                
+        
+
+
         # deconvolution
         # self.deconvolution_parameters = self.parameters["deconvolution"]
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "TDE":
             self.deconvolution = TDEDeconvolution()
         elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LR":
             self.deconvolution = LRDeconvolution()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LW":
+            self.deconvolution = LWDeconvolution()
         else:
             self.deconvolution = BaseDecon()
         # bleaching correction
