@@ -9,10 +9,48 @@ xp = np if cp is None else cp
 if xp is not cp:
     warnings.warn("CuPy not found – running on CPU / NumPy.", RuntimeWarning)
 
+class BaseUpsample:
+    """Boiler-plate wrapper so the pipeline can treat upsampling like deconvolution."""
 
-# ---------------------------------------------------------------------
-# 2.  Helper functions
-# ---------------------------------------------------------------------
+    def execute(self, input_roi_channel1, input_roi_channel2, parameters):
+        out1, out2 = self.upsample(input_roi_channel1,
+                                   input_roi_channel2,
+                                   parameters)
+        return out1, out2
+
+    def upsample(self, input_roi_channel1, input_roi_channel2, parameters):
+        return input_roi_channel1, input_roi_channel2
+
+    def give_name(self):
+        return "...upsampling..."
+
+
+class SpatialUpsampling(BaseUpsample):
+    """Zero-insertion upsampling (fast, keeps exact pixel values)."""
+
+    def upsample(self, input_roi_channel1, input_roi_channel2, parameters):
+        n = parameters['processing_pipeline']['postprocessing'].get(
+            'upsample_factor', 2)
+        return (spatial_upsample(input_roi_channel1, n),
+                spatial_upsample(input_roi_channel2, n))
+
+    def give_name(self):
+        return "Spatial Upsampling"
+
+
+class FourierUpsampling(BaseUpsample):
+    """FFT zero-padding upsampling (smooth, preserves frequency content)."""
+
+    def upsample(self, input_roi_channel1, input_roi_channel2, parameters):
+        n = parameters['processing_pipeline']['postprocessing'].get(
+            'upsample_factor', 2)
+        return (fourier_upsample(input_roi_channel1, n),
+                fourier_upsample(input_roi_channel2, n))
+
+    def give_name(self):
+        return "Fourier Upsampling"
+
+
 def spatial_upsample(stack: xp.ndarray, n: int = 2) -> xp.ndarray:
     """
     Insert (n−1) zero rows/cols between existing pixels.
@@ -60,44 +98,3 @@ def fourier_upsample(stack: xp.ndarray, n: int = 2) -> xp.ndarray:
         out[i] = xp.real(xp.fft.ifftn(xp.fft.ifftshift(fpad)))
 
     return out[0] if add_axis else out
-
-class BaseUpsample:
-    """Boiler-plate wrapper so the pipeline can treat upsampling like deconvolution."""
-
-    def execute(self, input_roi_channel1, input_roi_channel2, parameters):
-        out1, out2 = self.upsample(input_roi_channel1,
-                                   input_roi_channel2,
-                                   parameters)
-        return out1, out2
-
-    def upsample(self, input_roi_channel1, input_roi_channel2, parameters):
-        return input_roi_channel1, input_roi_channel2
-
-    def give_name(self):
-        return "...upsampling..."
-
-
-class SpatialUpsampling(BaseUpsample):
-    """Zero-insertion upsampling (fast, keeps exact pixel values)."""
-
-    def upsample(self, input_roi_channel1, input_roi_channel2, parameters):
-        n = parameters['processing_pipeline']['postprocessing'].get(
-            'upsample_factor', 2)
-        return (spatial_upsample(input_roi_channel1, n),
-                spatial_upsample(input_roi_channel2, n))
-
-    def give_name(self):
-        return "Spatial Upsampling"
-
-
-class FourierUpsampling(BaseUpsample):
-    """FFT zero-padding upsampling (smooth, preserves frequency content)."""
-
-    def upsample(self, input_roi_channel1, input_roi_channel2, parameters):
-        n = parameters['processing_pipeline']['postprocessing'].get(
-            'upsample_factor', 2)
-        return (fourier_upsample(input_roi_channel1, n),
-                fourier_upsample(input_roi_channel2, n))
-
-    def give_name(self):
-        return "Fourier Upsampling"

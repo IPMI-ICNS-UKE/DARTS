@@ -116,7 +116,6 @@ class ImageProcessor:
             self.upsample() = SpatialUpsampling()
         elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling"] == "FU":
             self.upsample() = FourierUpsampling()
-            
 
                 
         

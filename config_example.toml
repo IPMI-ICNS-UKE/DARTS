@@ -62,6 +62,7 @@ bleaching_correction_in_pipeline = true
 bleaching_correction_algorithm = "additiv no fit"
 ratio_images = true
 median_filter_kernel = 3
+upsampling = ""
 
 [processing_pipeline.postprocessing.psf]
 type = "confocal"

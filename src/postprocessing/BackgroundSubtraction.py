@@ -1,7 +1,7 @@
 import skimage.measure
 import numpy as np
 from skimage.filters import threshold_mean
-
+import pywt
 
 class BackgroundSubtractor():
     def __init__(self, segmentation):
@@ -76,3 +76,166 @@ class BackgroundSubtractor():
             background_subtracted_channel[frame] = copy
 
         return background_subtracted_channel
+
+
+
+class WaveletBackgroundSubtractor:
+    """
+    Wavelet-based per-pixel background estimator (refactored from the original
+    procedural code).  Usage:
+
+        wbs = WaveletBackgroundSubtractor(background_flag=3)
+        clean = wbs.subtract_background(img_stack)          # (T, H, W) or (H, W)
+
+    Parameters
+    ----------
+    background_flag : int {1, …, 5}
+        Controls the pre-clipping strategy (see _precondition()).
+    th : float
+        Threshold term used in iterative clipping (default 1 → √|res| / 2).
+    dlevel : int
+        Wavelet decomposition level.
+    wavename : str
+        PyWavelets wavelet family name.
+    max_iter : int
+        Iterations of “estimate → clip bright outliers → re-estimate”.
+    dtype : numpy dtype
+        Working dtype for internal arrays (default float32).
+    """
+
+    def __init__(
+        self,
+        background_flag: int = 1,
+        th: float = 1.0,
+        dlevel: int = 7,
+        wavename: str = "db6",
+        max_iter: int = 3,
+        dtype=np.float32,
+    ):
+        if background_flag not in (1, 2, 3, 4, 5):
+            raise ValueError("background_flag must be 1 … 5")
+        self.flag = background_flag
+        self.th = th
+        self.dlevel = dlevel
+        self.wavename = wavename
+        self.max_iter = max_iter
+        self.dtype = dtype
+
+
+    def subtract_background(self, imgs):
+        """
+        Apply wavelet background removal.
+
+        Parameters
+        ----------
+        imgs : ndarray
+            Shape (H, W) or (T, H, W); any integer or float type.
+
+        Returns
+        -------
+        ndarray
+            Background-subtracted array with the same shape as `imgs`
+            and dtype as given in constructor.
+        """
+        imgs = np.asarray(imgs, dtype=self.dtype)
+        original_shape = imgs.shape
+        is_stack = imgs.ndim == 3
+
+        # Normalise 0-1 to get scale invariance (original code behaviour)
+        scaler = np.max(imgs)
+        if scaler == 0:
+            return imgs.copy()  # blank input, nothing to do
+        imgs = imgs / scaler
+
+        # Pre-condition according to the chosen flag
+        imgs_pc = self._precondition(imgs)
+
+        # Estimate background
+        bg = self._background_estimation(imgs_pc)
+
+        # Subtract and rescale back
+        cleaned = imgs - bg
+        cleaned = np.clip(cleaned, 0, None)  # keep non-negative
+        cleaned *= scaler
+
+        return cleaned.reshape(original_shape)
+
+    
+    #INTERNAL HELPERS
+    def _precondition(self, img):
+        """
+        Implements the five branches of the original method1.
+        Operates on a float32 array already normalised to [0, 1].
+        """
+        if self.flag == 1:
+            return img / 2.5
+        if self.flag == 2:
+            return img / 2.0
+        # flags 3-5: clip bright pixels before background estimation
+        mean_val = np.mean(img)
+        if self.flag == 3:
+            clip_val = mean_val / 2.5
+        elif self.flag == 4:
+            clip_val = mean_val / 2.0
+        else:  # flag 5
+            clip_val = mean_val
+        img_clipped = img.copy()
+        img_clipped[img > clip_val] = clip_val
+        return img_clipped
+
+    #wavelet helpers
+    @staticmethod
+    def _low_freq_only(coeffs, dlevel):
+        """
+        Zeroes detail coefficients so that inverse transform returns the
+        approximation (low-frequency) component only.
+        """
+        vec = [coeffs[0]]  # keep cA_n
+        for _ in range(1, dlevel + 1):
+            cH = np.zeros_like(coeffs[1][0])
+            vec.append((cH, cH, cH))
+        return vec
+
+    @staticmethod
+    def _trim_to_original(arr, target_shape):
+        """
+        PyWavelets may pad images when sizes are odd.  Trim to original shape.
+        """
+        return arr[: target_shape[0], : target_shape[1]]
+
+    # main background estimator
+    def _background_estimation(self, imgs):
+        """
+        Core of the algorithm; works for 2-D or 3-D stacks.
+        """
+        if imgs.ndim == 2:
+            return self._background_single(imgs)
+        # 3-D time stack
+        t, h, w = imgs.shape
+        bg = np.zeros_like(imgs)
+        for idx in range(t):
+            bg[idx] = self._background_single(imgs[idx])
+        return bg
+
+    def _background_single(self, img):
+        """
+        Estimate background for a single 2-D frame.
+        """
+        h, w = img.shape
+        res = img.copy()
+
+        for _ in range(self.max_iter):
+            coeffs = pywt.wavedec2(res, wavelet=self.wavename, level=self.dlevel)
+            vec = self._low_freq_only(coeffs, self.dlevel)
+            b_iter = pywt.waverec2(vec, wavelet=self.wavename)
+            b_iter = self._trim_to_original(b_iter, (h, w))
+
+            # Optional iterative clipping step
+            if self.th > 0:
+                eps = np.sqrt(np.abs(res)) / 2.0
+                mask = img > (b_iter + eps)
+                res[mask] = b_iter[mask] + eps[mask]
+            else:
+                break  # no clipping requested
+
+        return b_iter.astype(self.dtype)
