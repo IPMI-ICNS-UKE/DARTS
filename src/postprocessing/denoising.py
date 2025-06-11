@@ -1,6 +1,5 @@
 import gc
-from .denoising.operation import *
-from .denoising.sparse_iteration import *
+from .denoising.sparse_hessian import *
 import numpy as np
 try:
     import cupy as cp
@@ -28,12 +27,11 @@ class SparseHessian(BaseDenoise):
         super().__init__()
     
     def denoise(self, input_roi_channel1, input_roi_channel2, parameters):
-        # todo implementation with config file
-        iters    = 100
-        fidelity = 150
-        sparsity = 10
-        contiz   = 0.5
-        mu       = 1
+        iters    = parameters["processing_pipeline"]["postprocessing"]["denoise"]["iterations"]
+        fidelity = parameters["processing_pipeline"]["postprocessing"]["denoise"]["fidelity"]
+        sparsity = parameters["processing_pipeline"]["postprocessing"]["denoise"]["sparsity"]
+        contiz   = parameters["processing_pipeline"]["postprocessing"]["denoise"]["contiz"]
+        mu       = parameters["processing_pipeline"]["postprocessing"]["denoise"]["mu"]
         
         out1 = np.empty_like(input_roi_channel1, dtype=float)
         out2 = np.empty_like(input_roi_channel2, dtype=float)

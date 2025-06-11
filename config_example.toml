@@ -81,6 +81,15 @@ rindexSp = 1.518
 nor = 0
 xysize = 150
 
+[processing_pipeline.postprocessing.denoise]
+denoising_algorithm = "sparse"
+iterations = 20
+fidelity = 150
+sparsity = 10
+contiz = 0.5
+mu = 1
+
+
 [processing_pipeline.shape_normalization]
 shape_normalization = true
 

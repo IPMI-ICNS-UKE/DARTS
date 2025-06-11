@@ -87,9 +87,7 @@ class LWDeconvolution(BaseDecon):
  
         psf_ch1, psf_ch2 = self.get_psf(input_roi_channel1, parameters)
 
-        # number of Land-Weber iterations should come from the pipeline;
-        # default to 20
-        n_iter = 20 #ToDo
+        n_iter = parameters["processing_pipeline"]["postprocessing"]["decon_iter"]
 
         # pre-compute the OTF (= FFT of the PSF) once per channel
         otf_ch1 = xp.fft.fftn(psf_ch1.data,s=input_roi_channel1.shape[-2:])
