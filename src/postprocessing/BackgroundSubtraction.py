@@ -77,6 +77,8 @@ class BackgroundSubtractor():
 
         return background_subtracted_channel
 
+    def give_name(self):
+        return "Background Substraction Masked"
 
 
 class WaveletBackgroundSubtractor:

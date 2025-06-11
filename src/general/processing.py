@@ -23,7 +23,7 @@ from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultip
 from src.general.RatioToConcentrationConverter import RatioConverter
 from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
 from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, SpatialUpsampling
-
+from src.postprocessing.denoising import SparseHessian
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
 
@@ -109,7 +109,7 @@ class ImageProcessor:
 
         # background subtraction
         self.background_subtractor = BackgroundSubtractor(self.segmentation)
-
+        
         #UpSampling:
         
         if self.parameter["processing_pipeline"]["postprocessing"]["upsampling"] == "SU":
@@ -117,7 +117,9 @@ class ImageProcessor:
         elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling"] == "FU":
             self.upsample() = FourierUpsampling()
 
-                
+        #denoising SPARSE
+        if self.parameter["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower == "sparse":
+            self.denoise = SparseHessian()        
         
 
 
