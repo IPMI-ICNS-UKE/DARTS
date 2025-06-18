@@ -83,7 +83,7 @@ nor = 0
 xysize = 150
 
 [processing_pipeline.postprocessing.denoise]
-denoising_algorithm = "sparse"
+denoising_algorithm = false
 iterations = 20
 fidelity = 150
 sparsity = 10

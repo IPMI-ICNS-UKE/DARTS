@@ -21,9 +21,9 @@ from src.shapenormalization.shapenormalization import ShapeNormalization
 from src.analysis.Dartboard import DartboardGenerator
 from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
 from src.general.RatioToConcentrationConverter import RatioConverter
-from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
+from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor, WaveletBackgroundSubtractor
 from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, SpatialUpsampling
-from src.postprocessing.denoising import SparseHessian
+from src.postprocessing.denoising import sparse_hessian
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
 
@@ -108,18 +108,20 @@ class ImageProcessor:
         self.segmentation = SegmentationSD(self.model)
 
         # background subtraction
-        self.background_subtractor = BackgroundSubtractor(self.segmentation)
-        
+        if self.parameters["processing_pipeline"]["postprocessing"]["background_substractor_algorithm"] == "Masked":
+            self.background_subtractor = BackgroundSubtractor(self.segmentation)
+        elif self.parameters["processing_pipeline"]["postprocessing"]["background_substractor_algorithm"] == "Wavelet":
+            self.background_subtraction = WaveletBackgroundSubtractor(self.segmentation)
         #UpSampling:
         
-        if self.parameter["processing_pipeline"]["postprocessing"]["upsampling"] == "SU":
-            self.upsample() = SpatialUpsampling()
-        elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling"] == "FU":
-            self.upsample() = FourierUpsampling()
+        if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Spatial":
+            self.upsample =  SpatialUpsampling()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Fourier":
+            self.upsample = FourierUpsampling()
 
         #denoising SPARSE
-        if self.parameter["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower == "sparse":
-            self.denoise = SparseHessian()        
+        if self.parameter["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower == "SparseHessian":
+            self.denoise = sparse_hessian()        
         
 
 

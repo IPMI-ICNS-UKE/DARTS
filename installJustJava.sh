@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# chmod +x installJustJava.sh 
+
 echo "👉 Checking for Java Runtime …"
 if ! command -v java &>/dev/null ; then
   echo "⏬ Java not found — installing latest OpenJDK via Homebrew."

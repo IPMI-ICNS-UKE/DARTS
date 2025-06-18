@@ -3,10 +3,11 @@ import numpy as np
 try:
     import cupy as cp
 except ImportError:
-    cupy = None
+    cp = None
+
 xp = np if cp is None else cp
 if xp is not cp:
-    warnings.warn("could not import cupy... falling back to numpy & cpu.")
+    warnings.warn("CuPy not found – running on CPU / NumPy.", RuntimeWarning)
 
 def operation_xx(gsize):
     delta_xx = xp.array([[[1, -2, 1]]], dtype = 'float32')

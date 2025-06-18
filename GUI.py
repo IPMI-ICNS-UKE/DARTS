@@ -242,7 +242,44 @@ class TDarts_GUI():
         self.check_box_background_subtraction_in_pipeline.select()
         # self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
 
+        background_subtraction_algorithms = [
+            "Masked",
+            "Wavelet" #placeholder name
+        ]
+        self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
+        self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
+        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline, self.background_subtraction_algorithm, *background_subtraction_algorithms, command=self.decon_selection_changed)
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_background_substraction.grid(column=3, row=14, sticky="W")
+
         #
+
+        self.label_upsampling = Label(self.label_processing_pipeline, text="Upsampling:  ")
+        self.label_upsampling.grid(column=4, row=14, sticky="W")
+        self.upsampling_in_pipeline = IntVar()
+        self.check_box_upsampling_in_pipeline = Checkbutton(self.label_processing_pipeline,
+                                                                        variable=self.upsampling_in_pipeline,
+                                                                        onvalue=1,
+                                                                        offvalue=0,
+                                                                        command=self.update_upsampling) #todo
+        self.check_box_upsampling_in_pipeline.grid(column=5, row=14, sticky="W")
+        self.check_box_upsampling_in_pipeline.deselect() #default: 0 / off
+        
+        #
+
+        upsampling_algorithms = [
+            "Fourier",
+            "Spatial"
+        ]
+        self.upsampling_algorithm = StringVar(self.label_processing_pipeline)
+        self.upsampling_algorithm.set(upsampling_algorithms[0])
+        self.option_menu_upsampling = OptionMenu(self.label_processing_pipeline, self.upsampling_algorithm, *upsampling_algorithms, command=self.decon_selection_changed)
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_upsampling.grid(column=6, row=14, sticky="W")
+
+        self.upsampling_in_pipeline_text_boxes = []
+        #
+
         self.label_segmentation_tracking = Label(self.label_processing_pipeline, text="Cell segmentation/Tracking:  ")
         self.label_segmentation_tracking.grid(column=1, row=15, sticky="W")
         self.segmentation_tracking_in_pipeline = IntVar()
@@ -254,7 +291,34 @@ class TDarts_GUI():
         self.check_box_segmentation_tracking_in_pipeline.grid(column=2, row=15, sticky="W")
         self.check_box_segmentation_tracking_in_pipeline.select()
         self.check_box_segmentation_tracking_in_pipeline.config(state=DISABLED)
+        
         #
+        
+        self.label_denoising = Label(self.label_processing_pipeline, text="Denoising:  ")
+        self.label_denoising.grid(column=4, row=16, sticky="W")
+        self.denoising_in_pipeline = IntVar()
+        self.check_box_denoising_in_pipeline = Checkbutton(self.label_processing_pipeline,
+                                                               variable=self.denoising_in_pipeline,
+                                                               onvalue=1,
+                                                               offvalue=0,
+                                                               command=self.update_denoising)
+        self.check_box_denoising_in_pipeline.grid(column=5, row=16, sticky="W")
+        self.check_box_denoising_in_pipeline.deselect()
+        # self.check_box_deconvolution_in_pipeline.config(state=DISABLED)
+
+        denoising_algorithms = [
+            "SparseHessian"
+        ]
+        self.denoising_algorithm = StringVar(self.label_processing_pipeline)
+        self.denoising_algorithm.set(denoising_algorithms[0])
+        self.option_menu_denoising = OptionMenu(self.label_processing_pipeline, self.denoising_algorithm, *denoising_algorithms, command=self.decon_selection_changed)
+        # self.option_menu_deconvolution.config(state=DISABLED)        self.deconvolution_text_boxes = []
+        self.option_menu_denoising.grid(column=6, row=16, sticky="W")
+        
+        self.denoising_text_boxes = []
+        
+        #
+
         self.label_deconvolution = Label(self.label_processing_pipeline, text="Deconvolution:  ")
         self.label_deconvolution.grid(column=1, row=16, sticky="W")
         self.deconvolution_in_pipeline = IntVar()
@@ -269,7 +333,8 @@ class TDarts_GUI():
 
         deconvolution_algorithms = [
             "LR",
-            "TDE"
+            "TDE",
+            "LW"
         ]
         self.deconvolution_algorithm = StringVar(self.label_processing_pipeline)
         self.deconvolution_algorithm.set(deconvolution_algorithms[0])
@@ -792,6 +857,27 @@ class TDarts_GUI():
             self.check_box_hotspot_detection.config(state=NORMAL)
             self.dartboard_projection_in_pipeline.set(1)
             self.check_box_dartboard_projection.config(state=NORMAL)
+
+
+    def update_upsampling(self):
+        if self.upsampling_in_pipeline.get() == 0:
+            self.option_menu_upsampling.config(state=DISABLED)
+            for textbox in self.upsampling_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.upsampling_in_pipeline.get() == 1:
+            self.option_menu_upsampling.config(state=NORMAL)
+            for textbox in self.upsampling_text_boxes:
+                textbox.config(state=NORMAL)
+
+    def update_denoising(self):
+        if self.denoising_in_pipeline.get() == 0:
+            self.option_menu_denoising.config(state=DISABLED)
+            for textbox in self.denoising_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.denoising_in_pipeline.get() == 1:
+            self.option_menu_denoising.config(state=NORMAL)
+            for textbox in self.denoising_text_boxes:
+                textbox.config(state=NORMAL)
 
     def update_deconvolution(self):
         if self.deconvolution_in_pipeline.get() == 0:
