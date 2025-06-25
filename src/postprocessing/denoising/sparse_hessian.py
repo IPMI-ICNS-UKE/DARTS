@@ -6,9 +6,11 @@ try:
     import cupy as cp
 except ImportError:
     cupy = None
+
 xp = np if cp is None else cp
 if xp is not cp:
-    warnings.warn("could not import cupy... falling back to numpy & cpu.")
+    warnings.warn("CuPy not found – running on CPU / NumPy.", RuntimeWarning)
+    
 
 def sparse_hessian(f, iteration_num = 100, fidelity = 150, sparsity = 10, contiz = 0.5 , mu = 1):
     '''

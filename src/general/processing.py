@@ -108,22 +108,25 @@ class ImageProcessor:
         self.segmentation = SegmentationSD(self.model)
 
         # background subtraction
-        if self.parameters["processing_pipeline"]["postprocessing"]["background_substractor_algorithm"] == "Masked":
-            self.background_subtractor = BackgroundSubtractor(self.segmentation)
-        elif self.parameters["processing_pipeline"]["postprocessing"]["background_substractor_algorithm"] == "Wavelet":
-            self.background_subtraction = WaveletBackgroundSubtractor(self.segmentation)
-        #UpSampling:
+        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
+                self.background_subtractor = BackgroundSubtractor(self.segmentation)
+            elif self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Wavelet":
+                self.background_subtractor = WaveletBackgroundSubtractor(self.segmentation)
         
-        if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Spatial":
-            self.upsample =  SpatialUpsampling()
-        elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Fourier":
-            self.upsample = FourierUpsampling()
+        #UpSampling:
+        if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Spatial":
+                self.upsample =  SpatialUpsampling()
+            elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Fourier":
+                self.upsample = FourierUpsampling()
+
 
         #denoising SPARSE
-        if self.parameter["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower == "SparseHessian":
-            self.denoise = sparse_hessian()        
+        if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower == "SparseHessian":
+                self.denoise = sparse_hessian()        
         
-
 
         # deconvolution
         # self.deconvolution_parameters = self.parameters["deconvolution"]
@@ -287,11 +290,12 @@ class ImageProcessor:
     def clear_outside_of_cells(self):
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
 
+    #TODO
     def background_subtraction(self, channel_1, channel_2):
         print("\nBackground subtraction: ")
         with alive_bar(1, force_tty=True) as bar:
             time.sleep(.005)
-            # background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
+            # background_label_first_frame = self.segmentation.stardist_s   egmentation_in_frame(channel_2[0])
             channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
             channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
             bar()

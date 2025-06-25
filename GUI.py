@@ -166,6 +166,20 @@ class TDarts_GUI():
         # global or local measurement
         self.label_global_or_local = Label(self.properties_of_measurement_frame, text="Imaging intention")
         self.label_global_or_local.grid(column=0, row=8, sticky="W")
+        self.text_experiment_name = Text(self.properties_of_measurement_frame, height=1, width=20)
+        self.text_experiment_name.grid(column=1, row=7, sticky="W")
+
+        # global or local measurement
+        self.label_global_or_local = Label(self.properties_of_measurement_frame, text="Imaging intention")
+        self.label_global_or_local.grid(column=0, row=8, sticky="W")
+        self.local_or_global = StringVar(value="local")
+        self.choose_local = Radiobutton(self.properties_of_measurement_frame, text="local imaging (microdomains)", variable=self.local_or_global,
+                                         value="local", command=self.set_default_settings_for_local_imaging)
+        self.choose_local.grid(column=0, row=9, sticky="W")
+
+        self.choose_global = Radiobutton(self.properties_of_measurement_frame, text="global imaging (ratio)", variable=self.local_or_global,
+                                      value="global", command=self.set_default_settings_for_global_imaging)
+        self.choose_global.grid(column=1, row=9, sticky="W")
         self.local_or_global = StringVar(value="local")
         self.choose_local = Radiobutton(self.properties_of_measurement_frame, text="local imaging (microdomains)", variable=self.local_or_global,
                                          value="local", command=self.set_default_settings_for_local_imaging)
@@ -248,10 +262,13 @@ class TDarts_GUI():
         ]
         self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
         self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
-        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline, self.background_subtraction_algorithm, *background_subtraction_algorithms, command=self.decon_selection_changed)
+        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline, self.background_subtraction_algorithm, *background_subtraction_algorithms, command=self.update_background)
+        # command=self.decon_selection_changed
         # self.option_menu_deconvolution.config(state=DISABLED)
         self.option_menu_background_substraction.grid(column=3, row=14, sticky="W")
-
+        
+        self.background_text_boxes = []
+        self.update_background()
         #
 
         self.label_upsampling = Label(self.label_processing_pipeline, text="Upsampling:  ")
@@ -276,8 +293,8 @@ class TDarts_GUI():
         self.option_menu_upsampling = OptionMenu(self.label_processing_pipeline, self.upsampling_algorithm, *upsampling_algorithms, command=self.decon_selection_changed)
         # self.option_menu_deconvolution.config(state=DISABLED)
         self.option_menu_upsampling.grid(column=6, row=14, sticky="W")
-
-        self.upsampling_in_pipeline_text_boxes = []
+        self.upsampling_text_boxes = []
+        self.update_upsampling()
         #
 
         self.label_segmentation_tracking = Label(self.label_processing_pipeline, text="Cell segmentation/Tracking:  ")
@@ -316,7 +333,7 @@ class TDarts_GUI():
         self.option_menu_denoising.grid(column=6, row=16, sticky="W")
         
         self.denoising_text_boxes = []
-        
+        self.update_denoising()
         #
 
         self.label_deconvolution = Label(self.label_processing_pipeline, text="Deconvolution:  ")
@@ -419,17 +436,22 @@ class TDarts_GUI():
         self.text_psf_ccdSize.grid(column=8, row=20, sticky="W")
         self.deconvolution_text_boxes.append(self.text_psf_ccdSize)
 
-        #
+        # ToDo
+        self.label_Iterations = Label(self.label_processing_pipeline, text="iterations")
+        self.label_Iterations.grid(column=3, row=21, sticky="W")
+        self.text_Iterations = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_Iterations.grid(column=4, row=21, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_Iterations)
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
-        self.label_bleaching_correction.grid(column=1, row=21, sticky="W")
+        self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
         self.bleaching_correction_in_pipeline = IntVar()
         self.check_box_bleaching_correction = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.bleaching_correction_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=self.update_bleaching_correction)
-        self.check_box_bleaching_correction.grid(column=2, row=21, sticky="W")
+        self.check_box_bleaching_correction.grid(column=2, row=22, sticky="W")
         self.check_box_bleaching_correction.select()
         # self.check_box_bleaching_correction.config(state=DISABLED)
 
@@ -444,25 +466,25 @@ class TDarts_GUI():
         self.option_menu_bleaching_correction = OptionMenu(self.label_processing_pipeline, self.bleaching_correction_algorithm,
                                                     *bleaching_correction_algorithms)
         # self.option_menu_bleaching_correction.config(state=DISABLED)
-        self.option_menu_bleaching_correction.grid(column=3, row=21, sticky="W")
+        self.option_menu_bleaching_correction.grid(column=3, row=22, sticky="W")
         #
         self.label_ratio_generation = Label(self.label_processing_pipeline, text="Ratio images:  ")
-        self.label_ratio_generation.grid(column=1, row=22, sticky="W")
+        self.label_ratio_generation.grid(column=1, row=23, sticky="W")
         self.ratio_generation_in_pipeline = IntVar()
         self.check_box_ratio_generation = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.ratio_generation_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=None)
-        self.check_box_ratio_generation.grid(column=2, row=22, sticky="W")
+        self.check_box_ratio_generation.grid(column=2, row=23, sticky="W")
         self.check_box_ratio_generation.select()
         self.check_box_ratio_generation.config(state=DISABLED)
 
         self.empty_label = Label(self.label_processing_pipeline, text="")
-        self.empty_label.grid(column=1, row=23, sticky="W")
+        self.empty_label.grid(column=1, row=24, sticky="W")
 
         self.label_shape_normalization = Label(self.label_processing_pipeline, text="Shape Normalization")
-        self.label_shape_normalization.grid(column=1, row=24, sticky="W")
+        self.label_shape_normalization.grid(column=1, row=25, sticky="W")
         self.label_shape_normalization.config(bg='lightgray')
 
 
@@ -472,43 +494,43 @@ class TDarts_GUI():
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=self.update_settings_shape_normalization)
-        self.check_box_shape_normalization.grid(column=2, row=24, sticky="W")
+        self.check_box_shape_normalization.grid(column=2, row=25, sticky="W")
         self.check_box_shape_normalization.select()
         # self.check_box_shape_normalization.config(state=DISABLED)
 
         self.empty_label_2 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_2.grid(column=1, row=25, sticky="W")
+        self.empty_label_2.grid(column=1, row=26, sticky="W")
 
         self.label_analysis = Label(self.label_processing_pipeline, text="Analysis")
-        self.label_analysis.grid(column=1, row=26, sticky="W")
+        self.label_analysis.grid(column=1, row=27, sticky="W")
         self.label_analysis.config(bg='lightgray')
 
         self.label_hotspot_detection = Label(self.label_processing_pipeline, text="Hotspot detection:  ")
-        self.label_hotspot_detection.grid(column=1, row=27, sticky="W")
+        self.label_hotspot_detection.grid(column=1, row=28, sticky="W")
         self.hotspot_detection_in_pipeline = IntVar()
         self.check_box_hotspot_detection = Checkbutton(self.label_processing_pipeline,
                                                       variable=self.hotspot_detection_in_pipeline,
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=self.update_settings_for_analysis)
-        self.check_box_hotspot_detection.grid(column=2, row=27, sticky="W")
+        self.check_box_hotspot_detection.grid(column=2, row=28, sticky="W")
         self.check_box_hotspot_detection.select()
         # self.check_box_hotspot_detection.config(state=DISABLED)
 
         self.label_dartboard_projection = Label(self.label_processing_pipeline, text="Dartboard projection:  ")
-        self.label_dartboard_projection.grid(column=1, row=28, sticky="W")
+        self.label_dartboard_projection.grid(column=1, row=29, sticky="W")
         self.dartboard_projection_in_pipeline = IntVar()
         self.check_box_dartboard_projection = Checkbutton(self.label_processing_pipeline,
                                                        variable=self.dartboard_projection_in_pipeline,
                                                        onvalue=1,
                                                        offvalue=0,
                                                        command=None)
-        self.check_box_dartboard_projection.grid(column=2, row=28, sticky="W")
+        self.check_box_dartboard_projection.grid(column=2, row=29, sticky="W")
         self.check_box_dartboard_projection.select()
         # self.check_box_dartboard_projection.config(state=DISABLED)
 
         self.empty_label_3 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_3.grid(column=1, row=29, sticky="W")
+        self.empty_label_3.grid(column=1, row=30, sticky="W")
 
         self.set_default_settings_for_local_imaging()
 
@@ -615,10 +637,16 @@ class TDarts_GUI():
                     'channel_alignment_in_pipeline': self.channel_alignment_in_pipeline.get() == 1,
                     'channel_alignment_each_frame': self.frame_by_frame_registration.get() == 1,
                     'registration_method': 'SITK',
+                    'upsampling_in_pipeline': self.upsampling_in_pipeline.get() == 1,
+                    'upsampling_algorithm': str(self.upsampling_algorithm.get()),
+                    'denoising_in_pipeline': self.denoising_in_pipeline.get() == 1,
+                    'denoising_algorithm': str(self.denoising_algorithm.get()),
                     'background_sub_in_pipeline': self.background_subtraction_in_pipeline.get() == 1,
+                    'background_subtractor_algorithm': str(self.background_subtraction_algorithm.get()),
                     'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
+                    'decon_iter': int(self.text_Iterations.get("1.0", END)),
                     'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
                     'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
                     'psf': {
@@ -858,6 +886,15 @@ class TDarts_GUI():
             self.dartboard_projection_in_pipeline.set(1)
             self.check_box_dartboard_projection.config(state=NORMAL)
 
+    def update_background(self):
+        if self.background_subtraction_in_pipeline.get() == 0:
+            self.option_menu_background_substraction.config(state=DISABLED)
+            for textbox in self.background_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.background_subtraction_in_pipeline.get() == 1:
+            self.option_menu_background_substraction.config(state=NORMAL)
+            for textbox in self.background_text_boxes:
+                textbox.config(state=NORMAL)
 
     def update_upsampling(self):
         if self.upsampling_in_pipeline.get() == 0:
