@@ -1,6 +1,8 @@
 import gc
-from .denoising.sparse_hessian import *
+from .denoising.sparse_hessian import sparse_hessian
 import numpy as np
+import warnings
+
 try:
     import cupy as cp
 except ImportError:

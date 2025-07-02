@@ -107,16 +107,12 @@ class WaveletBackgroundSubtractor:
 
     def __init__(
         self,
-        background_flag: int = 1,
         th: float = 1.0,
         dlevel: int = 7,
         wavename: str = "db6",
         max_iter: int = 3,
         dtype=np.float32,
     ):
-        if background_flag not in (1, 2, 3, 4, 5):
-            raise ValueError("background_flag must be 1 … 5")
-        self.flag = background_flag
         self.th = th
         self.dlevel = dlevel
         self.wavename = wavename
@@ -124,7 +120,7 @@ class WaveletBackgroundSubtractor:
         self.dtype = dtype
 
 
-    def subtract_background(self, imgs):
+    def subtract_background(self, imgs, parameters):
         """
         Apply wavelet background removal.
 
@@ -150,7 +146,8 @@ class WaveletBackgroundSubtractor:
         imgs = imgs / scaler
 
         # Pre-condition according to the chosen flag
-        imgs_pc = self._precondition(imgs)
+        background_method = parameters["processing_pipeline"]["postprocessing"]["wavelet_background"]
+        imgs_pc = self._precondition(imgs, background_method)
 
         # Estimate background
         bg = self._background_estimation(imgs_pc)
@@ -164,23 +161,25 @@ class WaveletBackgroundSubtractor:
 
     
     #INTERNAL HELPERS
-    def _precondition(self, img):
+    def _precondition(self, img, background_method):
         """
         Implements the five branches of the original method1.
         Operates on a float32 array already normalised to [0, 1].
         """
-        if self.flag == 1:
+        if background_method == "Weak-HI":
             return img / 2.5
-        if self.flag == 2:
+        if background_method == "Strong-HI":
             return img / 2.0
         # flags 3-5: clip bright pixels before background estimation
         mean_val = np.mean(img)
-        if self.flag == 3:
+        if background_method == "Weak-LI":
             clip_val = mean_val / 2.5
-        elif self.flag == 4:
-            clip_val = mean_val / 2.0
-        else:  # flag 5
+        elif background_method == "Strong-LI":
             clip_val = mean_val
+        """
+        else:  # flag 5
+            clip_val = mean_val / 2.0
+        """
         img_clipped = img.copy()
         img_clipped[img > clip_val] = clip_val
         return img_clipped

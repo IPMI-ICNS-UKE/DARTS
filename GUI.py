@@ -296,7 +296,7 @@ class TDarts_GUI():
         wavelets_algorithms = [
             "No",
             "Weak-HI",
-            "String-HI",
+            "Strong-HI",
             "Weak-LI",
             "Strong-LI"
         ]
