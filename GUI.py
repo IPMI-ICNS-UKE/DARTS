@@ -12,6 +12,10 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
 import webbrowser
 
+#ToDo Background Settings 1,..,5
+#ToDo load Config
+
+
 class TDarts_GUI():
 
     def __init__(self):
@@ -439,9 +443,9 @@ class TDarts_GUI():
         # ToDo
         self.label_Iterations = Label(self.label_processing_pipeline, text="iterations")
         self.label_Iterations.grid(column=3, row=21, sticky="W")
-        self.text_Iterations = Text(self.label_processing_pipeline, height=1, width=10)
-        self.text_Iterations.grid(column=4, row=21, sticky="W")
-        self.deconvolution_text_boxes.append(self.text_Iterations)
+        self.text_iterartions = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_iterartions.grid(column=4, row=21, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_iterartions)
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
         self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
@@ -646,7 +650,7 @@ class TDarts_GUI():
                     'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
-                    'decon_iter': int(self.text_Iterations.get("1.0", END)),
+                    'decon_iter': (self.text_iterartions.get("1.0", END)),
                     'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
                     'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
                     'psf': {
@@ -694,7 +698,7 @@ class TDarts_GUI():
 
 
 
-    def load_settings_from_computer(self):
+    def load_settings_from_computer(self): #Todo Upsampling, Denoising, BackgroundSubtraction
         config_file_path = tkinter.filedialog.askopenfilename()
         with open(config_file_path, mode="rt", encoding="utf-8") as fp:
             config = tomlkit.load(fp)
@@ -785,6 +789,12 @@ class TDarts_GUI():
                     self.text_TDE_lambda.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda"])
                     self.text_TDE_lambda_t.delete(1.0, END)
                     self.text_TDE_lambda_t.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"])
+                
+                if self.deconvolution_algorithm.get()=="LW":
+                    self.text_iterartions.config(state=NORMAL)
+                    self.text_iterartions.delete
+                    self.text_iterartions.insert(1.0, config["processing_pipeline"]["postprocessing"]["iterations"])                 
+
                 self.text_psf_type.delete(1.0, END)
                 self.text_psf_type.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["type"])
                 self.text_psf_lambdaEx_ch1.delete(1.0, END)

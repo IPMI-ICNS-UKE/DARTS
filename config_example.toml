@@ -59,7 +59,7 @@ deconvolution_in_pipeline = true
 deconvolution_algorithm = "LW"
 TDE_lambda = ""
 TDE_lambda_t = ""
-decon_iter = 10
+iterations = 10
 bleaching_correction_in_pipeline = true
 bleaching_correction_algorithm = "additiv no fit"
 ratio_images = true
@@ -82,6 +82,7 @@ depth = 0
 rindexSp = 1.518
 nor = 0
 xysize = 150
+
 
 [processing_pipeline.postprocessing.denoise]
 denoising_algorithm = false
