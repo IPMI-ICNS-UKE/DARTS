@@ -2,8 +2,26 @@ import skimage.measure
 import numpy as np
 from skimage.filters import threshold_mean
 import pywt
+from abc import ABC, abstractmethod
 
-class BackgroundSubtractor():
+
+class BaseBackgroundSubtractor(ABC):
+    def execute(self, imgs, parameters=None):
+        return self.subtract_background(imgs, parameters)
+
+    @abstractmethod
+    def subtract_background(self, imgs, parameters=None):
+        """
+        Algorithm‑specific background removal.
+        Subclasses *must* override.
+        """
+        return imgs
+
+    def give_name(self):
+        return "...background subtraction..."
+
+
+class BackgroundSubtractorMasked(BaseBackgroundSubtractor):
     def __init__(self, segmentation):
         self.segmentation = segmentation
 
@@ -12,8 +30,6 @@ class BackgroundSubtractor():
             cell.set_image_channel1(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel1()))
             cell.set_image_channel2(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel2()))
             cell.ratio = self.set_background_to_zero(cell.frame_masks, cell.ratio)
-
-
 
     def set_background_to_zero(self, frame_masks, cell_image_series):
         """
@@ -50,7 +66,7 @@ class BackgroundSubtractor():
         background_mean_intensity = round(region[0].intensity_mean)
         return background_mean_intensity
 
-    def subtract_background(self, channel_image_series):
+    def subtract_background(self, channel_image_series, parameters=None):
 
         # mean intensity of background in first frame
         mean_background_first_frame = self.measure_mean_background_intensity(channel_image_series[0])
@@ -78,10 +94,10 @@ class BackgroundSubtractor():
         return background_subtracted_channel
 
     def give_name(self):
-        return "Background Substraction Masked"
+        return "Background Subtraction Masked"
 
 
-class WaveletBackgroundSubtractor:
+class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
     """
     Wavelet-based per-pixel background estimator (refactored from the original
     procedural code).  Usage:
@@ -176,6 +192,8 @@ class WaveletBackgroundSubtractor:
             clip_val = mean_val / 2.5
         elif background_method == "Strong-LI":
             clip_val = mean_val
+        else:
+            clip_val = img
         """
         else:  # flag 5
             clip_val = mean_val / 2.0
@@ -240,3 +258,6 @@ class WaveletBackgroundSubtractor:
                 break  # no clipping requested
 
         return b_iter.astype(self.dtype)
+
+    def give_name(self):
+        return "Background Subtraction Wavelet"

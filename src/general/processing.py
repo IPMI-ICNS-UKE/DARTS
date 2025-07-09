@@ -21,7 +21,7 @@ from src.shapenormalization.shapenormalization import ShapeNormalization
 from src.analysis.Dartboard import DartboardGenerator
 from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
 from src.general.RatioToConcentrationConverter import RatioConverter
-from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor, WaveletBackgroundSubtractor
+from src.postprocessing.BackgroundSubtraction import BackgroundSubtractorMasked, WaveletBackgroundSubtractor
 from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, SpatialUpsampling
 from src.postprocessing.denoising import sparse_hessian
 from src.general.load_data import load_data
@@ -110,9 +110,9 @@ class ImageProcessor:
         # background subtraction
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
-                self.background_subtractor = BackgroundSubtractor(self.segmentation)
+                self.background_subtractor = BackgroundSubtractorMasked()
             elif self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Wavelet":
-                self.background_subtractor = WaveletBackgroundSubtractor(self.segmentation)
+                self.background_subtractor = WaveletBackgroundSubtractor()
         
         #UpSampling:
         if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
@@ -290,16 +290,25 @@ class ImageProcessor:
     def clear_outside_of_cells(self):
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
 
-    #TODO
+
     def background_subtraction(self, channel_1, channel_2):
-        print("\nBackground subtraction: ")
+        print("\n" + self.background_subtractor.give_name() + ": ")
         with alive_bar(1, force_tty=True) as bar:
             time.sleep(.005)
-            # background_label_first_frame = self.segmentation.stardist_s   egmentation_in_frame(channel_2[0])
-            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
-            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
+            # background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
+            channel_1_background_subtracted = self.background_subtractor.execute(channel_1, self.parameters)
+            channel_2_background_subtracted = self.background_subtractor.execute(channel_2, self.parameters)
             bar()
         return channel_1_background_subtracted, channel_2_background_subtracted
+
+    # TODO matching denoise Method
+    def denoise_cell_images(self, channel_1, channel_2):
+        print("\n"+ self.denoise.give_name() + ": ")
+        with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+            time.sleep(.005)
+            channel_1_denoised, channel_2_denoised = self.denoise.execute(channel_1, channel_2, self.parameters)
+            bar()
+        return channel_1_denoised, channel_2_denoised
 
     def create_cell_images(self, segmentation_result_dict):
         self.nb_rois = len(segmentation_result_dict)
@@ -344,11 +353,18 @@ class ImageProcessor:
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
+        # Todo Denoise method
+
+        if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
+            self.channel1, self.channel2 = self.denoise_cell_images(self.channel1, self.channel2) #todo
+
+
         # segmentation of cells, tracking
         self.segmentation_result_dict = self.select_rois()
 
         # cell images
         self.create_cell_images(self.segmentation_result_dict)
+
 
         # -- PROCESSING OF CELL IMAGES --
         if self.parameters["properties_of_measurement"]["bead_contact"]:  # if "bead contacts" was elected in the GUI
