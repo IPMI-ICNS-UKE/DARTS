@@ -162,7 +162,7 @@ class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
         imgs = imgs / scaler
 
         # Pre-condition according to the chosen flag
-        background_method = parameters["processing_pipeline"]["postprocessing"]["wavelet_background"]
+        background_method = parameters["processing_pipeline"]["postprocessing"]["wavelet_algorithm"]
         imgs_pc = self._precondition(imgs, background_method)
 
         # Estimate background
