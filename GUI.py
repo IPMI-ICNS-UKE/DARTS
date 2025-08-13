@@ -255,11 +255,10 @@ class TDarts_GUI():
                                                                variable=self.background_subtraction_in_pipeline,
                                                                onvalue=1,
                                                                offvalue=0,
-                                                               command=self.update_background
-                                                               )
+                                                               command=None)
         self.check_box_background_subtraction_in_pipeline.grid(column=2, row=14, sticky="W")
         self.check_box_background_subtraction_in_pipeline.select()
-        #self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
+        # self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
 
         background_subtraction_algorithms = [
             "Masked",
@@ -267,8 +266,6 @@ class TDarts_GUI():
         ]
         self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
         self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
-
-        """
         self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline, self.background_subtraction_algorithm, *background_subtraction_algorithms, command=self.update_background)
         # command=self.decon_selection_changed
         # self.option_menu_deconvolution.config(state=DISABLED)
@@ -278,51 +275,15 @@ class TDarts_GUI():
         self.update_background()
         #
 
-        self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
-        self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
-        """
-        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline,
-                                                              self.background_subtraction_algorithm,
-                                                              *background_subtraction_algorithms,
-                                                              command=self.update_wavelet
-                                                              )
-        # command=self.decon_selection_changed
-        # self.option_menu_deconvolution.config(state=DISABLED)
-        self.option_menu_background_substraction.grid(column=3, row=14, sticky="W")
-
-        self.background_text_boxes = []
-
-        #
-        wavelets_algorithms = [
-            "No",
-            "Weak-HI",
-            "String-HI",
-            "Weak-LI",
-            "Strong-LI"
-        ]
-
-        self.wavelet_algorithm = StringVar(self.label_processing_pipeline)
-        self.wavelet_algorithm.set(wavelets_algorithms[0])
-        self.option_menu_wavelet = OptionMenu(self.label_processing_pipeline, self.wavelet_algorithm,
-                                              *wavelets_algorithms, command=self.update_wavelet)  # TODO update
-        # command=self.decon_selection_changed
-        # self.option_menu_deconvolution.config(state=DISABLED)
-        self.option_menu_wavelet.grid(column=4, row=14, sticky="W")
-
-        self.wavelet_text_boxes = []
-        self.update_wavelet()
-        self.update_background()
-
-
         self.label_upsampling = Label(self.label_processing_pipeline, text="Upsampling:  ")
-        self.label_upsampling.grid(column=5, row=14, sticky="W")
+        self.label_upsampling.grid(column=4, row=14, sticky="W")
         self.upsampling_in_pipeline = IntVar()
         self.check_box_upsampling_in_pipeline = Checkbutton(self.label_processing_pipeline,
                                                                         variable=self.upsampling_in_pipeline,
                                                                         onvalue=1,
                                                                         offvalue=0,
                                                                         command=self.update_upsampling) #todo
-        self.check_box_upsampling_in_pipeline.grid(column=6, row=14, sticky="W")
+        self.check_box_upsampling_in_pipeline.grid(column=5, row=14, sticky="W")
         self.check_box_upsampling_in_pipeline.deselect() #default: 0 / off
         
         #
@@ -335,7 +296,7 @@ class TDarts_GUI():
         self.upsampling_algorithm.set(upsampling_algorithms[0])
         self.option_menu_upsampling = OptionMenu(self.label_processing_pipeline, self.upsampling_algorithm, *upsampling_algorithms, command=self.decon_selection_changed)
         # self.option_menu_deconvolution.config(state=DISABLED)
-        self.option_menu_upsampling.grid(column=7, row=14, sticky="W")
+        self.option_menu_upsampling.grid(column=6, row=14, sticky="W")
         self.upsampling_text_boxes = []
         self.update_upsampling()
         #
@@ -482,9 +443,9 @@ class TDarts_GUI():
         # ToDo
         self.label_Iterations = Label(self.label_processing_pipeline, text="iterations")
         self.label_Iterations.grid(column=3, row=21, sticky="W")
-        self.text_iterations = Text(self.label_processing_pipeline, height=1, width=10)
-        self.text_iterations.grid(column=4, row=21, sticky="W")
-        self.deconvolution_text_boxes.append(self.text_iterations)
+        self.text_iterartions = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_iterartions.grid(column=4, row=21, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_iterartions)
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
         self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
@@ -686,11 +647,10 @@ class TDarts_GUI():
                     'denoising_algorithm': str(self.denoising_algorithm.get()),
                     'background_sub_in_pipeline': self.background_subtraction_in_pipeline.get() == 1,
                     'background_subtractor_algorithm': str(self.background_subtraction_algorithm.get()),
-                    'wavelet_algorithm': str(self.wavelet_algorithm.get()),
                     'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
-                    'decon_iter': (self.text_iterations.get("1.0", END)),
+                    'decon_iter': (self.text_iterartions.get("1.0", END)),
                     'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
                     'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
                     'psf': {
@@ -738,7 +698,7 @@ class TDarts_GUI():
 
 
 
-    def load_settings_from_computer(self): #Todo Upsampling, Denoising, Iterations
+    def load_settings_from_computer(self): #Todo Upsampling, Denoising, BackgroundSubtraction
         config_file_path = tkinter.filedialog.askopenfilename()
         with open(config_file_path, mode="rt", encoding="utf-8") as fp:
             config = tomlkit.load(fp)
@@ -811,25 +771,8 @@ class TDarts_GUI():
 
             if config["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
                 self.check_box_background_subtraction_in_pipeline.select()
-                if config["processing_pipeline"]["postprocessing"]["background_subtraction_algorithm"]:
-                    self.background_subtraction_algorithm.set(config["processing_pipeline"]["postprocessing"]["background_subtraction_algorithm"])
-
-                    if self.background_subtraction_algorithm.get() == "Wavelet" and config["processing_pipeline"]["postprocessing"]["wavelet_background"]:
-                        self.wavelet_algorithm.set(config["processing_pipeline"]["postprocessing"]["wavelet_background"])
             else:
                 self.check_box_background_subtraction_in_pipeline.deselect()
-
-            if config["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
-                self.check_box_upsampling_in_pipeline.select()
-                if config["processing_pipeline"]["postprocessing"]["upsampling_algorithm"]:
-                    self.upsampling_algorithm.set(config["processing_pipeline"]["postprocessing"]["upsampling_algorithm"])
-
-            if config["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
-                self.check_box_denoising_in_pipeline.select()
-                if config["processing_pipeline"]["postprocessing"]["denoising_algorithm"]:
-                    self.denoising_algorithm.set(config["processing_pipeline"]["postprocessing"]["denoising_algorithm"])
-
-
             if config["processing_pipeline"]["postprocessing"]["cell_segmentation_tracking_in_pipeline"]:
                 self.check_box_segmentation_tracking_in_pipeline.select()
             else:
@@ -848,9 +791,9 @@ class TDarts_GUI():
                     self.text_TDE_lambda_t.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"])
                 
                 if self.deconvolution_algorithm.get()=="LW":
-                    self.text_iterations.config(state=NORMAL)
-                    self.text_iterations.delete
-                    self.text_iterations.insert(1.0, config["processing_pipeline"]["postprocessing"]["iterations"])                 
+                    self.text_iterartions.config(state=NORMAL)
+                    self.text_iterartions.delete
+                    self.text_iterartions.insert(1.0, config["processing_pipeline"]["postprocessing"]["iterations"])                 
 
                 self.text_psf_type.delete(1.0, END)
                 self.text_psf_type.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["type"])
@@ -956,34 +899,13 @@ class TDarts_GUI():
     def update_background(self):
         if self.background_subtraction_in_pipeline.get() == 0:
             self.option_menu_background_substraction.config(state=DISABLED)
-            self.option_menu_wavelet.config(state=DISABLED)
-            for textbox in self.background_text_boxes + self.wavelet_text_boxes:
-                textbox.config(state=DISABLED)
-        else:
-            self.option_menu_background_substraction.config(state=NORMAL)
-            for textbox in self.background_text_boxes:
-                textbox.config(state=NORMAL)
-            self.update_wavelet()
-
-
-        """if self.background_subtraction_in_pipeline.get() == 0:
-            self.option_menu_background_substraction.config(state=DISABLED)
             for textbox in self.background_text_boxes:
                 textbox.config(state=DISABLED)
         elif self.background_subtraction_in_pipeline.get() == 1:
             self.option_menu_background_substraction.config(state=NORMAL)
             for textbox in self.background_text_boxes:
-                textbox.config(state=NORMAL)"""
-
-    def update_wavelet(self, *args):
-        if self.background_subtraction_algorithm.get() != "Wavelet":
-            self.option_menu_wavelet.config(state=DISABLED)
-            for textbox in self.wavelet_text_boxes:
-                textbox.config(state=DISABLED)
-        elif self.background_subtraction_algorithm.get() == "Wavelet":
-            self.option_menu_wavelet.config(state=NORMAL)
-            for textbox in self.wavelet_text_boxes:
                 textbox.config(state=NORMAL)
+
     def update_upsampling(self):
         if self.upsampling_in_pipeline.get() == 0:
             self.option_menu_upsampling.config(state=DISABLED)

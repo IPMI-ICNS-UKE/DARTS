@@ -54,6 +54,7 @@ def main(gui_enabled):
     info_saver.save_version_DARTS(version_DARTS)
 
     input_path = parameters["input_output"]["path"]
+
     if os.path.isdir(input_path):
         input_directory = input_path
     else:
