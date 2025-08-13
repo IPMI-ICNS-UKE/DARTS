@@ -2,7 +2,7 @@
 file_or_directory = "file"
 image_conf = "two-in-one"
 path = "C:/Users/admin/Desktop/data/DARTS_testdata/DARTS_testfile.tif"
-results_dir = "C:/Users/admin/Desktop/data/DARTS_testdata/Darts_res"
+results_dir = "C:/Users/admin/Desktop/data/DARTS_testdata/results"
 excel_filename_microdomain_data = "microdomain_data.xlsx"
 
 [properties_of_measurement]
