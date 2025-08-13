@@ -182,6 +182,8 @@ class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
         Implements the five branches of the original method1.
         Operates on a float32 array already normalised to [0, 1].
         """
+        if background_method in (None, "", "None"):
+            return img
         if background_method == "Weak-HI":
             return img / 2.5
         if background_method == "Strong-HI":
@@ -192,27 +194,29 @@ class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
             clip_val = mean_val / 2.5
         elif background_method == "Strong-LI":
             clip_val = mean_val
-        else:
+        elif background_method == "Medium-HI":
             clip_val = img
-        """
-        else:  # flag 5
+        else:
             clip_val = mean_val / 2.0
-        """
+
         img_clipped = img.copy()
         img_clipped[img > clip_val] = clip_val
         return img_clipped
 
     #wavelet helpers
     @staticmethod
-    def _low_freq_only(coeffs, dlevel):
+    def _low_freq_only(coeffs):
         """
-        Zeroes detail coefficients so that inverse transform returns the
-        approximation (low-frequency) component only.
+        Return a coefficient tree in which all detail bands are zeroed
+        **using each level's own shape**, so `pywt.waverec2` never sees
+        mismatched array sizes.
         """
+
         vec = [coeffs[0]]  # keep cA_n
-        for _ in range(1, dlevel + 1):
-            cH = np.zeros_like(coeffs[1][0])
-            vec.append((cH, cH, cH))
+
+        for ch, cv, cd in coeffs[1:]:
+            z = np.zeros_like(ch)       # template from *this* level
+            vec.append((z, z, z))
         return vec
 
     @staticmethod
@@ -241,11 +245,17 @@ class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
         Estimate background for a single 2-D frame.
         """
         h, w = img.shape
+
+        # Clamp the wavelet depth so the smallest sub‑band is at least 1×1
+        max_lvl = pywt.dwt_max_level(min(h, w), pywt.Wavelet(self.wavename).dec_len)
+        level = min(self.dlevel, max_lvl)
+
         res = img.copy()
 
         for _ in range(self.max_iter):
-            coeffs = pywt.wavedec2(res, wavelet=self.wavename, level=self.dlevel)
-            vec = self._low_freq_only(coeffs, self.dlevel)
+            coeffs = pywt.wavedec2(res, wavelet=self.wavename, level=level)
+            vec = self._low_freq_only(coeffs)
+
             b_iter = pywt.waverec2(vec, wavelet=self.wavename)
             b_iter = self._trim_to_original(b_iter, (h, w))
 

@@ -738,7 +738,7 @@ class TDarts_GUI():
 
 
 
-    def load_settings_from_computer(self): #Todo Upsampling, Denoising, Iterations
+    def load_settings_from_computer(self):
         config_file_path = tkinter.filedialog.askopenfilename()
         with open(config_file_path, mode="rt", encoding="utf-8") as fp:
             config = tomlkit.load(fp)
@@ -849,7 +849,7 @@ class TDarts_GUI():
                 
                 if self.deconvolution_algorithm.get()=="LW":
                     self.text_iterations.config(state=NORMAL)
-                    self.text_iterations.delete
+                    self.text_iterations.delete(1.0, END)
                     self.text_iterations.insert(1.0, config["processing_pipeline"]["postprocessing"]["iterations"])                 
 
                 self.text_psf_type.delete(1.0, END)

@@ -23,7 +23,7 @@ from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultip
 from src.general.RatioToConcentrationConverter import RatioConverter
 from src.postprocessing.BackgroundSubtraction import BackgroundSubtractorMasked, WaveletBackgroundSubtractor
 from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, SpatialUpsampling
-from src.postprocessing.denoising import sparse_hessian
+from src.postprocessing.denoising import SparseHessian
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
 
@@ -122,10 +122,10 @@ class ImageProcessor:
                 self.upsample = FourierUpsampling()
 
 
-        #denoising SPARSE
+        #denoising_utils SPARSE
         if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
-            if self.parameters["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower == "SparseHessian":
-                self.denoise = sparse_hessian()        
+            if self.parameters["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower() == "sparsehessian":
+                self.denoise = SparseHessian()
         
 
         # deconvolution
