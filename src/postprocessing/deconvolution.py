@@ -111,7 +111,8 @@ class LWDeconvolution(BaseDecon):
             xk2_old = xk2                              
             
             #main itereration loop
-            for i in range(n_iter):
+            print(n_iter)
+            for i in range(int(n_iter)):
                 if i == 0:
                     # residual r = y – H x
                     r1 = xp.fft.fftn(data1) - otf_ch1 * xp.fft.fftn(xk1)

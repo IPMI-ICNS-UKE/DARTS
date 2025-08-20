@@ -1,7 +1,7 @@
 [input_output]
 file_or_directory = "dir"
 image_conf = "two-in-one"
-path = "/Users/felixwissel/Documents/UKE/Bilder_Felix/Darts_testfile"
+path = "/Users/felixwissel/Documents/UKE/Bilder_Felix/Darts_testfile_2frames"
 results_dir = "/Users/felixwissel/PycharmProjects/DARTS/results"
 excel_filename_microdomain_data = "microdomain_data.xlsx"
 
