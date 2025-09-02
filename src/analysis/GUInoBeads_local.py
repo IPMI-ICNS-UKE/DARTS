@@ -18,7 +18,10 @@ from src.general.load_data import load_data
 
 
 class GUInoBeads_local:
-    def __init__(self, cell, cell_index, parameters, ratioconverter):
+    # Class variable to remember the last chosen method across all instances
+    _last_method_choice = 1  # Default to original method
+    
+    def __init__(self, cell, cell_index, parameters, ratioconverter, processor=None):
         self.channel_format = parameters["input_output"]["image_conf"]
         self.image = cell.ratio
         self.mean_ratio_list = cell.mean_ratio_list  # Using mean_ratio_list for the global signal
@@ -26,6 +29,8 @@ class GUInoBeads_local:
         self.starting_point_auto = cell.starting_point_auto
         self.cell_denied_flag = False
         self.cell_type = parameters["properties_of_measurement"]["cell_type"]
+        self.processor = processor
+        self.cell = cell
         self.spotHeight = None
         if self.cell_type == 'primary':
             self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
@@ -35,7 +40,7 @@ class GUInoBeads_local:
             self.spotHeight = 72  # needs to be checked
         self.ratio_converter = ratioconverter
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
-        self.GUI_width, self.GUI_height = 1200, 800
+        self.GUI_width, self.GUI_height = 1200, 900  # Increased height to prevent overlapping
         self.root = Tk()
         self.root.resizable(False, False)
         self.root.geometry(f"{self.GUI_width}x{self.GUI_height}")
@@ -54,7 +59,7 @@ class GUInoBeads_local:
 
         # Image display subplot with color bar
         self.subplot_image = self.figure.add_subplot(121)
-        im = self.subplot_image.imshow(self.image[0], cmap='viridis', vmin=0.1, vmax=2.0)
+        im = self.subplot_image.imshow(self.image[0], cmap='jet', vmin=0.1, vmax=1.0) #changed to 1 before 2
         self.colorbar = self.figure.colorbar(im, ax=self.subplot_image, orientation='vertical', fraction=0.046,
                                              pad=0.04)
         self.colorbar.set_label("Ratio")
@@ -102,21 +107,39 @@ class GUInoBeads_local:
         self.accept_button = Button(self.root, text="set automatically", command=self.set_automatically)
         self.accept_button.place(x=self.GUI_width * 0.3, y=self.GUI_height * 0.75)
 
+        # Method selection toggle
+        self.method_choice = IntVar()
+        self.method_choice.set(self._last_method_choice)  # Use remembered choice
+        
+        # Radio buttons for method selection
+        self.method_label = Label(self.root, text="Starting Point Method:", width=20, anchor='w')
+        self.method_label.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.78)
+
+        self.method_radio1 = Radiobutton(self.root, text="Original Method", variable=self.method_choice, value=1, command=self.update_auto_method)
+        self.method_radio1.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.80)
+
+        self.method_radio2 = Radiobutton(self.root, text="Exponential Method", variable=self.method_choice, value=2, command=self.update_auto_method)
+        self.method_radio2.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.83)
+
         # Set Deny Button
         self.deny_button = Button(self.root, text="Deny cell", command=self.deny_cell)
-        self.deny_button.place(x=self.GUI_width * 0.50, y=self.GUI_height * 0.8)
+        self.deny_button.place(x=self.GUI_width * 0.62, y=self.GUI_height * 0.88)
 
         # Close button to finalize the selection and close GUI
         self.close_button = Button(self.root, text="Accept & Continue", command=self.close_and_continue_gui)
-        self.close_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.8)
+        self.close_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.88)
 
         self.cancel_button = Button(self.root, text='Cancel', command=self.cancel)
-        self.cancel_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.9)
+        self.cancel_button.place(x=self.GUI_width * 0.4, y=self.GUI_height * 0.94)
 
         # Initialize starting frame to None (default value if not set manually)
         self.starting_frame = None
+        
+        # Update the automatic method with the remembered choice
+        self.update_auto_method()
 
     def cancel(self):
+        self.save_method_choice()  # Save method choice before closing
         self.root.destroy()
         quit()
 
@@ -125,7 +148,7 @@ class GUInoBeads_local:
         new_frame = int(new_frame)
         new_image = self.image[new_frame]
         self.subplot_image.clear()
-        im = self.subplot_image.imshow(new_image, cmap='viridis', vmin=0.1, vmax=2.0)
+        im = self.subplot_image.imshow(new_image, cmap='jet', vmin=0.1, vmax=2.0) #orignial viridis
         self.colorbar.update_normal(im)
 
         # Move the vertical line to the new frame position
@@ -155,13 +178,58 @@ class GUInoBeads_local:
         if self.determination_choice.get() == 2:  # Automatic
             print("Automatic starting point determination selected.")
             self.starting_frame = self.starting_point_auto
-            self.starting_frame_label.config(text=f"Current Starting Frame: {self.starting_frame}, automatically set")
-            self.update_image(self.starting_point_auto)
-            self.slider.set(self.starting_point_auto)
+            if self.starting_point_auto > 0:
+                self.starting_frame_label.config(text=f"Current Starting Frame: {self.starting_frame}, automatically set")
+                self.update_image(self.starting_point_auto)
+                self.slider.set(self.starting_point_auto)
+            else:
+                method_name = "Original" if self.method_choice.get() == 1 else "Exponential"
+                self.starting_frame_label.config(text=f"No starting point found, {method_name} method (set to -1)")
+                print(f"Warning: No valid starting point found by {method_name} method. Manual selection may be required.")
+
+    def save_method_choice(self):
+        """Save the current method choice to class variable for next cell"""
+        self._last_method_choice = self.method_choice.get()
+
+    def update_auto_method(self):
+        """Update the automatic starting point when method is changed"""
+        if self.processor is not None:
+            if self.method_choice.get() == 1:  # Original method
+                self.starting_point_auto = self.processor.automated_starting_point(self.cell)
+            elif self.method_choice.get() == 2:  # Exponential method
+                self.starting_point_auto = self.processor.find_exp_start(self.cell)
+                # Check if method failed and provide feedback
+                if self.starting_point_auto == -1:
+                    # Get diagnostics from cell object if available
+                    if hasattr(self.cell, 'exp_start_diagnostics'):
+                        reason = self.cell.exp_start_diagnostics.get('reason', 'unknown')
+                        print(f"Exponential method could not find a starting point. Reason: {reason}")
+                    else:
+                        print("Exponential method could not find a starting point.")
+            
+            # Update the cell's starting_point_auto
+            self.cell.starting_point_auto = self.starting_point_auto
+            
+            # Update the vertical line position
+            if self.starting_point_auto > 0:
+                self.vertical_line.set_xdata([self.starting_point_auto])
+                self.canvas.draw()
+            else:
+                # Hide the vertical line if no valid starting point found
+                self.vertical_line.set_xdata([0])
+                self.canvas.draw()
+            
+            # Update the label to show current method and status
+            method_name = "Original" if self.method_choice.get() == 1 else "Exponential"
+            if self.starting_point_auto > 0:
+                self.starting_frame_label.config(text=f"Current Starting Frame: {self.starting_point_auto}, {method_name} method")
+            else:
+                self.starting_frame_label.config(text=f"No starting point found, {method_name} method (set to -1)")
 
     def deny_cell(self):
         print("Cell denied.")
         self.cell_denied_flag = True
+        self.save_method_choice()  # Save method choice before closing
         self.close_gui()
 
     def close_and_continue_gui(self):
@@ -169,11 +237,13 @@ class GUInoBeads_local:
             print("No starting frame defined.")
         else:
             print(f"Starting frame: {self.starting_frame}")
+        self.save_method_choice()  # Save method choice before closing
         self.root.destroy()
 
     def run_main_loop(self):
         self.root.mainloop()
 
     def close_gui(self):
+        self.save_method_choice()  # Save method choice before closing
         self.root.quit()
         self.root.destroy()

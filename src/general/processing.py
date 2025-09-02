@@ -460,7 +460,7 @@ class ImageProcessor:
 
 
         for i, cell in enumerate(self.cell_list):
-            cell_GUI_no_beads_local = GUInoBeads_local(cell, i, self.parameters,self.ratio_converter)
+            cell_GUI_no_beads_local = GUInoBeads_local(cell, i, self.parameters,self.ratio_converter, self)
             cell_GUI_no_beads_local.run_main_loop()
             manual_starting_frame = cell_GUI_no_beads_local.starting_frame
             cell_denied = cell_GUI_no_beads_local.cell_denied_flag
@@ -545,7 +545,246 @@ class ImageProcessor:
             cell.starting_point = -1  # no individual starting point
 
         return cell.starting_point
+# Matlab version
+    def find_exp_start(self, cell, tol=0.1, av_factor=0.05, show_plot=False, debug=True):
+        """
+        Alternative starting point detection method based on exponential signal onset.
+        Python port of findExpStart.m
 
+        Parameters
+        ----------
+        cell : CellImage
+            Cell object containing the data to analyze
+        tol : float, default 0.1
+            Tolerance (in log-intensity units) for declaring onset:
+            first frame where |log(I) - linear_continuation| < tol.
+        av_factor : float, default 0.05
+            Moving-average window as a fraction of total frames.
+        show_plot : bool, default False
+            If True, show the diagnostic plot.
+        debug : bool, default True
+            If True, print debugging information to terminal.
+
+        Returns
+        -------
+        start_frame : int
+            Index of the detected start frame (0-based) or -1 if not found.
+        """
+
+        # Get data from cell
+        img_m = np.array(cell.mean_ratio_list)
+        N = img_m.size
+        
+        if debug:
+            print(f"[DEBUG] find_exp_start: Starting analysis with {N} frames")
+            print(f"[DEBUG] Signal range: {np.min(img_m):.4f} to {np.max(img_m):.4f}")
+        
+        if N < 5:
+            if debug:
+                print(f"[DEBUG] FAILURE: Time series too short ({N} frames, need at least 5)")
+            if show_plot:
+                print("Warning: Time series too short.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "time_series_too_short"}
+            return -1
+
+        # ---- 1) Smoothing and log ----
+        def movmean(x, w):
+            w = max(1, int(w))
+            if w == 1:
+                return x.copy()
+            k = np.ones(w, dtype=float) / w
+            return np.convolve(x, k, mode="same")
+
+        av = max(1, int(np.floor(av_factor * N)))
+        img_ms = movmean(img_m, av)
+
+        eps = np.finfo(float).eps
+        img_ms_log = np.log(np.maximum(img_ms, eps))
+        img_g = np.gradient(img_ms_log)
+        
+        if debug:
+            print(f"[DEBUG] Smoothing: window size = {av} frames")
+            print(f"[DEBUG] Log signal range: {np.min(img_ms_log):.4f} to {np.max(img_ms_log):.4f}")
+
+        # ---- 2) Zero-crossings of smoothed derivative ----
+        zc = np.where(np.diff(np.sign(movmean(img_g, av))) != 0)[0]
+        number_frames = img_ms_log.size
+        zc = np.r_[0, zc, number_frames - 1]
+        if debug:
+            print(f"[DEBUG] Found {zc.size} zero-crossings (extrema)")
+            if zc.size > 0:
+                print(f"[DEBUG] Zero-crossing positions: {zc}")
+        
+        if zc.size < 2:
+            # Not enough extrema to define a segment
+            if debug:
+                print(f"[DEBUG] FAILURE: Not enough extrema ({zc.size} found, need at least 2)")
+            if show_plot:
+                print("Warning: not enough extrema; no fit can be found.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "not_enough_extrema"}
+            return -1
+
+        # ---- 3) Pick relevant rising segment (≥ 30% total log range) ----
+        total_range = float(np.max(img_ms_log) - np.min(img_ms_log))
+        if debug:
+            print(f"[DEBUG] Total log range: {total_range:.4f}")
+            print(f"[DEBUG] Looking for segments with ≥30% rise (≥{0.3 * total_range:.4f})")
+        
+        if total_range <= 0:
+            if debug:
+                print(f"[DEBUG] FAILURE: Non-positive total range ({total_range:.4f})")
+            if show_plot:
+                print("Warning: non-positive total range; no fit can be found.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "non_positive_total_range"}
+            return -1
+
+        # Sort extrema by their log value (desc) and walk down until a valid rise is found
+        order = np.argsort(img_ms_log[zc])[::-1]  # indices into zc
+        x1 = x2 = None
+        range_size = None
+
+        if debug:
+            print(f"[DEBUG] Checking {len(order)} extrema pairs for valid rising segments...")
+
+        for ord_idx in order:
+            if ord_idx < 1:
+                continue
+            I = ord_idx
+            x1_candidate = int(zc[I - 1])
+            x2_candidate = int(zc[I])
+            y1 = img_ms_log[x1_candidate]
+            y2 = img_ms_log[x2_candidate]
+            rise = y2 - y1
+            if debug:
+                print(f"[DEBUG] Segment {x1_candidate}-{x2_candidate}: rise={rise:.4f} (need ≥{0.3 * total_range:.4f})")
+            if rise >= 0.3 * total_range:
+                x1, x2 = x1_candidate, x2_candidate
+                range_size = rise
+                if debug:
+                    print(f"[DEBUG] SUCCESS: Found valid segment {x1}-{x2} with rise={rise:.4f}")
+                break
+
+        if x1 is None or x2 is None or range_size is None:
+            if debug:
+                print(f"[DEBUG] FAILURE: No segment found with ≥30% rise (threshold: {0.3 * total_range:.4f})")
+            if show_plot:
+                print("Warning: no fit can be found (no segment with ≥30% rise).")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "no_segment_meets_30pct_threshold"}
+            return -1
+
+        # ---- 4) Find the linear ascending sub-segment and fit it ----
+        # Approximation of MATLAB ischange(...,'linear'): find the steepest
+        # m-length window in [x1, x2] by linear regression slope.
+        seg_len = x2 - x1 + 1
+        if debug:
+            print(f"[DEBUG] Chosen segment length: {seg_len} frames")
+        
+        if seg_len < 5:
+            if debug:
+                print(f"[DEBUG] FAILURE: Chosen segment too short ({seg_len} frames, need at least 5)")
+            if show_plot:
+                print("Warning: chosen segment too short.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "segment_too_short", "x1": x1, "x2": x2}
+            return -1
+
+        m = max(10, int(0.2 * seg_len))
+        m = min(m, seg_len)  # clamp
+
+        if debug:
+            print(f"[DEBUG] Linear fit window size: {m} frames")
+            print(f"[DEBUG] Searching for steepest slope in segment {x1}-{x2}...")
+
+        best_slope = -np.inf
+        lin_start = x1
+        for s in range(x1, x2 - m + 2):
+            y = img_ms_log[s : s + m]
+            x = np.arange(m, dtype=float)
+            # linear least squares
+            A = np.vstack([x, np.ones_like(x)]).T
+            slope, intercept = np.linalg.lstsq(A, y, rcond=None)[0]
+            if slope > best_slope:
+                best_slope = slope
+                lin_start = s
+                lin_intercept = intercept
+
+        if debug:
+            print(f"[DEBUG] Best linear fit: start={lin_start}, slope={best_slope:.6f}")
+
+        lin_end = lin_start + m - 1
+        x = np.arange(m, dtype=float)
+        # final fit on chosen window
+        A = np.vstack([x, np.ones_like(x)]).T
+        slope, intercept = np.linalg.lstsq(A, img_ms_log[lin_start : lin_end + 1], rcond=None)[0]
+
+        # ---- 5) Extend the fitted line across all frames ----
+        # Align so that at frame = lin_start, line equals the first point of that window
+        t = np.arange(N, dtype=float)
+        lin_cont = slope * (t - lin_start) + intercept
+
+        # ---- 6) First frame within tolerance -> start_frame ----
+        d = np.abs(img_ms_log - lin_cont)
+        hits = np.where(d < tol)[0]
+        start_frame = int(hits[0]) if hits.size else -1
+        
+        if debug:
+            print(f"[DEBUG] Tolerance check: tol={tol}")
+            print(f"[DEBUG] Found {hits.size} frames within tolerance")
+            if hits.size > 0:
+                print(f"[DEBUG] First hit at frame: {start_frame}")
+            else:
+                print(f"[DEBUG] FAILURE: No frames found within tolerance {tol}")
+                print(f"[DEBUG] Minimum deviation: {np.min(d):.6f}")
+
+        # ---- 7) Plot (optional) ----
+        if show_plot:
+            plt.figure(figsize=(9, 5))
+            plt.plot(t, img_ms_log, label="Smoothed log-intensity")
+            plt.plot(t, lin_cont, "--", label="Linear fit continuation")
+            plt.axvspan(x1, x2, alpha=0.15, label="Chosen rising interval")
+            plt.plot(t, lin_cont + tol, ":", label="+tol")
+            plt.plot(t, lin_cont - tol, ":", label="-tol")
+            if start_frame >= 0:
+                plt.plot(start_frame, img_ms_log[start_frame], "D", label=f"Start: {start_frame}")
+            plt.title(f"Cell {cell} — start detection")
+            plt.xlabel("frames")
+            plt.ylabel("log(I)")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+        diagnostics = {
+            "x1": x1,
+            "x2": x2,
+            "range_size": range_size,
+            "total_range": total_range,
+            "lin_start": lin_start,
+            "lin_end": lin_end,
+            "slope": float(slope),
+            "intercept": float(intercept),
+        }
+        
+        # Store diagnostics in cell object for debugging if needed
+        if hasattr(cell, 'exp_start_diagnostics'):
+            cell.exp_start_diagnostics = diagnostics
+        
+        # Return only the starting frame to match the interface of automated_starting_point()
+        if debug:
+            if start_frame >= 0:
+                print(f"[DEBUG] SUCCESS: Starting point found at frame {start_frame}")
+            else:
+                print(f"[DEBUG] FAILURE: No starting point found")
+        
+        return start_frame
 
     def assign_bead_contacts_to_cells(self):
         for bead_contact in self.list_of_bead_contacts:
