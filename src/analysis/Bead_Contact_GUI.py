@@ -1,5 +1,7 @@
 import tkinter
 
+import re
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from tkinter import (Tk, Label, Scale, Listbox, Scrollbar, Frame, Button, Radiobutton, IntVar, Text, HORIZONTAL, END)
@@ -109,6 +111,43 @@ class BeadContactGUI():
 
         self.cancel_button = Button(self.input_frame, text='Cancel', command=self.cancel)
         self.cancel_button.grid(row=11, column=0, sticky="W")
+
+        #Try to load bead contacts from file
+        bead_contact_info_path = parameters["input_output"]["results_dir"] + '/Bead_contact_information.txt'
+        self.load_bead_contacts_from_file(bead_contact_info_path)
+
+
+    def load_bead_contacts_from_file(self, bead_contact_info_path):
+        try:
+            with open(bead_contact_info_path, 'r') as f:
+                content = f.read()
+            # Split by filenames
+            entries = re.split(r'Filename: ', content)
+            for entry in entries:
+                if not entry.strip():
+                    continue
+                lines = entry.strip().split('\n')
+                filename = lines[0].strip()
+                if filename == self.file:
+                    self.bead_contacts = []
+                    for line in lines[1:]:
+                        if line.startswith(" Bead contact: "):
+                            bead_contact_str = line.replace(" Bead contact: ", "")
+                            # Parse the string to extract values
+                            match = re.match(
+                                r'bead contact position\((\d+), (\d+)\)- frame: (\d+)- position inside cell: \((\d+), (\d+)\)',
+                                bead_contact_str
+                            )
+                            if match:
+                                x, y, frame, x_cell, y_cell = map(int, match.groups())
+                                bead_contact = BeadContact((x, y), frame, (x_cell, y_cell))
+                                self.bead_contacts.append(bead_contact)
+                                self.bead_contact_list.insert(END, bead_contact.to_string())
+                    return True
+            return False
+        except Exception as e:
+            print("Error loading bead contact info:", e)
+            return False
 
     def cancel(self):
         self.root.destroy()
