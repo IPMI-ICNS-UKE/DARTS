@@ -70,7 +70,12 @@ def main(gui_enabled):
         for file in files_for_further_processing:
             file_path = os.path.join(input_directory, file)
             bead_contact_gui = BeadContactGUI(file, file_path, info_saver.bead_contact_dict, parameters)
-            bead_contact_gui.run_main_loop()
+            # If contacts were loaded, skip GUI interaction
+            if bead_contact_gui.bead_contacts:
+                print(f"Following Bead contacts were loaded from file for {file}: {bead_contact_gui.bead_contacts}")
+                bead_contact_gui.close_gui()
+            else:
+                bead_contact_gui.run_main_loop()
             del bead_contact_gui
 
         # save bead contacts on computer
