@@ -45,6 +45,8 @@ class GUInoBeads_local:
         self.root.resizable(False, False)
         self.root.geometry(f"{self.GUI_width}x{self.GUI_height}")
         self.root.title("GUI no beads local, cell number: " + str(cell_index))
+        # Ensure window-close (X) uses a clean shutdown of mainloop
+        self.root.protocol("WM_DELETE_WINDOW", self.close_gui)
 
         # concentration conversion
         for i, ip in enumerate(self.mean_ratio_list):
@@ -59,7 +61,7 @@ class GUInoBeads_local:
 
         # Image display subplot with color bar
         self.subplot_image = self.figure.add_subplot(121)
-        im = self.subplot_image.imshow(self.image[0], cmap='jet', vmin=0.1, vmax=1.0) #changed to 1 before 2
+        im = self.subplot_image.imshow(self.image[0], cmap='nipy_spectral', vmin=0.1, vmax=1.0) #changed to 1 before 2
         self.colorbar = self.figure.colorbar(im, ax=self.subplot_image, orientation='vertical', fraction=0.046,
                                              pad=0.04)
         self.colorbar.set_label("Ratio")
@@ -95,31 +97,32 @@ class GUInoBeads_local:
         self.determination_choice = IntVar()
 
         # Text field for showing current starting frame
-        self.starting_frame_label = Label(self.root, text=f"Current Starting Frame: {self.starting_point_auto}, automatically set", width=30,
+        self.starting_frame_label = Label(self.root, text=f"Current Starting Frame: {self.starting_point_auto}, automatically set", width=40,
                                           anchor='w')
         self.starting_frame_label.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.7)
 
         # Set manually Button
         self.accept_button = Button(self.root, text="set manually", command=self.set_manually)
-        self.accept_button.place(x=self.GUI_width * 0.3, y=self.GUI_height * 0.7)
+        self.accept_button.place(x=self.GUI_width * 0.3, y=self.GUI_height * 0.75)
 
         # Set automatically Button
         self.accept_button = Button(self.root, text="set automatically", command=self.set_automatically)
-        self.accept_button.place(x=self.GUI_width * 0.3, y=self.GUI_height * 0.75)
+        self.accept_button.place(x=self.GUI_width * 0.3, y=self.GUI_height * 0.78)
 
         # Method selection toggle
         self.method_choice = IntVar()
-        self.method_choice.set(self._last_method_choice)  # Use remembered choice
+        # Initialize from class-level remembered choice
+        self.method_choice.set(GUInoBeads_local._last_method_choice)
         
         # Radio buttons for method selection
         self.method_label = Label(self.root, text="Starting Point Method:", width=20, anchor='w')
-        self.method_label.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.78)
+        self.method_label.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.75)
 
         self.method_radio1 = Radiobutton(self.root, text="Original Method", variable=self.method_choice, value=1, command=self.update_auto_method)
-        self.method_radio1.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.80)
+        self.method_radio1.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.78)
 
         self.method_radio2 = Radiobutton(self.root, text="Exponential Method", variable=self.method_choice, value=2, command=self.update_auto_method)
-        self.method_radio2.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.83)
+        self.method_radio2.place(x=self.GUI_width * 0.1, y=self.GUI_height * 0.805)
 
         # Set Deny Button
         self.deny_button = Button(self.root, text="Deny cell", command=self.deny_cell)
@@ -140,6 +143,11 @@ class GUInoBeads_local:
 
     def cancel(self):
         self.save_method_choice()  # Save method choice before closing
+        # Quit mainloop before destroying to prevent Tk from spinning
+        try:
+            self.root.quit()
+        except Exception:
+            pass
         self.root.destroy()
         quit()
 
@@ -148,7 +156,7 @@ class GUInoBeads_local:
         new_frame = int(new_frame)
         new_image = self.image[new_frame]
         self.subplot_image.clear()
-        im = self.subplot_image.imshow(new_image, cmap='jet', vmin=0.1, vmax=2.0) #orignial viridis
+        im = self.subplot_image.imshow(new_image, cmap='nipy_spectral', vmin=0.1, vmax=1.0) #orignial viridis, vmax=2.0
         self.colorbar.update_normal(im)
 
         # Move the vertical line to the new frame position
@@ -189,7 +197,7 @@ class GUInoBeads_local:
 
     def save_method_choice(self):
         """Save the current method choice to class variable for next cell"""
-        self._last_method_choice = self.method_choice.get()
+        GUInoBeads_local._last_method_choice = self.method_choice.get()
 
     def update_auto_method(self):
         """Update the automatic starting point when method is changed"""
@@ -238,6 +246,11 @@ class GUInoBeads_local:
         else:
             print(f"Starting frame: {self.starting_frame}")
         self.save_method_choice()  # Save method choice before closing
+        # Quit the Tk mainloop explicitly, then destroy the window
+        try:
+            self.root.quit()
+        except Exception:
+            pass
         self.root.destroy()
 
     def run_main_loop(self):

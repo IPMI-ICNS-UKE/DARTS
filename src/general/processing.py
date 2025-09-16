@@ -3,6 +3,8 @@ import math
 import skimage.io as io
 import numpy as np
 import skimage.measure
+from skimage.morphology import binary_erosion
+from skimage.transform import probabilistic_hough_line
 from alive_progress import alive_bar
 import time
 import pandas as pd
@@ -328,7 +330,12 @@ class ImageProcessor:
 
         # cell images
         self.create_cell_images(self.segmentation_result_dict)
-
+        
+        # Early filter: remove partial cells (touching ROI borders) to save compute
+        if not self.parameters["properties_of_measurement"]["bead_contact"]:
+            # Check first few frames; drop if mask hits any border in most of them
+            self.filter_partial_cells(edge_margin=0, frames_to_check=3, required_fraction=0.66)
+        
         # -- PROCESSING OF CELL IMAGES --
         if self.parameters["properties_of_measurement"]["bead_contact"]:  # if "bead contacts" was elected in the GUI
             # assign bead contacts to cells
@@ -360,6 +367,15 @@ class ImageProcessor:
         # clear area outside the cells
         self.clear_outside_of_cells()
 
+        # filter out preactivated cells (ratio too high before stimulation), if no beads
+        if not self.parameters["properties_of_measurement"]["bead_contact"]:
+            try:
+                filtering_cfg = self.parameters.get("processing_pipeline", {}).get("filtering", {})
+                preact_threshold = filtering_cfg.get("preactivation_ratio_threshold", 1.0)
+            except Exception:
+                preact_threshold = 1.0
+            self.filter_preactivated_cells(preact_threshold)
+
         # save ratio images of the cells
         self.save_ratio_images()
 
@@ -370,6 +386,142 @@ class ImageProcessor:
         # determine starting points for local imaging, if no beads
         if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
             self.determine_starting_points_local_no_beads()
+
+    def filter_preactivated_cells(self, threshold: float):
+        """Remove cells that are preactivated (mean ratio in frame 0 > threshold).
+
+        Applies after ratio generation and masking, before saving/GUI steps.
+        Updates both self.cell_list and self.cell_list_for_processing to keep them in sync.
+        """
+        kept = []
+        removed = 0
+        for cell in list(self.cell_list_for_processing):
+            try:
+                if cell.is_preactivated(threshold):
+                    removed += 1
+                    continue
+            except Exception as E:
+                # If anything goes wrong with the check, keep the cell and continue
+                print(E)
+            kept.append(cell)
+
+        # Update lists consistently so later steps (including GUIs) only see kept cells
+        self.cell_list_for_processing = kept
+        self.cell_list = kept
+        if removed > 0:
+            try:
+                self.logger.log_and_print(
+                    message=f"Filtered {removed} preactivated cell(s) (threshold={threshold}).",
+                    level=logging.INFO,
+                    logger=self.logger)
+            except Exception:
+                pass
+
+    def _mask_touches_border(self, mask_frame, edge_margin=0):
+        """Return True if the (inside-cell) mask touches any image border.
+
+        mask_frame should be a boolean mask where True marks the cell area.
+        """
+        if mask_frame is None or not np.any(mask_frame):
+            return False
+        y_max, x_max = mask_frame.shape
+        # Quick edge checks with optional margin
+        if np.any(mask_frame[0:max(1, 1+edge_margin), :]):
+            return True
+        if np.any(mask_frame[y_max-1-edge_margin:y_max, :]):
+            return True
+        if np.any(mask_frame[:, 0:max(1, 1+edge_margin)]):
+            return True
+        if np.any(mask_frame[:, x_max-1-edge_margin:x_max]):
+            return True
+        return False
+
+    def filter_partial_cells(self, edge_margin=0, frames_to_check=3, required_fraction=0.66):
+        """Remove cells whose masks touch ROI borders (likely partial/cut cells).
+
+        - edge_margin: allow tolerance from the border
+        - frames_to_check: number of initial frames to test
+        - required_fraction: fraction of tested frames that must touch a border to drop the cell
+        """
+        kept = []
+        removed = 0
+        for cell in list(self.cell_list):
+            try:
+                n_frames = min(frames_to_check, cell.frame_number)
+                hits = 0
+                checked = 0
+                for f in range(n_frames):
+                    # frame_masks True=outside; invert to get inside-cell mask
+                    inside_mask = np.invert(cell.frame_masks[f])
+                    if inside_mask is None:
+                        continue
+                    checked += 1
+                    # Border contact OR internal straight edge
+                    if (self._mask_touches_border(inside_mask, edge_margin=edge_margin)
+                        or self._has_internal_straight_edge(inside_mask)):
+                        hits += 1
+                if checked > 0 and (hits / checked) >= required_fraction:
+                    removed += 1
+                    continue
+            except Exception as E:
+                # If in doubt, keep the cell to avoid false negatives
+                print(E)
+            kept.append(cell)
+
+        self.cell_list = kept
+        self.cell_list_for_processing = kept
+        if removed > 0:
+            try:
+                self.logger.log_and_print(
+                    message=f"Filtered {removed} partial cell(s) touching ROI borders.",
+                    level=logging.INFO,
+                    logger=self.logger)
+            except Exception:
+                pass
+
+    def _has_internal_straight_edge(self, inside_mask: np.ndarray,
+                                     min_rel_length: float = 0.6,
+                                     min_abs_len_px: int = 10,
+                                     threshold: int = 10,
+                                     line_gap: int = 2) -> bool:
+        """Detects a long straight segment on the cell boundary (a chord),
+        which is characteristic for cut/partial cells.
+
+        - inside_mask: boolean mask (True = cell)
+        - min_rel_length: minimum line length relative to estimated diameter
+        - min_abs_len_px: absolute minimum length in pixels
+        - threshold, line_gap: parameters for probabilistic Hough transform
+        """
+        try:
+            area = int(np.sum(inside_mask))
+            if area <= 0:
+                return False
+            # Estimate diameter from area assuming roughly circular cell
+            diameter_est = 2.0 * np.sqrt(area / np.pi)
+            target_len = max(min_rel_length * diameter_est, float(min_abs_len_px))
+
+            # Extract 1-pixel boundary of the mask
+            boundary = np.logical_and(inside_mask, np.logical_not(binary_erosion(inside_mask)))
+
+            # Detect line segments on the boundary
+            # Use a conservative minimal length to propose segments; verify length below
+            min_len_param = max(5, int(target_len * 0.7))
+            lines = probabilistic_hough_line(boundary.astype(np.uint8),
+                                             threshold=threshold,
+                                             line_length=min_len_param,
+                                             line_gap=line_gap)
+            if not lines:
+                return False
+            # Check if any segment is long enough
+            for (x0, y0), (x1, y1) in lines:
+                seg_len = float(np.hypot(x1 - x0, y1 - y0))
+                if seg_len >= target_len:
+                    return True
+            return False
+        except Exception as E:
+            # On any error, be conservative and return False
+            print(E)
+            return False
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
@@ -1132,6 +1284,3 @@ class ImageProcessor:
         os.makedirs(save_path, exist_ok=True)
         for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(save_path + '/'+ self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif', cell.give_ratio_image(), check_contrast=False)
-
-
-
