@@ -92,6 +92,17 @@ class TDarts_GUI():
         self.choose_results_directory_button = Button(self.input_output_frame, text="Choose a results directory",
                                                       command=self.choose_results_directory_clicked)
         self.choose_results_directory_button.grid(row=12, column=0, sticky="W")
+        #
+        self.label_checkpoint = Label(self.input_output_frame, text="Checkpoint:  ")
+        self.label_checkpoint.grid(column=0, row=13, sticky="W")
+        self.checkpoint_in_pipeline = IntVar()
+        self.check_box_checkpoint_in_pipeline = Checkbutton(self.input_output_frame,
+                                                               variable=self.checkpoint_in_pipeline,
+                                                               onvalue=1,
+                                                               offvalue=0,
+                                                               command=None)
+        self.check_box_checkpoint_in_pipeline.grid(column=1, row=13, sticky="W")
+        self.check_box_checkpoint_in_pipeline.deselect()
 
         #####################################################################################
 
@@ -584,6 +595,9 @@ class TDarts_GUI():
                 'analysis': {
                     'hotspot_detection': self.hotspot_detection_in_pipeline.get() == 1,
                     'dartboard_projection': self.dartboard_projection_in_pipeline.get() == 1
+                },
+                'checkpoints': {
+                    'save_pre_start': self.checkpoint_in_pipeline.get() == 1
                 }
             }
         }
@@ -615,6 +629,11 @@ class TDarts_GUI():
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["input_output"]["results_dir"])
             self.excel_filename_microdomain_data = config["input_output"]["excel_filename_microdomain_data"]
+            
+            if config["processing_pipeline"]["checkpoints"]["save_pre_start"]:
+                self.check_box_checkpoint_in_pipeline.select()
+            else:
+                self.check_box_checkpoint_in_pipeline.deselect()
 
             # PROPERTIES OF MEASUREMENT
             self.text_microscope.delete(1.0, END)

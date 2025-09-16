@@ -1,5 +1,6 @@
 import logging
 import math
+import json
 import skimage.io as io
 import numpy as np
 import skimage.measure
@@ -367,6 +368,9 @@ class ImageProcessor:
         # clear area outside the cells
         self.clear_outside_of_cells()
 
+        # optional checkpoint before time-window trimming
+        self.save_preprocessing_checkpoint()
+
         # filter out preactivated cells (ratio too high before stimulation), if no beads
         if not self.parameters["properties_of_measurement"]["bead_contact"]:
             try:
@@ -545,6 +549,81 @@ class ImageProcessor:
 
         for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell.ratio)
+
+    def save_preprocessing_checkpoint(self):
+        """Persist intermediate data before trimming by time windows."""
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+        enabled = bool(checkpoints_cfg.get("save_pre_start", False))
+
+        status_message = f"save_pre_start flag set to {enabled}."
+        try:
+            if getattr(self, "logger", None) is not None:
+                self.logger.log_and_print(message=status_message,
+                                          level=logging.INFO,
+                                          logger=self.logger)
+            else:
+                print(status_message)
+        except Exception:
+            print(status_message)
+
+        if not enabled:
+            return
+
+        checkpoint_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
+        manifest_entries = []
+        for idx, cell in enumerate(self.cell_list_for_processing):
+            cell_label = f"cell_{idx:04d}"
+
+            ratio_filename = f"{cell_label}_ratio.tif"
+            ratio_path = os.path.join(checkpoint_dir, ratio_filename)
+            if cell.ratio is None:
+                continue
+            io.imsave(ratio_path, cell.ratio.astype(np.float32))
+
+            mask_filename = None
+            if cell.frame_masks is not None:
+                mask_filename = f"{cell_label}_frame_masks.npy"
+                mask_path = os.path.join(checkpoint_dir, mask_filename)
+                np.save(mask_path, cell.frame_masks)
+
+            manifest_entries.append({
+                "cell_index": idx,
+                "ratio_file": ratio_filename,
+                "mask_file": mask_filename,
+                "frame_number": int(cell.frame_number),
+                "starting_point": int(getattr(cell, "starting_point", 0)),
+                "starting_point_auto": int(getattr(cell, "starting_point_auto", -1))
+                if hasattr(cell, "starting_point_auto") else None,
+            })
+
+        manifest = {
+            "measurement": self.measurement_name,
+            "frame_rate": self.frames_per_second,
+            "time_before_start": self.parameters["properties_of_measurement"].get(
+                "time_of_measurement_before_starting_point"),
+            "time_after_start": self.parameters["properties_of_measurement"].get(
+                "time_of_measurement_after_starting_point"),
+            "cells": manifest_entries,
+        }
+
+        manifest_path = os.path.join(checkpoint_dir, "manifest.json")
+        with open(manifest_path, "w", encoding="utf-8") as manifest_file:
+            json.dump(manifest, manifest_file, indent=2)
+
+        message = (f"Saved preprocessing checkpoint with {len(manifest_entries)} cell(s) to "
+                   f"{checkpoint_dir}.")
+        try:
+            if getattr(self, "logger", None) is not None:
+                self.logger.log_and_print(message=message,
+                                          level=logging.INFO,
+                                          logger=self.logger)
+            else:
+                print(message)
+        except Exception:
+            print(message)
 
     def global_measurement(self, info_saver):
         global_dataframe = info_saver.global_data
