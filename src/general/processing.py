@@ -11,6 +11,8 @@ import time
 import pandas as pd
 import os
 import timeit
+from datetime import datetime
+import shutil
 from stardist.models import StarDist2D
 import matplotlib.pyplot as plt
 
@@ -145,9 +147,12 @@ class ImageProcessor:
         self.experiment_name = self.parameters["properties_of_measurement"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties_of_measurement"]["day_of_measurement"]
         # self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
-        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        self.measurement_basename = f"{self.day_of_measurement}_{self.experiment_name}_{self.file_name}"
+        self.measurement_name = self.measurement_basename
         self.results_folder = self.parameters["input_output"]["results_dir"]
-        self.save_path = self.results_folder + '/' + self.measurement_name
+        self.save_path = os.path.join(self.results_folder, self.measurement_name)
+        self.time_of_finished_processing = None
+        self._resumed_from_checkpoint = False
         self.frame_number = len(self.channel1)
         self.cell_type = self.parameters["properties_of_measurement"]["cell_type"]
         self.spotHeight = None
@@ -316,62 +321,57 @@ class ImageProcessor:
         return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
     def start_postprocessing(self):
+        resumed_from_checkpoint = False
+        if self.should_load_preprocessing_checkpoint():
+            resumed_from_checkpoint = self.load_preprocessing_checkpoint()
+
+        self._resumed_from_checkpoint = resumed_from_checkpoint
+
+        if not resumed_from_checkpoint:
+            self._run_pre_checkpoint_pipeline()
+
+        self._run_post_checkpoint_steps()
+
+    def _run_pre_checkpoint_pipeline(self):
         # -- PROCESSING OF WHOLE IMAGE CHANNELS --
-        # channel registration
         if self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
             self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                    self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"])
 
-        # background subtraction
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
-        # segmentation of cells, tracking
         self.segmentation_result_dict = self.select_rois()
-
-        # cell images
         self.create_cell_images(self.segmentation_result_dict)
-        
-        # Early filter: remove partial cells (touching ROI borders) to save compute
+
         if not self.parameters["properties_of_measurement"]["bead_contact"]:
-            # Check first few frames; drop if mask hits any border in most of them
             self.filter_partial_cells(edge_margin=0, frames_to_check=3, required_fraction=0.66)
-        
-        # -- PROCESSING OF CELL IMAGES --
-        if self.parameters["properties_of_measurement"]["bead_contact"]:  # if "bead contacts" was elected in the GUI
-            # assign bead contacts to cells
+
+        if self.parameters["properties_of_measurement"]["bead_contact"]:
             self.assign_bead_contacts_to_cells()
         else:
             if self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
                 for i, cell in enumerate(self.cell_list):
                     cell.starting_point = self.time_of_addition
 
-        # deconvolution
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
             self.deconvolve_cell_images()
 
-        # bleaching correction
         if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
             self.bleaching_correction()
 
-        # first median filter
         if self.deconvolution.give_name() != "TDE Deconvolution":
             self.medianfilter("channels")
 
-        # generation of ratio images
         self.generate_ratio_images()
 
-        # second median filter
         if self.deconvolution.give_name() != "TDE Deconvolution":
             self.medianfilter("ratio")
 
-        # clear area outside the cells
         self.clear_outside_of_cells()
-
-        # optional checkpoint before time-window trimming
         self.save_preprocessing_checkpoint()
 
-        # filter out preactivated cells (ratio too high before stimulation), if no beads
+    def _run_post_checkpoint_steps(self):
         if not self.parameters["properties_of_measurement"]["bead_contact"]:
             try:
                 filtering_cfg = self.parameters.get("processing_pipeline", {}).get("filtering", {})
@@ -380,16 +380,95 @@ class ImageProcessor:
                 preact_threshold = 1.0
             self.filter_preactivated_cells(preact_threshold)
 
-        # save ratio images of the cells
+        self.finalize_output_directory()
+
         self.save_ratio_images()
 
-        # measure mean ratio values in all frames
         for cell in self.cell_list_for_processing:
             cell.mean_ratio_list = cell.measure_mean_ratio_in_all_frames()
 
-        # determine starting points for local imaging, if no beads
         if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
             self.determine_starting_points_local_no_beads()
+
+    def finalize_output_directory(self):
+        if getattr(self, "_resumed_from_checkpoint", False):
+            return
+
+        finish_time = datetime.now().strftime("%H-%M-%S")
+        self.time_of_finished_processing = finish_time
+        new_measurement_name = f"{self.day_of_measurement}_{finish_time}_{self.experiment_name}_{self.file_name}"
+
+        if new_measurement_name == self.measurement_name:
+            return
+
+        current_path = self.save_path
+        target_path = os.path.join(self.results_folder, new_measurement_name)
+        os.makedirs(self.results_folder, exist_ok=True)
+
+        destination = target_path
+        suffix = 1
+        while os.path.exists(destination):
+            destination = f"{target_path}_{suffix:02d}"
+            suffix += 1
+
+        try:
+            if os.path.isdir(current_path) and current_path != destination:
+                shutil.move(current_path, destination)
+            else:
+                os.makedirs(destination, exist_ok=True)
+        except Exception as exc:
+            message = ("Could not move output folder to include processing finish time. "
+                       f"Reason: {exc}")
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=message,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(message)
+            except Exception:
+                print(message)
+            return
+
+        self.save_path = destination
+        self.measurement_name = os.path.basename(self.save_path)
+        self.excel_filename_one_measurement = self.measurement_name + '_microdomain_data'
+
+        if getattr(self, "hotspotdetector", None) is not None:
+            self.hotspotdetector.save_path = self.save_path
+            self.hotspotdetector.excel_filename_one_measurement = self.excel_filename_one_measurement
+
+        if getattr(self, "dartboard_generator", None) is not None:
+            self.dartboard_generator.save_path = self.save_path
+            self.dartboard_generator.measurement_name = self.measurement_name
+
+        self._update_checkpoint_manifest_measurement()
+
+    def _update_checkpoint_manifest_measurement(self):
+        checkpoint_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
+        manifest_path = os.path.join(checkpoint_dir, "manifest.json")
+
+        if not os.path.isfile(manifest_path):
+            return
+
+        try:
+            with open(manifest_path, "r+", encoding="utf-8") as manifest_file:
+                manifest = json.load(manifest_file)
+                manifest["measurement"] = self.measurement_name
+                manifest_file.seek(0)
+                json.dump(manifest, manifest_file, indent=2)
+                manifest_file.truncate()
+        except Exception as exc:
+            message = f"Could not update checkpoint manifest after renaming output folder: {exc}"
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=message,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(message)
+            except Exception:
+                print(message)
 
     def filter_preactivated_cells(self, threshold: float):
         """Remove cells that are preactivated (mean ratio in frame 0 > threshold).
@@ -583,6 +662,20 @@ class ImageProcessor:
                 continue
             io.imsave(ratio_path, cell.ratio.astype(np.float32))
 
+            channel1_filename = f"{cell_label}_channel1.npy"
+            channel1_path = os.path.join(checkpoint_dir, channel1_filename)
+            np.save(channel1_path, cell.give_image_channel1().astype(np.float32))
+
+            channel2_filename = f"{cell_label}_channel2.npy"
+            channel2_path = os.path.join(checkpoint_dir, channel2_filename)
+            np.save(channel2_path, cell.give_image_channel2().astype(np.float32))
+
+            cell_dataframe_filename = None
+            if getattr(cell, "cell_image_data_channel_2", None) is not None:
+                cell_dataframe_filename = f"{cell_label}_cell_data.pkl"
+                cell_dataframe_path = os.path.join(checkpoint_dir, cell_dataframe_filename)
+                cell.cell_image_data_channel_2.to_pickle(cell_dataframe_path)
+
             mask_filename = None
             if cell.frame_masks is not None:
                 mask_filename = f"{cell_label}_frame_masks.npy"
@@ -593,6 +686,9 @@ class ImageProcessor:
                 "cell_index": idx,
                 "ratio_file": ratio_filename,
                 "mask_file": mask_filename,
+                "channel1_file": channel1_filename,
+                "channel2_file": channel2_filename,
+                "cell_dataframe": cell_dataframe_filename,
                 "frame_number": int(cell.frame_number),
                 "starting_point": int(getattr(cell, "starting_point", 0)),
                 "starting_point_auto": int(getattr(cell, "starting_point_auto", -1))
@@ -606,6 +702,8 @@ class ImageProcessor:
                 "time_of_measurement_before_starting_point"),
             "time_after_start": self.parameters["properties_of_measurement"].get(
                 "time_of_measurement_after_starting_point"),
+            "raw_image_shape": list(self.channel1.shape) if getattr(self, "channel1", None) is not None else None,
+            "image_width": int(getattr(self, "x_max", 0)) if getattr(self, "x_max", None) is not None else None,
             "cells": manifest_entries,
         }
 
@@ -624,6 +722,192 @@ class ImageProcessor:
                 print(message)
         except Exception:
             print(message)
+
+    def should_load_preprocessing_checkpoint(self) -> bool:
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+        return bool(checkpoints_cfg.get("load_pre_start", False))
+
+    def load_preprocessing_checkpoint(self) -> bool:
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+
+        source_hint = str(checkpoints_cfg.get("source_dir", "")) or ""
+        candidate_dirs = []
+
+        if source_hint:
+            expanded = os.path.expanduser(source_hint)
+            if not os.path.isabs(expanded):
+                expanded = os.path.join(self.results_folder, expanded)
+            expanded = os.path.abspath(expanded)
+
+            if os.path.isfile(expanded):
+                if expanded.lower().endswith(".json"):
+                    candidate_dirs.append(os.path.dirname(expanded))
+            elif os.path.isdir(expanded):
+                candidate_dirs.append(expanded)
+                candidate_dirs.append(os.path.join(expanded, "checkpoints", "pre_start"))
+
+        default_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
+        candidate_dirs.append(default_dir)
+
+        checkpoint_dir = None
+        manifest_path = None
+        for candidate in candidate_dirs:
+            if not candidate:
+                continue
+            candidate_manifest = os.path.join(candidate, "manifest.json")
+            if os.path.isfile(candidate_manifest):
+                checkpoint_dir = candidate
+                manifest_path = candidate_manifest
+                break
+
+        if checkpoint_dir is None or manifest_path is None:
+            msg = ("No preprocessing checkpoint manifest found. "
+                   "Falling back to full preprocessing pipeline.")
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=msg,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(msg)
+            except Exception:
+                print(msg)
+            return False
+
+        measurement_dir = os.path.dirname(checkpoint_dir)
+        if os.path.basename(checkpoint_dir) != "pre_start":
+            measurement_dir = checkpoint_dir
+        elif os.path.basename(measurement_dir) == "checkpoints":
+            measurement_dir = os.path.dirname(measurement_dir)
+
+        with open(manifest_path, "r", encoding="utf-8") as manifest_file:
+            manifest = json.load(manifest_file)
+
+        manifest_measurement = manifest.get("measurement")
+        if manifest_measurement:
+            self.measurement_name = manifest_measurement
+            self.save_path = os.path.join(self.results_folder, self.measurement_name)
+
+        if os.path.isdir(measurement_dir):
+            self.save_path = measurement_dir
+
+        raw_shape = manifest.get("raw_image_shape")
+        if raw_shape:
+            try:
+                if len(raw_shape) == 3:
+                    self.t_max, self.y_max, self.x_max = raw_shape
+                elif len(raw_shape) == 2:
+                    self.y_max, self.x_max = raw_shape
+            except Exception:
+                pass
+
+        image_width = manifest.get("image_width", getattr(self, "x_max", None))
+
+        cells_loaded = []
+        for entry in manifest.get("cells", []):
+            try:
+                ratio_file = entry.get("ratio_file")
+                if not ratio_file:
+                    continue
+                ratio_path = os.path.join(checkpoint_dir, ratio_file)
+                if not os.path.isfile(ratio_path):
+                    continue
+                ratio = io.imread(ratio_path).astype(np.float32)
+
+                channel1_path = entry.get("channel1_file")
+                if channel1_path:
+                    channel1_abs = os.path.join(checkpoint_dir, channel1_path)
+                    if os.path.isfile(channel1_abs):
+                        channel1_array = np.load(channel1_abs)
+                    else:
+                        continue
+                else:
+                    continue
+
+                channel2_path = entry.get("channel2_file")
+                if channel2_path:
+                    channel2_abs = os.path.join(checkpoint_dir, channel2_path)
+                    if os.path.isfile(channel2_abs):
+                        channel2_array = np.load(channel2_abs)
+                    else:
+                        continue
+                else:
+                    continue
+
+                mask_array = None
+                mask_path = entry.get("mask_file")
+                if mask_path:
+                    mask_abs = os.path.join(checkpoint_dir, mask_path)
+                    if os.path.isfile(mask_abs):
+                        mask_array = np.load(mask_abs, allow_pickle=True)
+
+                cell_dataframe = None
+                df_path = entry.get("cell_dataframe")
+                if df_path:
+                    df_abs = os.path.join(checkpoint_dir, df_path)
+                    if os.path.isfile(df_abs):
+                        cell_dataframe = pd.read_pickle(df_abs)
+
+                channel1_image = ChannelImage(channel1_array, self.wl1)
+                channel2_image = ChannelImage(channel2_array, self.wl2)
+                cell_obj = CellImage(channel1_image,
+                                     channel2_image,
+                                     image_width if image_width is not None else channel1_array.shape[-1],
+                                     cell_dataframe,
+                                     mask_array)
+
+                cell_obj.ratio = ratio
+                cell_obj.frame_number = int(entry.get("frame_number", ratio.shape[0]))
+                cell_obj.starting_point = int(entry.get("starting_point", 0))
+                if entry.get("starting_point_auto") is not None:
+                    cell_obj.starting_point_auto = int(entry.get("starting_point_auto"))
+
+                cells_loaded.append(cell_obj)
+            except Exception as exc:
+                warning = f"Failed to load cell from checkpoint: {exc}"
+                try:
+                    if getattr(self, "logger", None) is not None:
+                        self.logger.log_and_print(message=warning,
+                                                  level=logging.WARNING,
+                                                  logger=self.logger)
+                    else:
+                        print(warning)
+                except Exception:
+                    print(warning)
+                continue
+
+        if not cells_loaded:
+            msg = "Checkpoint manifest could not be loaded or contained no cells."
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=msg,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(msg)
+            except Exception:
+                print(msg)
+            return False
+
+        self.cell_list = cells_loaded
+        self.cell_list_for_processing = self.cell_list
+        self.nb_rois = len(self.cell_list)
+
+        info_message = (f"Loaded preprocessing checkpoint with {len(self.cell_list)} cell(s) "
+                        f"from {checkpoint_dir}.")
+        try:
+            if getattr(self, "logger", None) is not None:
+                self.logger.log_and_print(message=info_message,
+                                          level=logging.INFO,
+                                          logger=self.logger)
+            else:
+                print(info_message)
+        except Exception:
+            print(info_message)
+
+        return True
 
     def global_measurement(self, info_saver):
         global_dataframe = info_saver.global_data

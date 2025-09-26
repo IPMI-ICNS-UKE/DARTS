@@ -97,12 +97,32 @@ class TDarts_GUI():
         self.label_checkpoint.grid(column=0, row=13, sticky="W")
         self.checkpoint_in_pipeline = IntVar()
         self.check_box_checkpoint_in_pipeline = Checkbutton(self.input_output_frame,
-                                                               variable=self.checkpoint_in_pipeline,
-                                                               onvalue=1,
-                                                               offvalue=0,
-                                                               command=None)
+                                                            text="Save after preprocessing",
+                                                            variable=self.checkpoint_in_pipeline,
+                                                            onvalue=1,
+                                                            offvalue=0)
         self.check_box_checkpoint_in_pipeline.grid(column=1, row=13, sticky="W")
         self.check_box_checkpoint_in_pipeline.deselect()
+
+        self.resume_checkpoint_in_pipeline = IntVar()
+        self.check_box_resume_checkpoint = Checkbutton(self.input_output_frame,
+                                                       text="Load existing checkpoint",
+                                                       variable=self.resume_checkpoint_in_pipeline,
+                                                       onvalue=1,
+                                                       offvalue=0,
+                                                       command=self.on_resume_checkpoint_toggle)
+        self.check_box_resume_checkpoint.grid(column=2, row=13, sticky="W")
+        self.check_box_resume_checkpoint.deselect()
+
+        self.label_checkpoint_path = Label(self.input_output_frame, text="Checkpoint source path")
+        self.label_checkpoint_path.grid(column=0, row=14, sticky="E")
+        self.entry_checkpoint_path = Entry(self.input_output_frame, width=30)
+        self.entry_checkpoint_path.grid(column=1, row=14, columnspan=2, sticky="WE")
+        self.button_choose_checkpoint = Button(self.input_output_frame, text="Choose checkpoint",
+                                               command=self.choose_checkpoint_directory_clicked)
+        self.button_choose_checkpoint.grid(column=1, row=15, sticky="W")
+
+        self.on_resume_checkpoint_toggle()
 
         #####################################################################################
 
@@ -597,7 +617,9 @@ class TDarts_GUI():
                     'dartboard_projection': self.dartboard_projection_in_pipeline.get() == 1
                 },
                 'checkpoints': {
-                    'save_pre_start': self.checkpoint_in_pipeline.get() == 1
+                    'save_pre_start': self.checkpoint_in_pipeline.get() == 1,
+                    'load_pre_start': self.resume_checkpoint_in_pipeline.get() == 1,
+                    'source_dir': self.entry_checkpoint_path.get().strip()
                 }
             }
         }
@@ -630,10 +652,18 @@ class TDarts_GUI():
             self.text_results_directory.insert(1.0, config["input_output"]["results_dir"])
             self.excel_filename_microdomain_data = config["input_output"]["excel_filename_microdomain_data"]
             
-            if config["processing_pipeline"]["checkpoints"]["save_pre_start"]:
+            checkpoints_cfg = dict(config["processing_pipeline"].get("checkpoints", {}))
+            if checkpoints_cfg.get("save_pre_start", False):
                 self.check_box_checkpoint_in_pipeline.select()
             else:
                 self.check_box_checkpoint_in_pipeline.deselect()
+
+            if checkpoints_cfg.get("load_pre_start", False):
+                self.check_box_resume_checkpoint.select()
+            else:
+                self.check_box_resume_checkpoint.deselect()
+
+            self.set_checkpoint_path_value(checkpoints_cfg.get("source_dir", ""))
 
             # PROPERTIES OF MEASUREMENT
             self.text_microscope.delete(1.0, END)
@@ -978,6 +1008,24 @@ class TDarts_GUI():
         self.text_results_directory.delete('1.0', END)
         self.text_results_directory.insert(1.0, results_directory)
 
+    def choose_checkpoint_directory_clicked(self):
+        directory = fd.askdirectory()
+        if directory:
+            self.set_checkpoint_path_value(directory)
+
+    def on_resume_checkpoint_toggle(self):
+        enabled = self.resume_checkpoint_in_pipeline.get() == 1
+        entry_state = NORMAL if enabled else DISABLED
+        button_state = NORMAL if enabled else DISABLED
+        self.entry_checkpoint_path.config(state=entry_state)
+        self.button_choose_checkpoint.config(state=button_state)
+
+    def set_checkpoint_path_value(self, value):
+        self.entry_checkpoint_path.config(state=NORMAL)
+        self.entry_checkpoint_path.delete(0, END)
+        self.entry_checkpoint_path.insert(0, value)
+        self.on_resume_checkpoint_toggle()
+
     def write_input_to_config_file(self):
         file = open("config.toml", "w")
         data = self.get_parameters()
@@ -1164,10 +1212,4 @@ class CellTypeManager:
 
         # Set default value to the first option in the new list
         self.selected_cell_type.set(self.cell_types[0])
-
-
-
-
-
-
 
