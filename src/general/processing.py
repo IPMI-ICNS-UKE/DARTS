@@ -745,8 +745,15 @@ class ImageProcessor:
                 if expanded.lower().endswith(".json"):
                     candidate_dirs.append(os.path.dirname(expanded))
             elif os.path.isdir(expanded):
-                candidate_dirs.append(expanded)
-                candidate_dirs.append(os.path.join(expanded, "checkpoints", "pre_start"))
+                possible_dirs = [
+                    expanded,
+                    os.path.join(expanded, "checkpoints"),
+                    os.path.join(expanded, "pre_start"),
+                    os.path.join(expanded, "checkpoints", "pre_start"),
+                ]
+                for candidate in possible_dirs:
+                    if os.path.isdir(candidate) and candidate not in candidate_dirs:
+                        candidate_dirs.append(candidate)
 
         default_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
         candidate_dirs.append(default_dir)

@@ -39,19 +39,26 @@ class TDarts_GUI():
         self.label_batch = Label(self.input_output_frame, text="Batch or single processing")
         self.label_batch.grid(column=0, row=0, sticky="W")
         self.select_mode = StringVar(value="file")
+        self.last_input_mode = "file"
+        self.input_path_value = ""
+        self.checkpoint_path_value = ""
         self.choose_single = Radiobutton(self.input_output_frame, text="Select File", variable=self.select_mode,
-                                         value="file")
+                                         value="file", anchor="center", justify="center")
         self.choose_single.grid(column=0, row=1, sticky="W")
 
         self.choose_dir = Radiobutton(self.input_output_frame, text="Select Directory", variable=self.select_mode,
-                                      value="dir")
+                                      value="dir", anchor="center", justify="center")
         self.choose_dir.grid(column=1, row=1, sticky="W")
+        self.choose_checkpoint = Radiobutton(self.input_output_frame, text="Select Checkpoint",
+                                             variable=self.select_mode,
+                                             value="cp", anchor="center", justify="center")
+        self.choose_checkpoint.grid(column=2, row=1, sticky="W")
 
-        self.label_path = Label(self.input_output_frame, text="path to input", anchor="e")
+        self.label_path = Label(self.input_output_frame, text="Selected path", anchor="e")
         self.label_path.grid(row=2, column=0, sticky="E")
         self.text_path = Text(self.input_output_frame, height=1, width=20)
         self.text_path.grid(row=2, column=1, sticky="W")
-        self.selection_button = Button(self.input_output_frame, text="Choose files or directory",
+        self.selection_button = Button(self.input_output_frame, text="Select path",
                                        command=self.select_files_or_directory)
         self.selection_button.grid(row=3, column=0, sticky="W")
 
@@ -104,25 +111,9 @@ class TDarts_GUI():
         self.check_box_checkpoint_in_pipeline.grid(column=1, row=13, sticky="W")
         self.check_box_checkpoint_in_pipeline.deselect()
 
-        self.resume_checkpoint_in_pipeline = IntVar()
-        self.check_box_resume_checkpoint = Checkbutton(self.input_output_frame,
-                                                       text="Load existing checkpoint",
-                                                       variable=self.resume_checkpoint_in_pipeline,
-                                                       onvalue=1,
-                                                       offvalue=0,
-                                                       command=self.on_resume_checkpoint_toggle)
-        self.check_box_resume_checkpoint.grid(column=2, row=13, sticky="W")
-        self.check_box_resume_checkpoint.deselect()
-
-        self.label_checkpoint_path = Label(self.input_output_frame, text="Checkpoint source path")
-        self.label_checkpoint_path.grid(column=0, row=14, sticky="E")
-        self.entry_checkpoint_path = Entry(self.input_output_frame, width=30)
-        self.entry_checkpoint_path.grid(column=1, row=14, columnspan=2, sticky="WE")
-        self.button_choose_checkpoint = Button(self.input_output_frame, text="Choose checkpoint",
-                                               command=self.choose_checkpoint_directory_clicked)
-        self.button_choose_checkpoint.grid(column=1, row=15, sticky="W")
-
-        self.on_resume_checkpoint_toggle()
+        self.resume_checkpoint_in_pipeline = IntVar(value=0)
+        self.select_mode.trace_add("write", self.on_select_mode_change)
+        self.on_select_mode_change()
 
         #####################################################################################
 
@@ -546,11 +537,18 @@ class TDarts_GUI():
         webbrowser.open(website)
 
     def get_parameters(self):
+        current_display_path = self.text_path.get("1.0", "end-1c").strip()
+        mode = self.select_mode.get()
+        if mode in ("file", "dir"):
+            self.input_path_value = current_display_path
+        elif mode == "cp":
+            self.checkpoint_path_value = current_display_path
+
         data = {
             'input_output': {
-                'file_or_directory': self.select_mode.get(),
+                'file_or_directory': self.last_input_mode,
                 'image_conf': self.get_image_configuration(),
-                'path': self.text_path.get("1.0", "end-1c"),
+                'path': self.input_path_value,
                 # 'path_to_input_1': self.text_single_path_to_input_channel1.get("1.0", "end-1c"),
                 # 'path_to_input_2': self.text_single_path_to_input_channel2.get("1.0", "end-1c"),
                 # 'path_to_input_combined': self.text_path_to_input_combined.get("1.0", "end-1c"),
@@ -619,7 +617,7 @@ class TDarts_GUI():
                 'checkpoints': {
                     'save_pre_start': self.checkpoint_in_pipeline.get() == 1,
                     'load_pre_start': self.resume_checkpoint_in_pipeline.get() == 1,
-                    'source_dir': self.entry_checkpoint_path.get().strip()
+                    'source_dir': self.checkpoint_path_value
                 }
             }
         }
@@ -642,11 +640,11 @@ class TDarts_GUI():
         with open(config_file_path, mode="rt", encoding="utf-8") as fp:
             config = tomlkit.load(fp)
             # INPUT OUTPUT
-            self.select_mode.set(config["input_output"]["file_or_directory"])
+            self.last_input_mode = config["input_output"]["file_or_directory"]
             image_config = self.convert_image_config_to_number(config['input_output']['image_conf'])
             self.selected_image_configuration.set(image_config)
-            self.text_path.delete(1.0, END)
-            self.text_path.insert(1.0, config["input_output"]["path"])
+            self.input_path_value = config["input_output"]["path"]
+            self.update_path_display(self.input_path_value)
 
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["input_output"]["results_dir"])
@@ -658,12 +656,12 @@ class TDarts_GUI():
             else:
                 self.check_box_checkpoint_in_pipeline.deselect()
 
-            if checkpoints_cfg.get("load_pre_start", False):
-                self.check_box_resume_checkpoint.select()
+            self.checkpoint_path_value = checkpoints_cfg.get("source_dir", "")
+            load_pre_start = bool(checkpoints_cfg.get("load_pre_start", False))
+            if load_pre_start:
+                self.select_mode.set("cp")
             else:
-                self.check_box_resume_checkpoint.deselect()
-
-            self.set_checkpoint_path_value(checkpoints_cfg.get("source_dir", ""))
+                self.select_mode.set(self.last_input_mode)
 
             # PROPERTIES OF MEASUREMENT
             self.text_microscope.delete(1.0, END)
@@ -919,13 +917,47 @@ class TDarts_GUI():
     #        self.text_single_path_to_input_channel2.delete('1.0', END)
 
     def select_files_or_directory(self):
-        if self.select_mode.get() == "file":
-            paths = fd.askopenfilename(title="Select File")
-        else:
-            paths = fd.askdirectory(title="Select Directory")
+        mode = self.select_mode.get()
+        selected_path = ""
+        if mode == "file":
+            selected_path = fd.askopenfilename(title="Select File")
+        elif mode == "dir":
+            selected_path = fd.askdirectory(title="Select Directory")
+        elif mode == "cp":
+            selected_path = fd.askdirectory(title="Select Checkpoint Directory")
 
+        if not selected_path:
+            return
+
+        if mode in ("file", "dir"):
+            self.input_path_value = selected_path
+            self.update_path_display(self.input_path_value)
+        elif mode == "cp":
+            self.set_checkpoint_path_value(selected_path)
+
+    def update_path_display(self, value):
         self.text_path.delete('1.0', END)
-        self.text_path.insert(1.0, paths)
+        if value:
+            self.text_path.insert('1.0', value)
+
+    def on_select_mode_change(self, *_):
+        mode = self.select_mode.get()
+        if mode in ("file", "dir"):
+            self.last_input_mode = mode
+            self.resume_checkpoint_in_pipeline.set(0)
+            self.update_path_display(self.input_path_value)
+        elif mode == "cp":
+            self.resume_checkpoint_in_pipeline.set(1 if self.checkpoint_path_value else 0)
+            self.update_path_display(self.checkpoint_path_value)
+        else:
+            self.resume_checkpoint_in_pipeline.set(0)
+            self.update_path_display("")
+
+    def set_checkpoint_path_value(self, value):
+        self.checkpoint_path_value = value
+        if self.select_mode.get() == "cp":
+            self.update_path_display(self.checkpoint_path_value)
+        self.resume_checkpoint_in_pipeline.set(1 if self.checkpoint_path_value else 0)
 
     #def enable_text_boxes(self):
     #    self.text_path_to_input_combined['state'] = 'normal'
@@ -1007,24 +1039,6 @@ class TDarts_GUI():
         results_directory = fd.askdirectory()
         self.text_results_directory.delete('1.0', END)
         self.text_results_directory.insert(1.0, results_directory)
-
-    def choose_checkpoint_directory_clicked(self):
-        directory = fd.askdirectory()
-        if directory:
-            self.set_checkpoint_path_value(directory)
-
-    def on_resume_checkpoint_toggle(self):
-        enabled = self.resume_checkpoint_in_pipeline.get() == 1
-        entry_state = NORMAL if enabled else DISABLED
-        button_state = NORMAL if enabled else DISABLED
-        self.entry_checkpoint_path.config(state=entry_state)
-        self.button_choose_checkpoint.config(state=button_state)
-
-    def set_checkpoint_path_value(self, value):
-        self.entry_checkpoint_path.config(state=NORMAL)
-        self.entry_checkpoint_path.delete(0, END)
-        self.entry_checkpoint_path.insert(0, value)
-        self.on_resume_checkpoint_toggle()
 
     def write_input_to_config_file(self):
         file = open("config.toml", "w")
@@ -1212,4 +1226,3 @@ class CellTypeManager:
 
         # Set default value to the first option in the new list
         self.selected_cell_type.set(self.cell_types[0])
-
