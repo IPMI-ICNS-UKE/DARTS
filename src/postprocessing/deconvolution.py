@@ -139,7 +139,6 @@ class LWDeconvolution(BaseDecon):
             xk2_old = xk2                              
             
             #main itereration loop
-            print(n_iter)
             for i in range(int(n_iter)):
                 if i == 0:
                     # residual r = y – H x
