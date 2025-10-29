@@ -42,17 +42,19 @@ class TDarts_GUI():
         self.last_input_mode = "file"
         self.input_path_value = ""
         self.checkpoint_path_value = ""
-        self.choose_single = Radiobutton(self.input_output_frame, text="Select File", variable=self.select_mode,
+        self.mode_choice_frame = Frame(self.input_output_frame)
+        self.mode_choice_frame.grid(column=0, row=1, columnspan=3, sticky="W")
+        self.choose_single = Radiobutton(self.mode_choice_frame, text="Select File", variable=self.select_mode,
                                          value="file")
-        self.choose_single.grid(column=0, row=1, sticky="W")
+        self.choose_single.pack(anchor="w")
 
-        self.choose_dir = Radiobutton(self.input_output_frame, text="Select Directory", variable=self.select_mode,
+        self.choose_dir = Radiobutton(self.mode_choice_frame, text="Select Directory", variable=self.select_mode,
                                       value="dir")
-        self.choose_dir.grid(column=1, row=1, sticky="W")
-        self.choose_checkpoint = Radiobutton(self.input_output_frame, text="Select Checkpoint",
+        self.choose_dir.pack(anchor="w")
+        self.choose_checkpoint = Radiobutton(self.mode_choice_frame, text="Select Checkpoint",
                                              variable=self.select_mode,
                                              value="cp")
-        self.choose_checkpoint.grid(column=2, row=1, sticky="W")
+        self.choose_checkpoint.pack(anchor="w")
 
         self.label_path = Label(self.input_output_frame, text="Selected path", anchor="e")
         self.label_path.grid(row=2, column=0, sticky="E")
