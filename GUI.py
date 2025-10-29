@@ -799,99 +799,110 @@ class TDarts_GUI():
 
             # PROCESSING PIPELINE
             ## POSTPROCESSING
-            if config["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
+            post_cfg = config["processing_pipeline"]["postprocessing"]
+
+            if post_cfg["channel_alignment_in_pipeline"]:
                 self.check_box_channel_alignment.select()
             else:
                 self.check_box_channel_alignment.deselect()
-            if config["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"]:
+            if post_cfg["channel_alignment_each_frame"]:
                 self.check_box_frame_by_frame_registration.select()
             else:
                 self.check_box_frame_by_frame_registration.deselect()
-            self.registration_method = config["processing_pipeline"]["postprocessing"]["registration_method"]
+            self.registration_method = post_cfg["registration_method"]
 
-            if config["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            if post_cfg["background_sub_in_pipeline"]:
                 self.check_box_background_subtraction_in_pipeline.select()
-                if config["processing_pipeline"]["postprocessing"]["background_subtraction_algorithm"]:
-                    self.background_subtraction_algorithm.set(config["processing_pipeline"]["postprocessing"]["background_subtraction_algorithm"])
-
-                    if self.background_subtraction_algorithm.get() == "Wavelet" and config["processing_pipeline"]["postprocessing"]["wavelet_background"]:
-                        self.wavelet_algorithm.set(config["processing_pipeline"]["postprocessing"]["wavelet_background"])
+                background_algorithm = post_cfg.get("background_subtractor_algorithm")
+                if background_algorithm is None:
+                    background_algorithm = post_cfg.get("background_subtraction_algorithm")
+                if background_algorithm:
+                    self.background_subtraction_algorithm.set(background_algorithm)
+                    wavelet_algorithm = post_cfg.get("wavelet_algorithm")
+                    if wavelet_algorithm is None:
+                        wavelet_algorithm = post_cfg.get("wavelet_background")
+                    if self.background_subtraction_algorithm.get() == "Wavelet" and wavelet_algorithm:
+                        self.wavelet_algorithm.set(wavelet_algorithm)
             else:
                 self.check_box_background_subtraction_in_pipeline.deselect()
 
-            if config["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
+            if post_cfg["upsampling_in_pipeline"]:
                 self.check_box_upsampling_in_pipeline.select()
-                if config["processing_pipeline"]["postprocessing"]["upsampling_algorithm"]:
-                    self.upsampling_algorithm.set(config["processing_pipeline"]["postprocessing"]["upsampling_algorithm"])
+                if post_cfg["upsampling_algorithm"]:
+                    self.upsampling_algorithm.set(post_cfg["upsampling_algorithm"])
 
-            if config["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
+            if post_cfg["denoising_in_pipeline"]:
                 self.check_box_denoising_in_pipeline.select()
-                if config["processing_pipeline"]["postprocessing"]["denoising_algorithm"]:
-                    self.denoising_algorithm.set(config["processing_pipeline"]["postprocessing"]["denoising_algorithm"])
+                if post_cfg["denoising_algorithm"]:
+                    self.denoising_algorithm.set(post_cfg["denoising_algorithm"])
 
 
-            if config["processing_pipeline"]["postprocessing"]["cell_segmentation_tracking_in_pipeline"]:
+            if post_cfg["cell_segmentation_tracking_in_pipeline"]:
                 self.check_box_segmentation_tracking_in_pipeline.select()
             else:
                 self.check_box_segmentation_tracking_in_pipeline.deselect()
-            if config["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
+            if post_cfg["deconvolution_in_pipeline"]:
                 self.check_box_deconvolution_in_pipeline.select()
 
-                self.deconvolution_algorithm.set(config["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"])
+                self.deconvolution_algorithm.set(post_cfg["deconvolution_algorithm"])
                 self.option_menu_deconvolution.config(state=NORMAL)
                 if self.deconvolution_algorithm.get() == "TDE":
                     self.text_TDE_lambda.config(state=NORMAL)
                     self.text_TDE_lambda_t.config(state=NORMAL)
                     self.text_TDE_lambda.delete(1.0, END)
-                    tde_lambda_val = config["processing_pipeline"]["postprocessing"]["TDE_lambda"]
+                    tde_lambda_val = post_cfg["TDE_lambda"]
                     if tde_lambda_val is not None:
                         self.text_TDE_lambda.insert(1.0, str(tde_lambda_val))
                     self.text_TDE_lambda_t.delete(1.0, END)
-                    tde_lambda_t_val = config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"]
+                    tde_lambda_t_val = post_cfg["TDE_lambda_t"]
                     if tde_lambda_t_val is not None:
                         self.text_TDE_lambda_t.insert(1.0, str(tde_lambda_t_val))
                 
                 if self.deconvolution_algorithm.get()=="LW":
                     self.text_iterations.config(state=NORMAL)
                     self.text_iterations.delete(1.0, END)
-                    self.text_iterations.insert(1.0, config["processing_pipeline"]["postprocessing"]["iterations"])                 
+                    decon_iter = post_cfg.get("decon_iter")
+                    if decon_iter is None:
+                        decon_iter = post_cfg.get("iterations")
+                    if decon_iter is not None:
+                        self.text_iterations.insert(1.0, str(decon_iter))
 
                 self.text_psf_type.delete(1.0, END)
-                self.text_psf_type.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["type"])
+                self.text_psf_type.insert(1.0, post_cfg["psf"]["type"])
                 self.text_psf_lambdaEx_ch1.delete(1.0, END)
-                self.text_psf_lambdaEx_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEx_ch1"])
+                self.text_psf_lambdaEx_ch1.insert(1.0, post_cfg["psf"]["lambdaEx_ch1"])
                 self.text_psf_lambdaEm_ch1.delete(1.0, END)
-                self.text_psf_lambdaEm_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEm_ch1"])
+                self.text_psf_lambdaEm_ch1.insert(1.0, post_cfg["psf"]["lambdaEm_ch1"])
                 self.text_psf_lambdaEx_ch2.delete(1.0, END)
-                self.text_psf_lambdaEx_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEx_ch2"])
+                self.text_psf_lambdaEx_ch2.insert(1.0, post_cfg["psf"]["lambdaEx_ch2"])
                 self.text_psf_lambdaEm_ch2.delete(1.0, END)
-                self.text_psf_lambdaEm_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEm_ch2"])
+                self.text_psf_lambdaEm_ch2.insert(1.0, post_cfg["psf"]["lambdaEm_ch2"])
                 self.text_psf_numAper.delete(1.0, END)
-                self.text_psf_numAper.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["numAper"])
+                self.text_psf_numAper.insert(1.0, post_cfg["psf"]["numAper"])
                 self.text_psf_magObj.delete(1.0, END)
-                self.text_psf_magObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["magObj"])
+                self.text_psf_magObj.insert(1.0, post_cfg["psf"]["magObj"])
                 self.text_psf_rindexObj.delete(1.0, END)
-                self.text_psf_rindexObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["rindexObj"])
+                self.text_psf_rindexObj.insert(1.0, post_cfg["psf"]["rindexObj"])
                 self.text_psf_rindexSp.delete(1.0, END)
-                self.text_psf_rindexSp.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["rindexSp"])
+                self.text_psf_rindexSp.insert(1.0, post_cfg["psf"]["rindexSp"])
                 self.text_psf_ccdSize.delete(1.0, END)
-                self.text_psf_ccdSize.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["ccdSize"])
+                self.text_psf_ccdSize.insert(1.0, post_cfg["psf"]["ccdSize"])
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
                 self.option_menu_deconvolution.config(state=DISABLED)
 
-            if config["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
+            if post_cfg["bleaching_correction_in_pipeline"]:
                 self.check_box_bleaching_correction.select()
-                self.bleaching_correction_algorithm.set(config["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"])
+                self.bleaching_correction_algorithm.set(post_cfg["bleaching_correction_algorithm"])
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
                 self.option_menu_bleaching_correction.config(state=DISABLED)
-            if config["processing_pipeline"]["postprocessing"]["ratio_images"]:
+            if post_cfg["ratio_images"]:
                 self.check_box_ratio_generation.select()
             else:
                 self.check_box_ratio_generation.deselect()
-            self.median_filter_kernel = config["processing_pipeline"]["postprocessing"]["median_filter_kernel"]
+            self.median_filter_kernel = post_cfg["median_filter_kernel"]
 
             ## SHAPE NORMALIZATION
             if config["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
@@ -1369,7 +1380,5 @@ class CellTypeManager:
 
         # Set default value to the first option in the new list
         self.selected_cell_type.set(self.cell_types[0])
-
-
 
 
