@@ -30,11 +30,22 @@ class SparseHessian(BaseDenoise):
     
     def denoise(self, input_roi_channel1, input_roi_channel2, parameters):
 
-        iters = 100
-        fidelity = 150
-        sparsity = 10
-        contiz = 0.5
-        mu = 1
+        denoise_cfg = parameters.get("processing_pipeline", {}).get("postprocessing", {}).get("denoise", {})
+
+        def _get_param(name, default, cast):
+            raw = denoise_cfg.get(name, default)
+            if raw in ("", None):
+                return default
+            try:
+                return cast(raw)
+            except (ValueError, TypeError):
+                return default
+
+        iters = int(_get_param("iterations", 100, int))
+        fidelity = float(_get_param("fidelity", 150, float))
+        sparsity = float(_get_param("sparsity", 10, float))
+        contiz = float(_get_param("contiz", 0.5, float))
+        mu = float(_get_param("mu", 1, float))
         
         out1 = np.empty_like(input_roi_channel1, dtype=float)
         out2 = np.empty_like(input_roi_channel2, dtype=float)
