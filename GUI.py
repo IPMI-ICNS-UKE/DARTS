@@ -691,8 +691,8 @@ class TDarts_GUI():
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
                     'decon_iter': (self.text_iterations.get("1.0", END)),
-                    'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
-                    'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
+                    'TDE_lambda': self._get_float_from_text_widget(self.text_TDE_lambda),
+                    'TDE_lambda_t': self._get_float_from_text_widget(self.text_TDE_lambda_t),
                     'psf': {
                         'type': str(self.text_psf_type.get("1.0", "end-1c")),  # accepted types: "confocal" and "widefield"
                         'lambdaEx_ch1': int(self.text_psf_lambdaEx_ch1.get("1.0", END)),
@@ -843,9 +843,13 @@ class TDarts_GUI():
                     self.text_TDE_lambda.config(state=NORMAL)
                     self.text_TDE_lambda_t.config(state=NORMAL)
                     self.text_TDE_lambda.delete(1.0, END)
-                    self.text_TDE_lambda.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda"])
+                    tde_lambda_val = config["processing_pipeline"]["postprocessing"]["TDE_lambda"]
+                    if tde_lambda_val is not None:
+                        self.text_TDE_lambda.insert(1.0, str(tde_lambda_val))
                     self.text_TDE_lambda_t.delete(1.0, END)
-                    self.text_TDE_lambda_t.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"])
+                    tde_lambda_t_val = config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"]
+                    if tde_lambda_t_val is not None:
+                        self.text_TDE_lambda_t.insert(1.0, str(tde_lambda_t_val))
                 
                 if self.deconvolution_algorithm.get()=="LW":
                     self.text_iterations.config(state=NORMAL)
@@ -1036,6 +1040,15 @@ class TDarts_GUI():
             return "two-in-one"
         else:
             return "no configuration chosen"
+
+    def _get_float_from_text_widget(self, widget):
+        value = widget.get("1.0", "end-1c").strip()
+        if not value:
+            return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
 
     def convert_image_config_to_number(self, image_config):
         if image_config == "single":
@@ -1356,9 +1369,6 @@ class CellTypeManager:
 
         # Set default value to the first option in the new list
         self.selected_cell_type.set(self.cell_types[0])
-
-
-
 
 
 
