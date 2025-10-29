@@ -1074,11 +1074,17 @@ class TDarts_GUI():
         if chosen_decon_algorithm == "TDE":
             self.text_TDE_lambda.config(state=NORMAL)
             self.text_TDE_lambda_t.config(state=NORMAL)
-        elif chosen_decon_algorithm =="LR":
+        else:
             self.text_TDE_lambda.delete(1.0, END)
             self.text_TDE_lambda.config(state=DISABLED)
             self.text_TDE_lambda_t.delete(1.0, END)
             self.text_TDE_lambda_t.config(state=DISABLED)
+
+        if chosen_decon_algorithm == "LW":
+            self.text_iterations.config(state=NORMAL)
+        else:
+            self.text_iterations.delete(1.0, END)
+            self.text_iterations.config(state=DISABLED)
     #def select_directory(self):
     #    chosen_image_configuration = self.get_image_configuration()
 
@@ -1380,5 +1386,4 @@ class CellTypeManager:
 
         # Set default value to the first option in the new list
         self.selected_cell_type.set(self.cell_types[0])
-
 
