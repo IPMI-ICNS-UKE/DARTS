@@ -395,7 +395,8 @@ class ImageProcessor:
             self.medianfilter("ratio")
 
         # clear area outside the cells
-        self.clear_outside_of_cells()
+        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            self.clear_outside_of_cells()
 
         # save ratio images of the cells
         self.save_ratio_images()
@@ -550,6 +551,9 @@ class ImageProcessor:
         # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
         #    point of  A.
         individual_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if cell.starting_point > 0]
+        if not individual_starting_points:
+            return
+
         mean_individual_starting_point = sum(individual_starting_points)/len(individual_starting_points)
         cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
         for cell in cells_without_individual_starting_point:

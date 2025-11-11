@@ -690,9 +690,11 @@ class TDarts_GUI():
                     'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
-                    'decon_iter': self._get_int_from_text_widget(self.text_iterations),
-                    'TDE_lambda': self._get_float_from_text_widget(self.text_TDE_lambda),
-                    'TDE_lambda_t': self._get_float_from_text_widget(self.text_TDE_lambda_t),
+                    'decon_iter': self._get_str_from_text_widget(self.text_iterations),
+                    'TDE_lambda': (self._get_float_from_text_widget(self.text_TDE_lambda)
+                                   if self._get_float_from_text_widget(self.text_TDE_lambda) is not None else ""),
+                    'TDE_lambda_t': (self._get_float_from_text_widget(self.text_TDE_lambda_t)
+                                     if self._get_float_from_text_widget(self.text_TDE_lambda_t) is not None else ""),
                     'psf': {
                         'type': str(self.text_psf_type.get("1.0", "end-1c")),  # accepted types: "confocal" and "widefield"
                         'lambdaEx_ch1': int(self.text_psf_lambdaEx_ch1.get("1.0", END)),
@@ -1061,14 +1063,9 @@ class TDarts_GUI():
         except ValueError:
             return None
 
-    def _get_int_from_text_widget(self, widget):
+    def _get_str_from_text_widget(self, widget):
         value = widget.get("1.0", "end-1c").strip()
-        if not value:
-            return None
-        try:
-            return int(value)
-        except ValueError:
-            return None
+        return value
 
     def convert_image_config_to_number(self, image_config):
         if image_config == "single":
