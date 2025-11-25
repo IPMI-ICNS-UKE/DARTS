@@ -1,5 +1,6 @@
 import pandas as pd
 import trackpy as tp
+from trackpy.linking.utils import SubnetOversizeException
 import skimage
 from csbdeep.utils import normalize
 import numpy as np
@@ -56,10 +57,14 @@ class CellTracker:
 
         print("\nCelltracking: ")
         features = pd.DataFrame()
+        bbox_sizes = []
         with alive_bar(len(image_series), force_tty=True) as bar:
             for num, img in enumerate(image_series):
                 time.sleep(.005)
                 for r, region in enumerate(skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img)):
+                    width = region.bbox[3] - region.bbox[1]
+                    height = region.bbox[2] - region.bbox[0]
+                    bbox_sizes.append(max(width, height))
                     features = features._append([{  'y': region.centroid[0],
                                                     'x': region.centroid[1],
                                                     'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
@@ -81,8 +86,19 @@ class CellTracker:
         if not features.empty:
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
-            search_range = 60  #needs to be optimise; depends on the diameter of the cells in the given magnification
-            t = tp.link_df(features, search_range, memory=3)
+            search_ranges = self._build_search_ranges(bbox_sizes)
+            t = None
+            for search_range in search_ranges:
+                try:
+                    t = tp.link_df(features, search_range, memory=3)
+                    break
+                except SubnetOversizeException as exc:
+                    print(f"search_range {search_range} too large ({exc}); trying a smaller value.")
+                    continue
+
+            if t is None:
+                raise RuntimeError("Unable to link trajectories: all search_range candidates were too large. "
+                                   "Try reducing expected cell movement or lower search_range manually.")
             t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250)
             # print (t)
             # tp.plot_traj(t, superimpose=image_series[0])
@@ -90,6 +106,25 @@ class CellTracker:
             particle_set = set(t['particle'].tolist())
             # print(particle_set)
             return t, particle_set
+
+    def _build_search_ranges(self, bbox_sizes):
+        """
+        Build a list of search_range candidates based on observed cell size to avoid oversize subnets.
+        """
+        if bbox_sizes:
+            median_size = float(np.median(bbox_sizes))
+            base = int(np.clip(median_size * 0.75, 5, 60))
+        else:
+            base = 60
+
+        candidates = [base, int(base * 0.75), 60, 40, 30, 20, 10, 5]
+        search_ranges = []
+        for candidate in candidates:
+            candidate_int = max(1, int(round(candidate)))
+            if candidate_int not in search_ranges:
+                search_ranges.append(candidate_int)
+
+        return search_ranges
 
     def get_max_bbox_shape(self, bboxlist):
         """

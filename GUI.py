@@ -801,19 +801,19 @@ class TDarts_GUI():
 
             # PROCESSING PIPELINE
             ## POSTPROCESSING
-            post_cfg = config["processing_pipeline"]["postprocessing"]
+            post_cfg = config.get("processing_pipeline", {}).get("postprocessing", {})
 
-            if post_cfg["channel_alignment_in_pipeline"]:
+            if post_cfg.get("channel_alignment_in_pipeline", False):
                 self.check_box_channel_alignment.select()
             else:
                 self.check_box_channel_alignment.deselect()
-            if post_cfg["channel_alignment_each_frame"]:
+            if post_cfg.get("channel_alignment_each_frame", False):
                 self.check_box_frame_by_frame_registration.select()
             else:
                 self.check_box_frame_by_frame_registration.deselect()
-            self.registration_method = post_cfg["registration_method"]
+            self.registration_method = post_cfg.get("registration_method", "SITK")
 
-            if post_cfg["background_sub_in_pipeline"]:
+            if post_cfg.get("background_sub_in_pipeline", False):
                 self.check_box_background_subtraction_in_pipeline.select()
                 background_algorithm = post_cfg.get("background_subtractor_algorithm")
                 if background_algorithm is None:
@@ -828,35 +828,35 @@ class TDarts_GUI():
             else:
                 self.check_box_background_subtraction_in_pipeline.deselect()
 
-            if post_cfg["upsampling_in_pipeline"]:
+            if post_cfg.get("upsampling_in_pipeline", False):
                 self.check_box_upsampling_in_pipeline.select()
-                if post_cfg["upsampling_algorithm"]:
+                if post_cfg.get("upsampling_algorithm"):
                     self.upsampling_algorithm.set(post_cfg["upsampling_algorithm"])
 
-            if post_cfg["denoising_in_pipeline"]:
+            if post_cfg.get("denoising_in_pipeline", False):
                 self.check_box_denoising_in_pipeline.select()
-                if post_cfg["denoising_algorithm"]:
+                if post_cfg.get("denoising_algorithm"):
                     self.denoising_algorithm.set(post_cfg["denoising_algorithm"])
 
 
-            if post_cfg["cell_segmentation_tracking_in_pipeline"]:
+            if post_cfg.get("cell_segmentation_tracking_in_pipeline", False):
                 self.check_box_segmentation_tracking_in_pipeline.select()
             else:
                 self.check_box_segmentation_tracking_in_pipeline.deselect()
-            if post_cfg["deconvolution_in_pipeline"]:
+            if post_cfg.get("deconvolution_in_pipeline", False):
                 self.check_box_deconvolution_in_pipeline.select()
 
-                self.deconvolution_algorithm.set(post_cfg["deconvolution_algorithm"])
+                self.deconvolution_algorithm.set(post_cfg.get("deconvolution_algorithm", "LR"))
                 self.option_menu_deconvolution.config(state=NORMAL)
                 if self.deconvolution_algorithm.get() == "TDE":
                     self.text_TDE_lambda.config(state=NORMAL)
                     self.text_TDE_lambda_t.config(state=NORMAL)
                     self.text_TDE_lambda.delete(1.0, END)
-                    tde_lambda_val = post_cfg["TDE_lambda"]
+                    tde_lambda_val = post_cfg.get("TDE_lambda")
                     if tde_lambda_val is not None:
                         self.text_TDE_lambda.insert(1.0, str(tde_lambda_val))
                     self.text_TDE_lambda_t.delete(1.0, END)
-                    tde_lambda_t_val = post_cfg["TDE_lambda_t"]
+                    tde_lambda_t_val = post_cfg.get("TDE_lambda_t")
                     if tde_lambda_t_val is not None:
                         self.text_TDE_lambda_t.insert(1.0, str(tde_lambda_t_val))
                 
@@ -870,57 +870,59 @@ class TDarts_GUI():
                         self.text_iterations.insert(1.0, str(decon_iter))
 
                 self.text_psf_type.delete(1.0, END)
-                self.text_psf_type.insert(1.0, post_cfg["psf"]["type"])
+                psf_cfg = post_cfg.get("psf", {})
+
+                self.text_psf_type.insert(1.0, psf_cfg.get("type", "confocal"))
                 self.text_psf_lambdaEx_ch1.delete(1.0, END)
-                self.text_psf_lambdaEx_ch1.insert(1.0, post_cfg["psf"]["lambdaEx_ch1"])
+                self.text_psf_lambdaEx_ch1.insert(1.0, psf_cfg.get("lambdaEx_ch1", ""))
                 self.text_psf_lambdaEm_ch1.delete(1.0, END)
-                self.text_psf_lambdaEm_ch1.insert(1.0, post_cfg["psf"]["lambdaEm_ch1"])
+                self.text_psf_lambdaEm_ch1.insert(1.0, psf_cfg.get("lambdaEm_ch1", ""))
                 self.text_psf_lambdaEx_ch2.delete(1.0, END)
-                self.text_psf_lambdaEx_ch2.insert(1.0, post_cfg["psf"]["lambdaEx_ch2"])
+                self.text_psf_lambdaEx_ch2.insert(1.0, psf_cfg.get("lambdaEx_ch2", ""))
                 self.text_psf_lambdaEm_ch2.delete(1.0, END)
-                self.text_psf_lambdaEm_ch2.insert(1.0, post_cfg["psf"]["lambdaEm_ch2"])
+                self.text_psf_lambdaEm_ch2.insert(1.0, psf_cfg.get("lambdaEm_ch2", ""))
                 self.text_psf_numAper.delete(1.0, END)
-                self.text_psf_numAper.insert(1.0, post_cfg["psf"]["numAper"])
+                self.text_psf_numAper.insert(1.0, psf_cfg.get("numAper", ""))
                 self.text_psf_magObj.delete(1.0, END)
-                self.text_psf_magObj.insert(1.0, post_cfg["psf"]["magObj"])
+                self.text_psf_magObj.insert(1.0, psf_cfg.get("magObj", ""))
                 self.text_psf_rindexObj.delete(1.0, END)
-                self.text_psf_rindexObj.insert(1.0, post_cfg["psf"]["rindexObj"])
+                self.text_psf_rindexObj.insert(1.0, psf_cfg.get("rindexObj", ""))
                 self.text_psf_rindexSp.delete(1.0, END)
-                self.text_psf_rindexSp.insert(1.0, post_cfg["psf"]["rindexSp"])
+                self.text_psf_rindexSp.insert(1.0, psf_cfg.get("rindexSp", ""))
                 self.text_psf_ccdSize.delete(1.0, END)
-                self.text_psf_ccdSize.insert(1.0, post_cfg["psf"]["ccdSize"])
+                self.text_psf_ccdSize.insert(1.0, psf_cfg.get("ccdSize", ""))
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
                 self.option_menu_deconvolution.config(state=DISABLED)
 
-            if post_cfg["bleaching_correction_in_pipeline"]:
+            if post_cfg.get("bleaching_correction_in_pipeline", False):
                 self.check_box_bleaching_correction.select()
-                self.bleaching_correction_algorithm.set(post_cfg["bleaching_correction_algorithm"])
+                self.bleaching_correction_algorithm.set(post_cfg.get("bleaching_correction_algorithm", "additiv no fit"))
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
                 self.option_menu_bleaching_correction.config(state=DISABLED)
-            if post_cfg["ratio_images"]:
+            if post_cfg.get("ratio_images", False):
                 self.check_box_ratio_generation.select()
             else:
                 self.check_box_ratio_generation.deselect()
-            self.median_filter_kernel = post_cfg["median_filter_kernel"]
+            self.median_filter_kernel = post_cfg.get("median_filter_kernel", 3)
 
             ## SHAPE NORMALIZATION
-            if config["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
+            if config.get("processing_pipeline", {}).get("shape_normalization", {}).get("shape_normalization", False):
                 self.check_box_shape_normalization.config(state=NORMAL)
                 self.check_box_shape_normalization.select()
             else:
                 self.check_box_shape_normalization.deselect()
 
             ## ANALYSIS
-            if config["processing_pipeline"]["analysis"]["hotspot_detection"]:
+            if config.get("processing_pipeline", {}).get("analysis", {}).get("hotspot_detection", False):
                 self.check_box_hotspot_detection.select()
                 self.check_box_hotspot_detection.config(state=NORMAL)
             else:
                 self.check_box_hotspot_detection.deselect()
 
-            if config["processing_pipeline"]["analysis"]["dartboard_projection"]:
+            if config.get("processing_pipeline", {}).get("analysis", {}).get("dartboard_projection", False):
                 self.check_box_dartboard_projection.select()
                 self.check_box_dartboard_projection.config(state=NORMAL)
             else:
