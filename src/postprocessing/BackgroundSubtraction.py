@@ -271,3 +271,8 @@ class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
 
     def give_name(self):
         return "Background Subtraction Wavelet"
+
+
+# Backward compatibility: older code imports BackgroundSubtractor
+# from this module. Keep an alias so the import still works.
+BackgroundSubtractor = BackgroundSubtractorMasked

@@ -50,6 +50,12 @@ def main(gui_enabled):
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
 
+    # stamp a unique run time (date + seconds + millis) for this start click/run
+    now = time.time()
+    parameters["properties_of_measurement"]["run_datetime"] = time.strftime(
+        "%Y-%m-%d_%H-%M-%S", time.localtime(now)
+    ) + f"_{int((now % 1) * 1000):03d}"
+
     info_saver = InfoToComputer(parameters)
     info_saver.save_version_DARTS(version_DARTS)
 

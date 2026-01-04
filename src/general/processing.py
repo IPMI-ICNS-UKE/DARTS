@@ -101,43 +101,6 @@ class ImageProcessor:
         else:
             self.registration = None
 
-        # cell tracking & segmentation
-        self.scale_pixels_per_micron = self.parameters["properties_of_measurement"]["scale"]
-        self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
-        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
-        self.segmentation = SegmentationSD(self.model)
-
-        # background subtraction
-        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
-            if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
-                self.background_subtractor = BackgroundSubtractorMasked()
-            elif self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Wavelet":
-                self.background_subtractor = WaveletBackgroundSubtractor()
-        
-        #UpSampling:
-        if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
-            if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Spatial":
-                self.upsample =  SpatialUpsampling()
-            elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Fourier":
-                self.upsample = FourierUpsampling()
-
-
-        #denoising_utils SPARSE
-        if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
-            if self.parameters["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower() == "sparsehessian":
-                self.denoise = SparseHessian()
-        
-
-        # deconvolution
-        # self.deconvolution_parameters = self.parameters["deconvolution"]
-        if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "TDE":
-            self.deconvolution = TDEDeconvolution()
-        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LR":
-            self.deconvolution = LRDeconvolution()
-        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LW":
-            self.deconvolution = LWDeconvolution()
-        else:
-            self.deconvolution = BaseDecon()
         # bleaching correction
         if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
             if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"] == "additiv no fit":
@@ -161,12 +124,51 @@ class ImageProcessor:
         self.microdomains_timelines_dict = {}
         self.experiment_name = self.parameters["properties_of_measurement"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties_of_measurement"]["day_of_measurement"]
-        # self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
-        self.measurement_name = self.day_of_measurement + '_' + self.experiment_name + '_' + self.file_name
+        self.run_datetime = self.parameters["properties_of_measurement"].get("run_datetime")
+        # prefer run timestamp (date + time) if provided, else fall back to configured day
+        measurement_prefix = self.run_datetime if self.run_datetime else self.day_of_measurement
+        self.measurement_name = measurement_prefix + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["input_output"]["results_dir"]
         self.save_path = self.results_folder + '/' + self.measurement_name
         self.frame_number = len(self.channel1)
         self.cell_type = self.parameters["properties_of_measurement"]["cell_type"]
+
+        # cell tracking & segmentation
+        self.scale_pixels_per_micron = self.parameters["properties_of_measurement"]["scale"]
+        self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
+        # give tracker access to results path for debug overlays
+        self.cell_tracker.save_path = self.save_path
+        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
+        self.segmentation = SegmentationSD(self.model)
+
+        # background subtraction
+        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
+                self.background_subtractor = BackgroundSubtractorMasked()
+            elif self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Wavelet":
+                self.background_subtractor = WaveletBackgroundSubtractor()
+        # UpSampling
+        if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Spatial":
+                self.upsample = SpatialUpsampling()
+            elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Fourier":
+                self.upsample = FourierUpsampling()
+
+        # denoising_utils SPARSE
+        if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower() == "sparsehessian":
+                self.denoise = SparseHessian()
+
+        # deconvolution
+        if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "TDE":
+            self.deconvolution = TDEDeconvolution()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LR":
+            self.deconvolution = LRDeconvolution()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LW":
+            self.deconvolution = LWDeconvolution()
+        else:
+            self.deconvolution = BaseDecon()
+
         self.spotHeight = None
         if self.cell_type == 'primary':
             self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
@@ -481,7 +483,7 @@ class ImageProcessor:
                     cell.ratio = filtered_image_list[0]
                 bar()
 
-
+ 
     def return_ratios(self):
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
