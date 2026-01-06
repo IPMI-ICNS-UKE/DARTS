@@ -22,14 +22,37 @@ class BaseBackgroundSubtractor(ABC):
 
 
 class BackgroundSubtractorMasked(BaseBackgroundSubtractor):
-    def __init__(self, segmentation):
+    def __init__(self, segmentation=None):
         self.segmentation = segmentation
 
     def clear_outside_of_cells(self, cells_with_bead_contact):
         for cell in cells_with_bead_contact:
-            cell.set_image_channel1(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel1()))
-            cell.set_image_channel2(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel2()))
-            cell.ratio = self.set_background_to_zero(cell.frame_masks, cell.ratio)
+            frame_masks = self._get_frame_masks(cell)
+            if frame_masks is None:
+                continue
+            cell.frame_masks = frame_masks
+            cell.set_image_channel1(self.set_background_to_zero(frame_masks, cell.give_image_channel1()))
+            cell.set_image_channel2(self.set_background_to_zero(frame_masks, cell.give_image_channel2()))
+            cell.ratio = self.set_background_to_zero(frame_masks, cell.ratio)
+
+    def _get_frame_masks(self, cell):
+        """
+        Return existing masks if present; otherwise, if a segmentation model is
+        available, create masks on the fly for the cell ROI (background=True).
+        """
+        if cell.frame_masks is not None:
+            return cell.frame_masks
+        if self.segmentation is None:
+            return None
+        try:
+            imgs = cell.give_image_channel2()
+            masks = np.zeros_like(imgs, dtype=bool)
+            for idx in range(len(imgs)):
+                labels = self.segmentation.stardist_segmentation_in_frame(imgs[idx])
+                masks[idx] = labels == 0  # background is label 0
+            return masks
+        except Exception:
+            return None
 
     def set_background_to_zero(self, frame_masks, cell_image_series):
         """

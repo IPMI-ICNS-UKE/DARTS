@@ -144,7 +144,7 @@ class ImageProcessor:
         # background subtraction
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
-                self.background_subtractor = BackgroundSubtractorMasked()
+                self.background_subtractor = BackgroundSubtractorMasked(self.segmentation)
             elif self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Wavelet":
                 self.background_subtractor = WaveletBackgroundSubtractor()
         # UpSampling
