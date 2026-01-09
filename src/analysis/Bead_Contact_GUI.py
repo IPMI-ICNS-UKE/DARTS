@@ -5,6 +5,7 @@ from matplotlib.figure import Figure
 from tkinter import (Tk, Label, Scale, Listbox, Scrollbar, Frame, Button, Radiobutton, IntVar, Text, HORIZONTAL, END)
 import skimage.io as io
 import math
+import numpy as np
 from src.general.load_data import load_data
 
 
@@ -12,7 +13,8 @@ class BeadContactGUI():
     def __init__(self, file, filepath, bead_contact_dict, parameters):
         self.file = file
         self.channel_format = parameters["input_output"]["image_conf"]
-        self.image = io.imread(filepath)
+        self.image_raw = io.imread(filepath)
+        self.image = self._prepare_display_image(self.image_raw, self.channel_format)
         """
         try:
             self.image = load_data(filepath, self.channel_format)
@@ -109,6 +111,25 @@ class BeadContactGUI():
 
         self.cancel_button = Button(self.input_frame, text='Cancel', command=self.cancel)
         self.cancel_button.grid(row=11, column=0, sticky="W")
+
+    def _prepare_display_image(self, image, channel_format):
+        """
+        Return a 3D (T, H, W) stack for GUI display only; keep raw data intact.
+        """
+        if image.ndim == 3:
+            return image
+        if image.ndim == 4:
+            # Prefer first channel for display; handle common layouts.
+            if image.shape[-1] in (2, 3):
+                return image[..., 0]
+            if image.shape[0] in (2, 3):
+                return image[0]
+            if image.shape[1] in (2, 3):
+                return image[:, 0, ...]
+        squeezed = np.squeeze(image)
+        if squeezed.ndim == 3:
+            return squeezed
+        raise ValueError(f"Unsupported image shape for GUI display: {image.shape}")
 
     def cancel(self):
         self.root.destroy()
@@ -255,6 +276,5 @@ class BeadContact():
         clock_list = [4,5,6,7,8,9,10,11,12,1,2,3]
         location_on_clock = clock_list[dartboard_area]
         return location_on_clock
-
 
 
