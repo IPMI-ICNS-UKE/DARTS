@@ -140,6 +140,30 @@ def load_data(input_path, input_format, channel=None, **bf_kwargs):
     _, ext = os.path.splitext(input_path)
     if ext.lower() in ['.tif', '.tiff']:
         img_data = io.imread(input_path)
+        if img_data.ndim == 4:
+            # Try to interpret 4D TIFFs as (T,H,W,C), (C,T,H,W), or (T,C,H,W) with 2 channels.
+            if img_data.shape[-1] == 2:
+                img_data = np.moveaxis(img_data, -1, 0)  # (C,T,H,W)
+            elif img_data.shape[0] == 2:
+                pass  # already (C,T,H,W)
+            elif img_data.shape[1] == 2:
+                img_data = np.moveaxis(img_data, 1, 0)  # (C,T,H,W)
+            else:
+                raise ValueError(f"Only 2-channel 4D TIFFs are supported, got shape {img_data.shape}")
+
+            ch1 = img_data[0]
+            ch2 = img_data[1]
+            if channel == "both":
+                return ch1, ch2
+            if channel == 1:
+                return ch1
+            if channel == 2:
+                return ch2
+            if input_format == "two-in-one":
+                return np.concatenate([ch1, ch2], axis=2)
+            # Fallback: return channel 1 if format does not support two-in-one.
+            return ch1
+
         assert img_data.ndim == 3, f"Only 2D+t data is supported at the moment"
         if channel:
             if input_format == "two-in-one":
