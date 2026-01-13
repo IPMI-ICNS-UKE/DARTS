@@ -29,7 +29,7 @@ class CellTracker:
         :return: The labels in the frame detected by the Stardist algorithm
         """
         img_labels, img_details = model.predict_instances(normalize(image_frame),
-                                                               predict_kwargs=dict(verbose=False), scale=0.5)
+                                                               predict_kwargs=dict(verbose=False), scale=0.25)
         return img_labels, img_details
 
     def generate_trajectory(self, image_series, model):
@@ -109,7 +109,10 @@ class CellTracker:
             )
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
-            search_ranges = self._build_search_ranges(bbox_sizes)
+            adaptive_search_range = False
+            search_ranges = (
+                self._build_search_ranges(bbox_sizes) if adaptive_search_range else [60]
+            )
             t = None
             for search_range in search_ranges:
                 try:
