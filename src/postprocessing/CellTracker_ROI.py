@@ -133,7 +133,9 @@ class CellTracker:
             if t is None:
                 raise RuntimeError("Unable to link trajectories: all search_range candidates were too large. "
                                    "Try reducing expected cell movement or lower search_range manually.")
-            t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250) #Threshold cell
+            #t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250) #Threshold cell
+            t = tp.filtering.filter_stubs(t, threshold = max(10, int(0.4 * number_of_frames)))
+
             # print (t)
             # tp.plot_traj(t, superimpose=image_series[0])
             # print (t)
