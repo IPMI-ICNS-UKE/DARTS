@@ -62,9 +62,11 @@ def main(gui_enabled):
     input_path = parameters["input_output"]["path"]
     if os.path.isdir(input_path):
         input_directory = input_path
+        files_for_further_processing = os.listdir(input_directory)
     else:
         input_directory = os.path.dirname(input_path)
-    files_for_further_processing = os.listdir(input_directory)
+        # Process only the selected file when a file path is provided.
+        files_for_further_processing = [os.path.basename(input_path)]
     files_for_further_processing = [file for file in files_for_further_processing if not file.startswith(".")]  # exclude hidden files..
 
     if parameters["input_output"]["image_conf"] == "single":
