@@ -434,6 +434,7 @@ class ImageProcessor:
         self.finalize_output_directory()
 
         self.save_ratio_images()
+        print(f"Final results saved to: {self.save_path}")
 
         for cell in self.cell_list_for_processing:
             cell.mean_ratio_list = cell.measure_mean_ratio_in_all_frames()
@@ -442,6 +443,9 @@ class ImageProcessor:
             self.determine_starting_points_local_no_beads()
 
     def finalize_output_directory(self):
+        # Keep the original run-time folder so outputs stay with debug PNGs.
+        if self.run_datetime:
+            return
         if getattr(self, "_resumed_from_checkpoint", False):
             return
 
