@@ -50,20 +50,40 @@ def main(gui_enabled):
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
 
+    # stamp a unique run time (date + seconds + millis) for this start click/run
+    now = time.time()
+    parameters["properties_of_measurement"]["run_datetime"] = time.strftime(
+        "%Y-%m-%d_%H-%M-%S", time.localtime(now)
+    ) + f"_{int((now % 1) * 1000):03d}"
+
     info_saver = InfoToComputer(parameters)
     info_saver.save_version_DARTS(version_DARTS)
 
     input_path = parameters["input_output"]["path"]
-
     if os.path.isdir(input_path):
         input_directory = input_path
+        files_for_further_processing = os.listdir(input_directory)
     else:
         input_directory = os.path.dirname(input_path)
-    files_for_further_processing = os.listdir(input_directory)
+        # Process only the selected file when a file path is provided.
+        files_for_further_processing = [os.path.basename(input_path)]
     files_for_further_processing = [file for file in files_for_further_processing if not file.startswith(".")]  # exclude hidden files..
 
     if parameters["input_output"]["image_conf"] == "single":
-        files_for_further_processing = [f for f in files_for_further_processing if fnmatch.fnmatch(f, '*_1.*')]  # loop only over channel 1 files
+        # Keep only channel-1 files for paired inputs: *_1.* or base files with a matching *_2.*.
+        available_files = set(files_for_further_processing)
+        filtered = []
+        for f in files_for_further_processing:
+            if fnmatch.fnmatch(f, '*_2.*'):
+                continue
+            name, ext = os.path.splitext(f)
+            if name.endswith("_1"):
+                candidate2 = name[:-2] + "_2" + ext
+            else:
+                candidate2 = name + "_2" + ext
+            if candidate2 in available_files:
+                filtered.append(f)
+        files_for_further_processing = filtered
 
     time_of_addition_dict = dict()
     if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined

@@ -140,6 +140,8 @@ def load_data(input_path, input_format, channel=None, **bf_kwargs):
     _, ext = os.path.splitext(input_path)
     if ext.lower() in ['.tif', '.tiff']:
         img_data = io.imread(input_path)
+        print(img_data.ndim, img_data.shape)
+
         assert img_data.ndim == 3, f"Only 2D+t data is supported at the moment"
         if channel:
             if input_format == "two-in-one":

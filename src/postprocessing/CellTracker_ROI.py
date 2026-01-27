@@ -1,11 +1,15 @@
+import os
+import time
 import pandas as pd
 import trackpy as tp
+from trackpy.linking.utils import SubnetOversizeException
 import skimage
+from skimage.color import label2rgb
+import imageio.v2 as iio
 from csbdeep.utils import normalize
 import numpy as np
 from scipy.ndimage import shift
 from alive_progress import alive_bar
-import time
 
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -16,6 +20,7 @@ class CellTracker:
         pass
         # self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
         self.scale_pixels_per_micron = scale_pixels_per_micron
+        self._overlay_written = False
 
     def stardist_segmentation_in_frame(self, image_frame, model):
         """
@@ -23,8 +28,13 @@ class CellTracker:
         :param image_frame:
         :return: The labels in the frame detected by the Stardist algorithm
         """
-        img_labels, img_details = model.predict_instances(normalize(image_frame),
-                                                               predict_kwargs=dict(verbose=False))
+        # StarDist scale is derived from the measurement scale (pixels per micron). 9.765 = pixels_per_micron for 63x Enhancement
+        stardist_scale = 9.765 / self.scale_pixels_per_micron if self.scale_pixels_per_micron else 0.25
+        img_labels, img_details = model.predict_instances(
+            normalize(image_frame),
+            predict_kwargs=dict(verbose=False),
+            scale=stardist_scale,
+        )
         return img_labels, img_details
 
     def generate_trajectory(self, image_series, model):
@@ -51,15 +61,29 @@ class CellTracker:
 
                 labels_for_each_frame.append(label_in_frame)
                 details_for_each_frame.append(details_in_frame)
+
+                # Save an overlay for the first frame to visualize StarDist detections
+                if frame == 0 and not self._overlay_written:
+                    base_dir = getattr(self, "save_path", ".")
+                    os.makedirs(base_dir, exist_ok=True)
+                    overlay = label2rgb(label_in_frame, image=image_series[frame], bg_label=0, alpha=0.3)
+                    overlay_path = os.path.join(base_dir, "stardist_overlay_frame0.png")
+                    iio.imwrite(overlay_path, (overlay * 255).astype(np.uint8))
+                    print(f"Saved StarDist overlay for frame 0 to: {overlay_path}")
+                    self._overlay_written = True
                 counter = counter + 1
                 bar()
 
         print("\nCelltracking: ")
         features = pd.DataFrame()
+        bbox_sizes = []
         with alive_bar(len(image_series), force_tty=True) as bar:
             for num, img in enumerate(image_series):
                 time.sleep(.005)
                 for r, region in enumerate(skimage.measure.regionprops(labels_for_each_frame[num], intensity_image=img)):
+                    width = region.bbox[3] - region.bbox[1]
+                    height = region.bbox[2] - region.bbox[0]
+                    bbox_sizes.append(max(width, height))
                     features = features._append([{  'y': region.centroid[0],
                                                     'x': region.centroid[1],
                                                     'y_centroid_minus_bbox': region.centroid[0]-region.bbox[0],
@@ -79,17 +103,95 @@ class CellTracker:
                 bar()
 
         if not features.empty:
+            # Debug: how many detections per frame before linking
+            per_frame_counts = features.groupby('frame').size()
+            print(
+                "Detections per frame before tracking: "
+                f"min={per_frame_counts.min()}, "
+                f"median={per_frame_counts.median()}, "
+                f"max={per_frame_counts.max()}, "
+                f"total={len(features)}"
+            )
             # tp.annotate(features[features.frame == (0)], image_series[0])  # generates a plot
             # tracking, linking of coordinates
-            search_range = 60  #needs to be optimise; depends on the diameter of the cells in the given magnification
-            t = tp.link_df(features, search_range, memory=3)
-            t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250)
+            adaptive_search_range = False
+            search_ranges = (
+                self._build_search_ranges(bbox_sizes) if adaptive_search_range else [60]
+            )
+            t = None
+            for search_range in search_ranges:
+                try:
+                    t = tp.link_df(features, search_range, memory=3)
+                    # Debug: inspect raw track lengths before filtering
+                    track_lengths = t.groupby('particle')['frame'].nunique()
+                    long_tracks = track_lengths[track_lengths > 50]
+                    print(f"Track lengths (frames) before stub filtering, search_range={search_range}: "
+                          f"{len(long_tracks)} tracks >50 frames, "
+                          f"max={long_tracks.max() if not long_tracks.empty else 0}")
+                    if not long_tracks.empty:
+                        print(long_tracks.sort_values(ascending=False).head())
+                    break
+                except SubnetOversizeException as exc:
+                    print(f"search_range {search_range} too large ({exc}); trying a smaller value.")
+                    continue
+
+            if t is None:
+                raise RuntimeError("Unable to link trajectories: all search_range candidates were too large. "
+                                   "Try reducing expected cell movement or lower search_range manually.")
+            #t = tp.filtering.filter_stubs(t, threshold=number_of_frames-250) #Threshold cell
+            t = tp.filtering.filter_stubs(t, threshold = max(10, int(0.4 * number_of_frames)))
+
             # print (t)
             # tp.plot_traj(t, superimpose=image_series[0])
             # print (t)
             particle_set = set(t['particle'].tolist())
             # print(particle_set)
+
+            # Debug overlay: show centroids of tracks that survived filtering on frame 0
+            base_dir = getattr(self, "save_path", ".")
+            os.makedirs(base_dir, exist_ok=True)
+            keep_df = t[t['particle'].isin(particle_set)]
+            if not keep_df.empty:
+                first_frame = int(keep_df['frame'].min())
+                frame_tracks = keep_df[keep_df['frame'] == first_frame]
+                if not frame_tracks.empty and first_frame < len(image_series):
+                    frame_img = image_series[first_frame].astype(float)
+                    max_val = frame_img.max()
+                    if max_val > 0:
+                        frame_img = frame_img / max_val
+                    overlay = np.dstack([frame_img, frame_img, frame_img])
+
+                    for _, row in frame_tracks.iterrows():
+                        y = int(round(row['y']))
+                        x = int(round(row['x']))
+                        y0, y1 = max(0, y - 2), min(overlay.shape[0], y + 3)
+                        x0, x1 = max(0, x - 2), min(overlay.shape[1], x + 3)
+                        overlay[y0:y1, x0:x1, :] = [1.0, 0.0, 0.0]  # red mark
+
+                    overlay_path = os.path.join(base_dir, f"tracks_overlay_frame{first_frame}.png")
+                    iio.imwrite(overlay_path, (overlay * 255).astype(np.uint8))
+                    print(f"Saved tracked-cells overlay for frame {first_frame} to: {overlay_path}")
+
             return t, particle_set
+
+    def _build_search_ranges(self, bbox_sizes):
+        """
+        Build a list of search_range candidates based on observed cell size to avoid oversize subnets.
+        """
+        if bbox_sizes:
+            median_size = float(np.median(bbox_sizes))
+            base = int(np.clip(median_size * 0.75, 5, 60))
+        else:
+            base = 60
+
+        candidates = [base, int(base * 0.75), 60, 40, 30, 20, 10, 5]
+        search_ranges = []
+        for candidate in candidates:
+            candidate_int = max(1, int(round(candidate)))
+            if candidate_int not in search_ranges:
+                search_ranges.append(candidate_int)
+
+        return search_ranges
 
     def get_max_bbox_shape(self, bboxlist):
         """

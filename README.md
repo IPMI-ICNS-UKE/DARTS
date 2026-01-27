@@ -14,6 +14,7 @@ It combines the following modules:
    - channel registration
    - background subtraction
    - cell detection and tracking
+   - denoising
    - deconvolution
    - bleaching correction
    - ratio computation 

@@ -12,6 +12,10 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
 import webbrowser
 
+#ToDo Background Settings 1,..,5
+#ToDo load Config
+
+
 class TDarts_GUI():
 
     def __init__(self):
@@ -190,6 +194,20 @@ class TDarts_GUI():
         # global or local measurement
         self.label_global_or_local = Label(self.properties_of_measurement_frame, text="Imaging intention")
         self.label_global_or_local.grid(column=0, row=8, sticky="W")
+        self.text_experiment_name = Text(self.properties_of_measurement_frame, height=1, width=20)
+        self.text_experiment_name.grid(column=1, row=7, sticky="W")
+
+        # global or local measurement
+        self.label_global_or_local = Label(self.properties_of_measurement_frame, text="Imaging intention")
+        self.label_global_or_local.grid(column=0, row=8, sticky="W")
+        self.local_or_global = StringVar(value="local")
+        self.choose_local = Radiobutton(self.properties_of_measurement_frame, text="local imaging (microdomains)", variable=self.local_or_global,
+                                         value="local", command=self.set_default_settings_for_local_imaging)
+        self.choose_local.grid(column=0, row=9, sticky="W")
+
+        self.choose_global = Radiobutton(self.properties_of_measurement_frame, text="global imaging (ratio)", variable=self.local_or_global,
+                                      value="global", command=self.set_default_settings_for_global_imaging)
+        self.choose_global.grid(column=1, row=9, sticky="W")
         self.local_or_global = StringVar(value="local")
         self.choose_local = Radiobutton(self.properties_of_measurement_frame, text="local imaging (microdomains)", variable=self.local_or_global,
                                          value="local", command=self.set_default_settings_for_local_imaging)
@@ -261,12 +279,91 @@ class TDarts_GUI():
                                                                variable=self.background_subtraction_in_pipeline,
                                                                onvalue=1,
                                                                offvalue=0,
-                                                               command=None)
+                                                               command=self.update_background
+                                                               )
         self.check_box_background_subtraction_in_pipeline.grid(column=2, row=14, sticky="W")
         self.check_box_background_subtraction_in_pipeline.select()
-        # self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
+        #self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
+
+        background_subtraction_algorithms = [
+            "Masked",
+            "Wavelet" #placeholder name
+        ]
+        self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
+        self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
+
+        """
+        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline, self.background_subtraction_algorithm, *background_subtraction_algorithms, command=self.update_background)
+        # command=self.decon_selection_changed
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_background_substraction.grid(column=3, row=14, sticky="W")
+        
+        self.background_text_boxes = []
+        self.update_background()
+        #
+
+        self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
+        self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
+        """
+        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline,
+                                                              self.background_subtraction_algorithm,
+                                                              *background_subtraction_algorithms,
+                                                              command=self.update_wavelet
+                                                              )
+        # command=self.decon_selection_changed
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_background_substraction.grid(column=3, row=14, sticky="W")
+
+        self.background_text_boxes = []
 
         #
+        wavelets_algorithms = [
+            "No",
+            "Weak-HI",
+            "Strong-HI",
+            "Weak-LI",
+            "Strong-LI"
+        ]
+
+        self.wavelet_algorithm = StringVar(self.label_processing_pipeline)
+        self.wavelet_algorithm.set(wavelets_algorithms[0])
+        self.option_menu_wavelet = OptionMenu(self.label_processing_pipeline, self.wavelet_algorithm,
+                                              *wavelets_algorithms, command=self.update_wavelet)  # TODO update
+        # command=self.decon_selection_changed
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_wavelet.grid(column=4, row=14, sticky="W")
+
+        self.wavelet_text_boxes = []
+        self.update_wavelet()
+        self.update_background()
+
+
+        self.label_upsampling = Label(self.label_processing_pipeline, text="Upsampling:  ")
+        self.label_upsampling.grid(column=5, row=14, sticky="W")
+        self.upsampling_in_pipeline = IntVar()
+        self.check_box_upsampling_in_pipeline = Checkbutton(self.label_processing_pipeline,
+                                                                        variable=self.upsampling_in_pipeline,
+                                                                        onvalue=1,
+                                                                        offvalue=0,
+                                                                        command=self.update_upsampling) #todo
+        self.check_box_upsampling_in_pipeline.grid(column=6, row=14, sticky="W")
+        self.check_box_upsampling_in_pipeline.deselect() #default: 0 / off
+        
+        #
+
+        upsampling_algorithms = [
+            "Fourier",
+            "Spatial"
+        ]
+        self.upsampling_algorithm = StringVar(self.label_processing_pipeline)
+        self.upsampling_algorithm.set(upsampling_algorithms[0])
+        self.option_menu_upsampling = OptionMenu(self.label_processing_pipeline, self.upsampling_algorithm, *upsampling_algorithms, command=self.decon_selection_changed)
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_upsampling.grid(column=7, row=14, sticky="W")
+        self.upsampling_text_boxes = []
+        self.update_upsampling()
+        #
+
         self.label_segmentation_tracking = Label(self.label_processing_pipeline, text="Cell segmentation/Tracking:  ")
         self.label_segmentation_tracking.grid(column=1, row=15, sticky="W")
         self.segmentation_tracking_in_pipeline = IntVar()
@@ -278,7 +375,34 @@ class TDarts_GUI():
         self.check_box_segmentation_tracking_in_pipeline.grid(column=2, row=15, sticky="W")
         self.check_box_segmentation_tracking_in_pipeline.select()
         self.check_box_segmentation_tracking_in_pipeline.config(state=DISABLED)
+        
         #
+        
+        self.label_denoising = Label(self.label_processing_pipeline, text="Denoising:  ")
+        self.label_denoising.grid(column=4, row=16, sticky="W")
+        self.denoising_in_pipeline = IntVar()
+        self.check_box_denoising_in_pipeline = Checkbutton(self.label_processing_pipeline,
+                                                               variable=self.denoising_in_pipeline,
+                                                               onvalue=1,
+                                                               offvalue=0,
+                                                               command=self.update_denoising)
+        self.check_box_denoising_in_pipeline.grid(column=5, row=16, sticky="W")
+        self.check_box_denoising_in_pipeline.deselect()
+        # self.check_box_deconvolution_in_pipeline.config(state=DISABLED)
+
+        denoising_algorithms = [
+            "SparseHessian"
+        ]
+        self.denoising_algorithm = StringVar(self.label_processing_pipeline)
+        self.denoising_algorithm.set(denoising_algorithms[0])
+        self.option_menu_denoising = OptionMenu(self.label_processing_pipeline, self.denoising_algorithm, *denoising_algorithms, command=self.decon_selection_changed)
+        # self.option_menu_deconvolution.config(state=DISABLED)        self.deconvolution_text_boxes = []
+        self.option_menu_denoising.grid(column=6, row=16, sticky="W")
+        
+        self.denoising_text_boxes = []
+        self.update_denoising()
+        #
+
         self.label_deconvolution = Label(self.label_processing_pipeline, text="Deconvolution:  ")
         self.label_deconvolution.grid(column=1, row=16, sticky="W")
         self.deconvolution_in_pipeline = IntVar()
@@ -293,7 +417,8 @@ class TDarts_GUI():
 
         deconvolution_algorithms = [
             "LR",
-            "TDE"
+            "TDE",
+            "LW"
         ]
         self.deconvolution_algorithm = StringVar(self.label_processing_pipeline)
         self.deconvolution_algorithm.set(deconvolution_algorithms[0])
@@ -378,17 +503,22 @@ class TDarts_GUI():
         self.text_psf_ccdSize.grid(column=8, row=20, sticky="W")
         self.deconvolution_text_boxes.append(self.text_psf_ccdSize)
 
-        #
+        # ToDo
+        self.label_Iterations = Label(self.label_processing_pipeline, text="iterations")
+        self.label_Iterations.grid(column=3, row=21, sticky="W")
+        self.text_iterations = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_iterations.grid(column=4, row=21, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_iterations)
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
-        self.label_bleaching_correction.grid(column=1, row=21, sticky="W")
+        self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
         self.bleaching_correction_in_pipeline = IntVar()
         self.check_box_bleaching_correction = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.bleaching_correction_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=self.update_bleaching_correction)
-        self.check_box_bleaching_correction.grid(column=2, row=21, sticky="W")
+        self.check_box_bleaching_correction.grid(column=2, row=22, sticky="W")
         self.check_box_bleaching_correction.select()
         # self.check_box_bleaching_correction.config(state=DISABLED)
 
@@ -403,25 +533,25 @@ class TDarts_GUI():
         self.option_menu_bleaching_correction = OptionMenu(self.label_processing_pipeline, self.bleaching_correction_algorithm,
                                                     *bleaching_correction_algorithms)
         # self.option_menu_bleaching_correction.config(state=DISABLED)
-        self.option_menu_bleaching_correction.grid(column=3, row=21, sticky="W")
+        self.option_menu_bleaching_correction.grid(column=3, row=22, sticky="W")
         #
         self.label_ratio_generation = Label(self.label_processing_pipeline, text="Ratio images:  ")
-        self.label_ratio_generation.grid(column=1, row=22, sticky="W")
+        self.label_ratio_generation.grid(column=1, row=23, sticky="W")
         self.ratio_generation_in_pipeline = IntVar()
         self.check_box_ratio_generation = Checkbutton(self.label_processing_pipeline,
                                                           variable=self.ratio_generation_in_pipeline,
                                                           onvalue=1,
                                                           offvalue=0,
                                                           command=None)
-        self.check_box_ratio_generation.grid(column=2, row=22, sticky="W")
+        self.check_box_ratio_generation.grid(column=2, row=23, sticky="W")
         self.check_box_ratio_generation.select()
         self.check_box_ratio_generation.config(state=DISABLED)
 
         self.empty_label = Label(self.label_processing_pipeline, text="")
-        self.empty_label.grid(column=1, row=23, sticky="W")
+        self.empty_label.grid(column=1, row=24, sticky="W")
 
         self.label_shape_normalization = Label(self.label_processing_pipeline, text="Shape Normalization")
-        self.label_shape_normalization.grid(column=1, row=24, sticky="W")
+        self.label_shape_normalization.grid(column=1, row=25, sticky="W")
         self.label_shape_normalization.config(bg='lightgray')
 
 
@@ -431,43 +561,43 @@ class TDarts_GUI():
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=self.update_settings_shape_normalization)
-        self.check_box_shape_normalization.grid(column=2, row=24, sticky="W")
+        self.check_box_shape_normalization.grid(column=2, row=25, sticky="W")
         self.check_box_shape_normalization.select()
         # self.check_box_shape_normalization.config(state=DISABLED)
 
         self.empty_label_2 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_2.grid(column=1, row=25, sticky="W")
+        self.empty_label_2.grid(column=1, row=26, sticky="W")
 
         self.label_analysis = Label(self.label_processing_pipeline, text="Analysis")
-        self.label_analysis.grid(column=1, row=26, sticky="W")
+        self.label_analysis.grid(column=1, row=27, sticky="W")
         self.label_analysis.config(bg='lightgray')
 
         self.label_hotspot_detection = Label(self.label_processing_pipeline, text="Hotspot detection:  ")
-        self.label_hotspot_detection.grid(column=1, row=27, sticky="W")
+        self.label_hotspot_detection.grid(column=1, row=28, sticky="W")
         self.hotspot_detection_in_pipeline = IntVar()
         self.check_box_hotspot_detection = Checkbutton(self.label_processing_pipeline,
                                                       variable=self.hotspot_detection_in_pipeline,
                                                       onvalue=1,
                                                       offvalue=0,
                                                       command=self.update_settings_for_analysis)
-        self.check_box_hotspot_detection.grid(column=2, row=27, sticky="W")
+        self.check_box_hotspot_detection.grid(column=2, row=28, sticky="W")
         self.check_box_hotspot_detection.select()
         # self.check_box_hotspot_detection.config(state=DISABLED)
 
         self.label_dartboard_projection = Label(self.label_processing_pipeline, text="Dartboard projection:  ")
-        self.label_dartboard_projection.grid(column=1, row=28, sticky="W")
+        self.label_dartboard_projection.grid(column=1, row=29, sticky="W")
         self.dartboard_projection_in_pipeline = IntVar()
         self.check_box_dartboard_projection = Checkbutton(self.label_processing_pipeline,
                                                        variable=self.dartboard_projection_in_pipeline,
                                                        onvalue=1,
                                                        offvalue=0,
                                                        command=None)
-        self.check_box_dartboard_projection.grid(column=2, row=28, sticky="W")
+        self.check_box_dartboard_projection.grid(column=2, row=29, sticky="W")
         self.check_box_dartboard_projection.select()
         # self.check_box_dartboard_projection.config(state=DISABLED)
 
         self.empty_label_3 = Label(self.label_processing_pipeline, text="")
-        self.empty_label_3.grid(column=1, row=29, sticky="W")
+        self.empty_label_3.grid(column=1, row=30, sticky="W")
 
         self.set_default_settings_for_local_imaging()
 
@@ -581,12 +711,21 @@ class TDarts_GUI():
                     'channel_alignment_in_pipeline': self.channel_alignment_in_pipeline.get() == 1,
                     'channel_alignment_each_frame': self.frame_by_frame_registration.get() == 1,
                     'registration_method': 'SITK',
+                    'upsampling_in_pipeline': self.upsampling_in_pipeline.get() == 1,
+                    'upsampling_algorithm': str(self.upsampling_algorithm.get()),
+                    'denoising_in_pipeline': self.denoising_in_pipeline.get() == 1,
+                    'denoising_algorithm': str(self.denoising_algorithm.get()),
                     'background_sub_in_pipeline': self.background_subtraction_in_pipeline.get() == 1,
+                    'background_subtractor_algorithm': str(self.background_subtraction_algorithm.get()),
+                    'wavelet_algorithm': str(self.wavelet_algorithm.get()),
                     'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
-                    'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
-                    'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
+                    'decon_iter': self._get_str_from_text_widget(self.text_iterations),
+                    'TDE_lambda': (self._get_float_from_text_widget(self.text_TDE_lambda)
+                                   if self._get_float_from_text_widget(self.text_TDE_lambda) is not None else ""),
+                    'TDE_lambda_t': (self._get_float_from_text_widget(self.text_TDE_lambda_t)
+                                     if self._get_float_from_text_widget(self.text_TDE_lambda_t) is not None else ""),
                     'psf': {
                         'type': str(self.text_psf_type.get("1.0", "end-1c")),  # accepted types: "confocal" and "widefield"
                         'lambdaEx_ch1': int(self.text_psf_lambdaEx_ch1.get("1.0", END)),
@@ -711,88 +850,128 @@ class TDarts_GUI():
 
             # PROCESSING PIPELINE
             ## POSTPROCESSING
-            if config["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
+            post_cfg = config.get("processing_pipeline", {}).get("postprocessing", {})
+
+            if post_cfg.get("channel_alignment_in_pipeline", False):
                 self.check_box_channel_alignment.select()
             else:
                 self.check_box_channel_alignment.deselect()
-            if config["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"]:
+            if post_cfg.get("channel_alignment_each_frame", False):
                 self.check_box_frame_by_frame_registration.select()
             else:
                 self.check_box_frame_by_frame_registration.deselect()
-            self.registration_method = config["processing_pipeline"]["postprocessing"]["registration_method"]
+            self.registration_method = post_cfg.get("registration_method", "SITK")
 
-            if config["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            if post_cfg.get("background_sub_in_pipeline", False):
                 self.check_box_background_subtraction_in_pipeline.select()
+                background_algorithm = post_cfg.get("background_subtractor_algorithm")
+                if background_algorithm is None:
+                    background_algorithm = post_cfg.get("background_subtraction_algorithm")
+                if background_algorithm:
+                    self.background_subtraction_algorithm.set(background_algorithm)
+                    wavelet_algorithm = post_cfg.get("wavelet_algorithm")
+                    if wavelet_algorithm is None:
+                        wavelet_algorithm = post_cfg.get("wavelet_background")
+                    if self.background_subtraction_algorithm.get() == "Wavelet" and wavelet_algorithm:
+                        self.wavelet_algorithm.set(wavelet_algorithm)
             else:
                 self.check_box_background_subtraction_in_pipeline.deselect()
-            if config["processing_pipeline"]["postprocessing"]["cell_segmentation_tracking_in_pipeline"]:
+
+            if post_cfg.get("upsampling_in_pipeline", False):
+                self.check_box_upsampling_in_pipeline.select()
+                if post_cfg.get("upsampling_algorithm"):
+                    self.upsampling_algorithm.set(post_cfg["upsampling_algorithm"])
+
+            if post_cfg.get("denoising_in_pipeline", False):
+                self.check_box_denoising_in_pipeline.select()
+                if post_cfg.get("denoising_algorithm"):
+                    self.denoising_algorithm.set(post_cfg["denoising_algorithm"])
+
+
+            if post_cfg.get("cell_segmentation_tracking_in_pipeline", False):
                 self.check_box_segmentation_tracking_in_pipeline.select()
             else:
                 self.check_box_segmentation_tracking_in_pipeline.deselect()
-            if config["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
+            if post_cfg.get("deconvolution_in_pipeline", False):
                 self.check_box_deconvolution_in_pipeline.select()
 
-                self.deconvolution_algorithm.set(config["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"])
+                self.deconvolution_algorithm.set(post_cfg.get("deconvolution_algorithm", "LR"))
                 self.option_menu_deconvolution.config(state=NORMAL)
                 if self.deconvolution_algorithm.get() == "TDE":
                     self.text_TDE_lambda.config(state=NORMAL)
                     self.text_TDE_lambda_t.config(state=NORMAL)
                     self.text_TDE_lambda.delete(1.0, END)
-                    self.text_TDE_lambda.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda"])
+                    tde_lambda_val = post_cfg.get("TDE_lambda")
+                    if tde_lambda_val is not None:
+                        self.text_TDE_lambda.insert(1.0, str(tde_lambda_val))
                     self.text_TDE_lambda_t.delete(1.0, END)
-                    self.text_TDE_lambda_t.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"])
+                    tde_lambda_t_val = post_cfg.get("TDE_lambda_t")
+                    if tde_lambda_t_val is not None:
+                        self.text_TDE_lambda_t.insert(1.0, str(tde_lambda_t_val))
+                
+                if self.deconvolution_algorithm.get()=="LW":
+                    self.text_iterations.config(state=NORMAL)
+                    self.text_iterations.delete(1.0, END)
+                    decon_iter = post_cfg.get("decon_iter")
+                    if decon_iter is None:
+                        decon_iter = post_cfg.get("iterations")
+                    if decon_iter is not None:
+                        self.text_iterations.insert(1.0, str(decon_iter))
+
                 self.text_psf_type.delete(1.0, END)
-                self.text_psf_type.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["type"])
+                psf_cfg = post_cfg.get("psf", {})
+
+                self.text_psf_type.insert(1.0, psf_cfg.get("type", "confocal"))
                 self.text_psf_lambdaEx_ch1.delete(1.0, END)
-                self.text_psf_lambdaEx_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEx_ch1"])
+                self.text_psf_lambdaEx_ch1.insert(1.0, psf_cfg.get("lambdaEx_ch1", ""))
                 self.text_psf_lambdaEm_ch1.delete(1.0, END)
-                self.text_psf_lambdaEm_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEm_ch1"])
+                self.text_psf_lambdaEm_ch1.insert(1.0, psf_cfg.get("lambdaEm_ch1", ""))
                 self.text_psf_lambdaEx_ch2.delete(1.0, END)
-                self.text_psf_lambdaEx_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEx_ch2"])
+                self.text_psf_lambdaEx_ch2.insert(1.0, psf_cfg.get("lambdaEx_ch2", ""))
                 self.text_psf_lambdaEm_ch2.delete(1.0, END)
-                self.text_psf_lambdaEm_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEm_ch2"])
+                self.text_psf_lambdaEm_ch2.insert(1.0, psf_cfg.get("lambdaEm_ch2", ""))
                 self.text_psf_numAper.delete(1.0, END)
-                self.text_psf_numAper.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["numAper"])
+                self.text_psf_numAper.insert(1.0, psf_cfg.get("numAper", ""))
                 self.text_psf_magObj.delete(1.0, END)
-                self.text_psf_magObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["magObj"])
+                self.text_psf_magObj.insert(1.0, psf_cfg.get("magObj", ""))
                 self.text_psf_rindexObj.delete(1.0, END)
-                self.text_psf_rindexObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["rindexObj"])
+                self.text_psf_rindexObj.insert(1.0, psf_cfg.get("rindexObj", ""))
                 self.text_psf_rindexSp.delete(1.0, END)
-                self.text_psf_rindexSp.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["rindexSp"])
+                self.text_psf_rindexSp.insert(1.0, psf_cfg.get("rindexSp", ""))
                 self.text_psf_ccdSize.delete(1.0, END)
-                self.text_psf_ccdSize.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["ccdSize"])
+                self.text_psf_ccdSize.insert(1.0, psf_cfg.get("ccdSize", ""))
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
                 self.option_menu_deconvolution.config(state=DISABLED)
 
-            if config["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
+            if post_cfg.get("bleaching_correction_in_pipeline", False):
                 self.check_box_bleaching_correction.select()
-                self.bleaching_correction_algorithm.set(config["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"])
+                self.bleaching_correction_algorithm.set(post_cfg.get("bleaching_correction_algorithm", "additiv no fit"))
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
                 self.option_menu_bleaching_correction.config(state=DISABLED)
-            if config["processing_pipeline"]["postprocessing"]["ratio_images"]:
+            if post_cfg.get("ratio_images", False):
                 self.check_box_ratio_generation.select()
             else:
                 self.check_box_ratio_generation.deselect()
-            self.median_filter_kernel = config["processing_pipeline"]["postprocessing"]["median_filter_kernel"]
+            self.median_filter_kernel = post_cfg.get("median_filter_kernel", 3)
 
             ## SHAPE NORMALIZATION
-            if config["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
+            if config.get("processing_pipeline", {}).get("shape_normalization", {}).get("shape_normalization", False):
                 self.check_box_shape_normalization.config(state=NORMAL)
                 self.check_box_shape_normalization.select()
             else:
                 self.check_box_shape_normalization.deselect()
 
             ## ANALYSIS
-            if config["processing_pipeline"]["analysis"]["hotspot_detection"]:
+            if config.get("processing_pipeline", {}).get("analysis", {}).get("hotspot_detection", False):
                 self.check_box_hotspot_detection.select()
                 self.check_box_hotspot_detection.config(state=NORMAL)
             else:
                 self.check_box_hotspot_detection.deselect()
 
-            if config["processing_pipeline"]["analysis"]["dartboard_projection"]:
+            if config.get("processing_pipeline", {}).get("analysis", {}).get("dartboard_projection", False):
                 self.check_box_dartboard_projection.select()
                 self.check_box_dartboard_projection.config(state=NORMAL)
             else:
@@ -842,6 +1021,57 @@ class TDarts_GUI():
             self.dartboard_projection_in_pipeline.set(1)
             self.check_box_dartboard_projection.config(state=NORMAL)
 
+    def update_background(self):
+        if self.background_subtraction_in_pipeline.get() == 0:
+            self.option_menu_background_substraction.config(state=DISABLED)
+            self.option_menu_wavelet.config(state=DISABLED)
+            for textbox in self.background_text_boxes + self.wavelet_text_boxes:
+                textbox.config(state=DISABLED)
+        else:
+            self.option_menu_background_substraction.config(state=NORMAL)
+            for textbox in self.background_text_boxes:
+                textbox.config(state=NORMAL)
+            self.update_wavelet()
+
+
+        """if self.background_subtraction_in_pipeline.get() == 0:
+            self.option_menu_background_substraction.config(state=DISABLED)
+            for textbox in self.background_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.background_subtraction_in_pipeline.get() == 1:
+            self.option_menu_background_substraction.config(state=NORMAL)
+            for textbox in self.background_text_boxes:
+                textbox.config(state=NORMAL)"""
+
+    def update_wavelet(self, *args):
+        if self.background_subtraction_algorithm.get() != "Wavelet":
+            self.option_menu_wavelet.config(state=DISABLED)
+            for textbox in self.wavelet_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.background_subtraction_algorithm.get() == "Wavelet":
+            self.option_menu_wavelet.config(state=NORMAL)
+            for textbox in self.wavelet_text_boxes:
+                textbox.config(state=NORMAL)
+    def update_upsampling(self):
+        if self.upsampling_in_pipeline.get() == 0:
+            self.option_menu_upsampling.config(state=DISABLED)
+            for textbox in self.upsampling_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.upsampling_in_pipeline.get() == 1:
+            self.option_menu_upsampling.config(state=NORMAL)
+            for textbox in self.upsampling_text_boxes:
+                textbox.config(state=NORMAL)
+
+    def update_denoising(self):
+        if self.denoising_in_pipeline.get() == 0:
+            self.option_menu_denoising.config(state=DISABLED)
+            for textbox in self.denoising_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.denoising_in_pipeline.get() == 1:
+            self.option_menu_denoising.config(state=NORMAL)
+            for textbox in self.denoising_text_boxes:
+                textbox.config(state=NORMAL)
+
     def update_deconvolution(self):
         if self.deconvolution_in_pipeline.get() == 0:
             self.option_menu_deconvolution.config(state=DISABLED)
@@ -875,6 +1105,19 @@ class TDarts_GUI():
         else:
             return "no configuration chosen"
 
+    def _get_float_from_text_widget(self, widget):
+        value = widget.get("1.0", "end-1c").strip()
+        if not value:
+            return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
+
+    def _get_str_from_text_widget(self, widget):
+        value = widget.get("1.0", "end-1c").strip()
+        return value
+
     def convert_image_config_to_number(self, image_config):
         if image_config == "single":
             return 1
@@ -888,11 +1131,17 @@ class TDarts_GUI():
         if chosen_decon_algorithm == "TDE":
             self.text_TDE_lambda.config(state=NORMAL)
             self.text_TDE_lambda_t.config(state=NORMAL)
-        elif chosen_decon_algorithm =="LR":
+        else:
             self.text_TDE_lambda.delete(1.0, END)
             self.text_TDE_lambda.config(state=DISABLED)
             self.text_TDE_lambda_t.delete(1.0, END)
             self.text_TDE_lambda_t.config(state=DISABLED)
+
+        if chosen_decon_algorithm == "LW":
+            self.text_iterations.config(state=NORMAL)
+        else:
+            self.text_iterations.delete(1.0, END)
+            self.text_iterations.config(state=DISABLED)
     #def select_directory(self):
     #    chosen_image_configuration = self.get_image_configuration()
 

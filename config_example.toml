@@ -1,8 +1,8 @@
 [input_output]
 file_or_directory = "dir"
 image_conf = "two-in-one"
-path = "/Users/testuser/Documents/GitHub/DARTS/Data"
-results_dir = "/Users/testuser/Documents/GitHub/DARTS/results"
+path = "/Users/felixwissel/Documents/UKE/Bilder_Felix/Darts_testfile_2frames"
+results_dir = "/Users/felixwissel/PycharmProjects/DARTS/results"
 excel_filename_microdomain_data = "microdomain_data.xlsx"
 
 [properties_of_measurement]
@@ -16,7 +16,7 @@ day_of_measurement = "2024-03-20"
 user = "test"
 experiment_name = "test"
 imaging_local_or_global = "local"
-bead_contact = true
+bead_contact = false
 duration_of_measurement = 48.0
 wavelength_1 = 488
 wavelength_2 = 561
@@ -58,15 +58,26 @@ channel_alignment_in_pipeline = true
 channel_alignment_each_frame = false
 registration_method = "SITK"
 background_sub_in_pipeline = true
+background_subtraction_algorithm = "Wavelet"
+wavelet_background = "Strong-LI"
+
+upsampling_in_pipeline = true
+upsampling_algorithm = "Fourier"
 cell_segmentation_tracking_in_pipeline = true
+
+
+denoising_in_pipeline = true
+denoising_algorithm = "SparseHessian"
 deconvolution_in_pipeline = true
-deconvolution_algorithm = "LR"
+deconvolution_algorithm = "LW"
 TDE_lambda = ""
 TDE_lambda_t = ""
+iterations = 10
 bleaching_correction_in_pipeline = true
 bleaching_correction_algorithm = "additiv no fit"
 ratio_images = true
 median_filter_kernel = 3
+upsampling = ""
 
 [processing_pipeline.postprocessing.psf]
 type = "confocal"
@@ -84,6 +95,16 @@ depth = 0
 rindexSp = 1.518
 nor = 0
 xysize = 150
+
+
+[processing_pipeline.postprocessing.denoise]
+denoising_algorithm = false
+iterations = 20
+fidelity = 150
+sparsity = 10
+contiz = 0.5
+mu = 1
+
 
 [processing_pipeline.shape_normalization]
 shape_normalization = true

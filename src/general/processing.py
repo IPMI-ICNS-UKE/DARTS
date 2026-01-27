@@ -19,15 +19,16 @@ import matplotlib.pyplot as plt
 from src.general.cell import CellImage, ChannelImage
 from src.postprocessing.segmentation import SegmentationSD
 from src.postprocessing.CellTracker_ROI import CellTracker
-from src.postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon
+from src.postprocessing.deconvolution import TDEDeconvolution, LRDeconvolution, BaseDecon, LWDeconvolution
 from src.postprocessing.registration import Registration_SITK, Registration_SR
 from src.analysis import HotSpotDetection
 from src.shapenormalization.shapenormalization import ShapeNormalization
 from src.analysis.Dartboard import DartboardGenerator
 from src.postprocessing.Bleaching import BleachingAdditiveNoFit, BleachingMultiplicativeSimple, BleachingBiexponentialFitAdditive
 from src.general.RatioToConcentrationConverter import RatioConverter
-from src.postprocessing.BackgroundSubtraction import BackgroundSubtractor
-
+from src.postprocessing.BackgroundSubtraction import BackgroundSubtractorMasked, WaveletBackgroundSubtractor
+from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, SpatialUpsampling
+from src.postprocessing.denoising import SparseHessian
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
 from src.analysis.GUInoBeads_local import GUInoBeads_local
@@ -107,22 +108,6 @@ class ImageProcessor:
         else:
             self.registration = None
 
-        # cell tracking & segmentation
-        self.scale_pixels_per_micron = self.parameters["properties_of_measurement"]["scale"]
-        self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
-        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
-        self.segmentation = SegmentationSD(self.model)
-
-        # background subtraction
-        self.background_subtractor = BackgroundSubtractor(self.segmentation)
-        # deconvolution
-        # self.deconvolution_parameters = self.parameters["deconvolution"]
-        if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "TDE":
-            self.deconvolution = TDEDeconvolution()
-        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LR":
-            self.deconvolution = LRDeconvolution()
-        else:
-            self.deconvolution = BaseDecon()
         # bleaching correction
         if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
             if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"] == "additiv no fit":
@@ -146,15 +131,53 @@ class ImageProcessor:
         self.microdomains_timelines_dict = {}
         self.experiment_name = self.parameters["properties_of_measurement"]["experiment_name"]
         self.day_of_measurement = self.parameters["properties_of_measurement"]["day_of_measurement"]
-        # self.measurement_name = self.day_of_measurement + '_' + self.experiment_name
-        self.measurement_basename = f"{self.day_of_measurement}_{self.experiment_name}_{self.file_name}"
-        self.measurement_name = self.measurement_basename
+        self.run_datetime = self.parameters["properties_of_measurement"].get("run_datetime")
+        # prefer run timestamp (date + time) if provided, else fall back to configured day
+        measurement_prefix = self.run_datetime if self.run_datetime else self.day_of_measurement
+        self.measurement_name = measurement_prefix + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["input_output"]["results_dir"]
         self.save_path = os.path.join(self.results_folder, self.measurement_name)
         self.time_of_finished_processing = None
         self._resumed_from_checkpoint = False
         self.frame_number = len(self.channel1)
         self.cell_type = self.parameters["properties_of_measurement"]["cell_type"]
+
+        # cell tracking & segmentation
+        self.scale_pixels_per_micron = self.parameters["properties_of_measurement"]["scale"]
+        self.cell_tracker = CellTracker(self.scale_pixels_per_micron)
+        # give tracker access to results path for debug overlays
+        self.cell_tracker.save_path = self.save_path
+        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
+        self.segmentation = SegmentationSD(self.model)
+
+        # background subtraction
+        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
+                self.background_subtractor = BackgroundSubtractorMasked(self.segmentation)
+            elif self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Wavelet":
+                self.background_subtractor = WaveletBackgroundSubtractor()
+        # UpSampling
+        if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Spatial":
+                self.upsample = SpatialUpsampling()
+            elif self.parameters["processing_pipeline"]["postprocessing"]["upsampling_algorithm"] == "Fourier":
+                self.upsample = FourierUpsampling()
+
+        # denoising_utils SPARSE
+        if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
+            if self.parameters["processing_pipeline"]["postprocessing"]["denoising_algorithm"].lower() == "sparsehessian":
+                self.denoise = SparseHessian()
+
+        # deconvolution
+        if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "TDE":
+            self.deconvolution = TDEDeconvolution()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LR":
+            self.deconvolution = LRDeconvolution()
+        elif self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"] == "LW":
+            self.deconvolution = LWDeconvolution()
+        else:
+            self.deconvolution = BaseDecon()
+
         self.spotHeight = None
         if self.cell_type == 'primary':
             self.spotHeight = 112.5  # [Ca2+] = 112.5 nM
@@ -203,9 +226,17 @@ class ImageProcessor:
             name, ext = os.path.splitext(filename)
             if name.endswith("_1"):
                 name2 = name[:-2] + "_2"
-            filename2 = name2 + ext
+                filename2 = name2 + ext
+                filename1 = filename
+            elif name.endswith("_2"):
+                name1 = name[:-2]
+                filename1 = name1 + ext
+                filename2 = filename
+            else:
+                filename1 = filename
+                filename2 = name + "_2" + ext
             try:
-                channel1 = load_data(filename, channel_format)
+                channel1 = load_data(filename1, channel_format)
                 channel2 = load_data(filename2, channel_format)
             except Exception as E:
                 print(E)
@@ -278,15 +309,25 @@ class ImageProcessor:
     def clear_outside_of_cells(self):
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
 
+
     def background_subtraction(self, channel_1, channel_2):
-        print("\nBackground subtraction: ")
+        print("\n" + self.background_subtractor.give_name() + ": ")
         with alive_bar(1, force_tty=True) as bar:
             time.sleep(.005)
             # background_label_first_frame = self.segmentation.stardist_segmentation_in_frame(channel_2[0])
-            channel_1_background_subtracted = self.background_subtractor.subtract_background(channel_1)
-            channel_2_background_subtracted = self.background_subtractor.subtract_background(channel_2)
+            channel_1_background_subtracted = self.background_subtractor.execute(channel_1, self.parameters)
+            channel_2_background_subtracted = self.background_subtractor.execute(channel_2, self.parameters)
             bar()
         return channel_1_background_subtracted, channel_2_background_subtracted
+
+    # TODO matching denoise Method
+    def denoise_cell_images(self, channel_1, channel_2):
+        print("\n"+ self.denoise.give_name() + ": ")
+        with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
+            time.sleep(.005)
+            channel_1_denoised, channel_2_denoised = self.denoise.execute(channel_1, channel_2, self.parameters)
+            bar()
+        return channel_1_denoised, channel_2_denoised
 
     def create_cell_images(self, segmentation_result_dict):
         self.nb_rois = len(segmentation_result_dict)
@@ -341,6 +382,13 @@ class ImageProcessor:
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
+        # Todo Denoise method
+
+        if self.parameters["processing_pipeline"]["postprocessing"]["denoising_in_pipeline"]:
+            self.channel1, self.channel2 = self.denoise_cell_images(self.channel1, self.channel2) #todo
+
+
+        # segmentation of cells, tracking
         self.segmentation_result_dict = self.select_rois()
         self.create_cell_images(self.segmentation_result_dict)
 
@@ -965,7 +1013,7 @@ class ImageProcessor:
                     cell.ratio = filtered_image_list[0]
                 bar()
 
-
+ 
     def return_ratios(self):
         for cell in self.cell_list:
             self.ratio_list.append(cell.calculate_ratio())
@@ -1059,7 +1107,25 @@ class ImageProcessor:
         #plt.legend()
         # plt.show()
 
-        # print("Transition Point:", transition_point)
+            # print("Transition Point:", transition_point)
+            
+            if transition_point > 0:
+                cell.starting_point = transition_point  # individual starting point
+            else:
+                cell.starting_point = -1  # no individual starting point
+
+        # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
+        # B. First, the mean starting point of cells with starting point > 0 is calculated.
+        # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
+        #    point of  A.
+        individual_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if cell.starting_point > 0]
+        if not individual_starting_points:
+            return
+
+        mean_individual_starting_point = sum(individual_starting_points)/len(individual_starting_points)
+        cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
+        for cell in cells_without_individual_starting_point:
+            cell.starting_point = int(mean_individual_starting_point)
 
         if len(transition_point) > 0 and transition_point[0]>0:
             cell.starting_point = transition_point[0]  # individual starting point
@@ -1321,6 +1387,12 @@ class ImageProcessor:
             for cell in self.cell_list:
                 dataframe = cell.cell_image_data_channel_2
                 cell_data_for_frame = dataframe.loc[dataframe['frame'] == starting_point]
+                if cell_data_for_frame.empty:
+                    available_frames = dataframe['frame'].values.tolist()
+                    print(
+                        f"No tracked frame {starting_point} for this cell; "
+                        f"available frames: {available_frames}"
+                    )
                 bbox_for_frame = cell_data_for_frame['bbox'].values.tolist()[0]
                 min_row, min_col, max_row, max_col = bbox_for_frame
 
