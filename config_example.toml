@@ -48,6 +48,11 @@ time_of_measurement_after_starting_point = 15.0
 
 
 [processing_pipeline]
+[processing_pipeline.checkpoints]
+save_pre_start = true
+load_pre_start = false
+source_dir = ""
+
 [processing_pipeline.postprocessing]
 channel_alignment_in_pipeline = true
 channel_alignment_each_frame = false

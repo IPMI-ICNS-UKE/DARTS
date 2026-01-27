@@ -85,6 +85,7 @@ def main(gui_enabled):
                 filtered.append(f)
         files_for_further_processing = filtered
 
+    time_of_addition_dict = dict()
     if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined
         # definition of bead contacts for each file
         for file in files_for_further_processing:
@@ -98,7 +99,7 @@ def main(gui_enabled):
         files_for_further_processing = [file for file in files_for_further_processing if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
     else:  # no bead contacts
         if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
-            time_of_addition_dict = dict()
+            # time_of_addition_dict = dict()
             for file in files_for_further_processing:
                 file_path = os.path.join(input_directory, file)
                 gui_no_beads = GUInoBeads(file, file_path, parameters)
@@ -106,6 +107,13 @@ def main(gui_enabled):
                 time_of_addition_dict[file] = gui_no_beads.get_time_of_addition()
                 del gui_no_beads
         elif parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
+            # cell_positions_dict = dict()
+            # for file in files_for_further_processing:
+            #     file_path = os.path.join(input_directory, file)
+            #     gui_no_beads_local = GUInoBeads_local(file, file_path, parameters)
+            #     gui_no_beads_local.run_main_loop()
+            #     cell_positions_dict[file] = gui_no_beads_local.get_cell_positions()
+            #     del gui_no_beads_local
             pass
 
     for file in files_for_further_processing:
@@ -124,6 +132,7 @@ def main(gui_enabled):
                 time_of_addition = time_of_addition_dict[file]
             else:  # local measurement + no beads => definition in Processor.start_postprocessing() for each cell individually
                 time_of_addition = None
+
 
         parameters["input_output"]["filename"] = file
         filename = os.path.join(input_directory, file)
@@ -155,7 +164,7 @@ def main(gui_enabled):
             info_saver.add_signal_information(microdomains_timelines_dict)
             info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
 
-        if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline; only possible if shape normlization in pipeline
+        if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline; only possible if shape normalization in pipeline
             Processor.dartboard(cells_dict, info_saver)
 
         del Processor

@@ -1,13 +1,18 @@
 import logging
 import math
+import json
 import skimage.io as io
 import numpy as np
 import skimage.measure
+from skimage.morphology import binary_erosion
+from skimage.transform import probabilistic_hough_line
 from alive_progress import alive_bar
 import time
 import pandas as pd
 import os
 import timeit
+from datetime import datetime
+import shutil
 from stardist.models import StarDist2D
 import matplotlib.pyplot as plt
 
@@ -26,6 +31,7 @@ from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, Spati
 from src.postprocessing.denoising import SparseHessian
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
+from src.analysis.GUInoBeads_local import GUInoBeads_local
 
 try:
     import SimpleITK as sitk
@@ -69,6 +75,7 @@ class ImageProcessor:
         self.channel2 = image_ch2
         self.logger = logger
         self.time_of_addition = time_of_addition
+
         # self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
 
         self.wl1 = self.parameters["properties_of_measurement"]["wavelength_1"]  # wavelength channel1
@@ -129,7 +136,9 @@ class ImageProcessor:
         measurement_prefix = self.run_datetime if self.run_datetime else self.day_of_measurement
         self.measurement_name = measurement_prefix + '_' + self.experiment_name + '_' + self.file_name
         self.results_folder = self.parameters["input_output"]["results_dir"]
-        self.save_path = self.results_folder + '/' + self.measurement_name
+        self.save_path = os.path.join(self.results_folder, self.measurement_name)
+        self.time_of_finished_processing = None
+        self._resumed_from_checkpoint = False
         self.frame_number = len(self.channel1)
         self.cell_type = self.parameters["properties_of_measurement"]["cell_type"]
 
@@ -353,13 +362,23 @@ class ImageProcessor:
         return ymin_corrected, ymax_corrected, xmin_corrected, xmax_corrected
 
     def start_postprocessing(self):
+        resumed_from_checkpoint = False
+        if self.should_load_preprocessing_checkpoint():
+            resumed_from_checkpoint = self.load_preprocessing_checkpoint()
+
+        self._resumed_from_checkpoint = resumed_from_checkpoint
+
+        if not resumed_from_checkpoint:
+            self._run_pre_checkpoint_pipeline()
+
+        self._run_post_checkpoint_steps()
+
+    def _run_pre_checkpoint_pipeline(self):
         # -- PROCESSING OF WHOLE IMAGE CHANNELS --
-        # channel registration
         if self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
             self.channel2 = self.registration.channel_registration(self.channel1, self.channel2,
                                                                    self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"])
 
-        # background subtraction
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             self.channel1, self.channel2 = self.background_subtraction(self.channel1, self.channel2)
 
@@ -371,53 +390,269 @@ class ImageProcessor:
 
         # segmentation of cells, tracking
         self.segmentation_result_dict = self.select_rois()
-
-        # cell images
         self.create_cell_images(self.segmentation_result_dict)
 
+        if not self.parameters["properties_of_measurement"]["bead_contact"]:
+            self.filter_partial_cells(edge_margin=0, frames_to_check=3, required_fraction=0.66)
 
-        # -- PROCESSING OF CELL IMAGES --
-        if self.parameters["properties_of_measurement"]["bead_contact"]:  # if "bead contacts" was elected in the GUI
-            # assign bead contacts to cells
+        if self.parameters["properties_of_measurement"]["bead_contact"]:
             self.assign_bead_contacts_to_cells()
         else:
             if self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
                 for i, cell in enumerate(self.cell_list):
                     cell.starting_point = self.time_of_addition
 
-        # deconvolution
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
             self.deconvolve_cell_images()
 
-        # bleaching correction
         if self.parameters["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
             self.bleaching_correction()
 
-        # first median filter
         if self.deconvolution.give_name() != "TDE Deconvolution":
             self.medianfilter("channels")
 
-        # generation of ratio images
         self.generate_ratio_images()
 
-        # second median filter
         if self.deconvolution.give_name() != "TDE Deconvolution":
             self.medianfilter("ratio")
 
-        # clear area outside the cells
-        if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
-            self.clear_outside_of_cells()
+        self.clear_outside_of_cells()
+        self.save_preprocessing_checkpoint()
 
-        # save ratio images of the cells
+    def _run_post_checkpoint_steps(self):
+        if not self.parameters["properties_of_measurement"]["bead_contact"]:
+            try:
+                filtering_cfg = self.parameters.get("processing_pipeline", {}).get("filtering", {})
+                preact_threshold = filtering_cfg.get("preactivation_ratio_threshold", 1.0)
+            except Exception:
+                preact_threshold = 1.0
+            self.filter_preactivated_cells(preact_threshold)
+
+        self.finalize_output_directory()
+
         self.save_ratio_images()
 
-        # measure mean ratio values in all frames
         for cell in self.cell_list_for_processing:
             cell.mean_ratio_list = cell.measure_mean_ratio_in_all_frames()
 
-        # determine starting points for local imaging, if no beads
         if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
             self.determine_starting_points_local_no_beads()
+
+    def finalize_output_directory(self):
+        if getattr(self, "_resumed_from_checkpoint", False):
+            return
+
+        finish_time = datetime.now().strftime("%H-%M-%S")
+        self.time_of_finished_processing = finish_time
+        new_measurement_name = f"{self.day_of_measurement}_{finish_time}_{self.experiment_name}_{self.file_name}"
+
+        if new_measurement_name == self.measurement_name:
+            return
+
+        current_path = self.save_path
+        target_path = os.path.join(self.results_folder, new_measurement_name)
+        os.makedirs(self.results_folder, exist_ok=True)
+
+        destination = target_path
+        suffix = 1
+        while os.path.exists(destination):
+            destination = f"{target_path}_{suffix:02d}"
+            suffix += 1
+
+        try:
+            if os.path.isdir(current_path) and current_path != destination:
+                shutil.move(current_path, destination)
+            else:
+                os.makedirs(destination, exist_ok=True)
+        except Exception as exc:
+            message = ("Could not move output folder to include processing finish time. "
+                       f"Reason: {exc}")
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=message,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(message)
+            except Exception:
+                print(message)
+            return
+
+        self.save_path = destination
+        self.measurement_name = os.path.basename(self.save_path)
+        self.excel_filename_one_measurement = self.measurement_name + '_microdomain_data'
+
+        if getattr(self, "hotspotdetector", None) is not None:
+            self.hotspotdetector.save_path = self.save_path
+            self.hotspotdetector.excel_filename_one_measurement = self.excel_filename_one_measurement
+
+        if getattr(self, "dartboard_generator", None) is not None:
+            self.dartboard_generator.save_path = self.save_path
+            self.dartboard_generator.measurement_name = self.measurement_name
+
+        self._update_checkpoint_manifest_measurement()
+
+    def _update_checkpoint_manifest_measurement(self):
+        checkpoint_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
+        manifest_path = os.path.join(checkpoint_dir, "manifest.json")
+
+        if not os.path.isfile(manifest_path):
+            return
+
+        try:
+            with open(manifest_path, "r+", encoding="utf-8") as manifest_file:
+                manifest = json.load(manifest_file)
+                manifest["measurement"] = self.measurement_name
+                manifest_file.seek(0)
+                json.dump(manifest, manifest_file, indent=2)
+                manifest_file.truncate()
+        except Exception as exc:
+            message = f"Could not update checkpoint manifest after renaming output folder: {exc}"
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=message,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(message)
+            except Exception:
+                print(message)
+
+    def filter_preactivated_cells(self, threshold: float):
+        """Remove cells that are preactivated (mean ratio in frame 0 > threshold).
+
+        Applies after ratio generation and masking, before saving/GUI steps.
+        Updates both self.cell_list and self.cell_list_for_processing to keep them in sync.
+        """
+        kept = []
+        removed = 0
+        for cell in list(self.cell_list_for_processing):
+            try:
+                if cell.is_preactivated(threshold):
+                    removed += 1
+                    continue
+            except Exception as E:
+                # If anything goes wrong with the check, keep the cell and continue
+                print(E)
+            kept.append(cell)
+
+        # Update lists consistently so later steps (including GUIs) only see kept cells
+        self.cell_list_for_processing = kept
+        self.cell_list = kept
+        if removed > 0:
+            try:
+                self.logger.log_and_print(
+                    message=f"Filtered {removed} preactivated cell(s) (threshold={threshold}).",
+                    level=logging.INFO,
+                    logger=self.logger)
+            except Exception:
+                pass
+
+    def _mask_touches_border(self, mask_frame, edge_margin=0):
+        """Return True if the (inside-cell) mask touches any image border.
+
+        mask_frame should be a boolean mask where True marks the cell area.
+        """
+        if mask_frame is None or not np.any(mask_frame):
+            return False
+        y_max, x_max = mask_frame.shape
+        # Quick edge checks with optional margin
+        if np.any(mask_frame[0:max(1, 1+edge_margin), :]):
+            return True
+        if np.any(mask_frame[y_max-1-edge_margin:y_max, :]):
+            return True
+        if np.any(mask_frame[:, 0:max(1, 1+edge_margin)]):
+            return True
+        if np.any(mask_frame[:, x_max-1-edge_margin:x_max]):
+            return True
+        return False
+
+    def filter_partial_cells(self, edge_margin=0, frames_to_check=3, required_fraction=0.66):
+        """Remove cells whose masks touch ROI borders (likely partial/cut cells).
+
+        - edge_margin: allow tolerance from the border
+        - frames_to_check: number of initial frames to test
+        - required_fraction: fraction of tested frames that must touch a border to drop the cell
+        """
+        kept = []
+        removed = 0
+        for cell in list(self.cell_list):
+            try:
+                n_frames = min(frames_to_check, cell.frame_number)
+                hits = 0
+                checked = 0
+                for f in range(n_frames):
+                    # frame_masks True=outside; invert to get inside-cell mask
+                    inside_mask = np.invert(cell.frame_masks[f])
+                    if inside_mask is None:
+                        continue
+                    checked += 1
+                    # Border contact OR internal straight edge
+                    if (self._mask_touches_border(inside_mask, edge_margin=edge_margin)
+                        or self._has_internal_straight_edge(inside_mask)):
+                        hits += 1
+                if checked > 0 and (hits / checked) >= required_fraction:
+                    removed += 1
+                    continue
+            except Exception as E:
+                # If in doubt, keep the cell to avoid false negatives
+                print(E)
+            kept.append(cell)
+
+        self.cell_list = kept
+        self.cell_list_for_processing = kept
+        if removed > 0:
+            try:
+                self.logger.log_and_print(
+                    message=f"Filtered {removed} partial cell(s) touching ROI borders.",
+                    level=logging.INFO,
+                    logger=self.logger)
+            except Exception:
+                pass
+
+    def _has_internal_straight_edge(self, inside_mask: np.ndarray,
+                                     min_rel_length: float = 0.6,
+                                     min_abs_len_px: int = 10,
+                                     threshold: int = 10,
+                                     line_gap: int = 2) -> bool:
+        """Detects a long straight segment on the cell boundary (a chord),
+        which is characteristic for cut/partial cells.
+
+        - inside_mask: boolean mask (True = cell)
+        - min_rel_length: minimum line length relative to estimated diameter
+        - min_abs_len_px: absolute minimum length in pixels
+        - threshold, line_gap: parameters for probabilistic Hough transform
+        """
+        try:
+            area = int(np.sum(inside_mask))
+            if area <= 0:
+                return False
+            # Estimate diameter from area assuming roughly circular cell
+            diameter_est = 2.0 * np.sqrt(area / np.pi)
+            target_len = max(min_rel_length * diameter_est, float(min_abs_len_px))
+
+            # Extract 1-pixel boundary of the mask
+            boundary = np.logical_and(inside_mask, np.logical_not(binary_erosion(inside_mask)))
+
+            # Detect line segments on the boundary
+            # Use a conservative minimal length to propose segments; verify length below
+            min_len_param = max(5, int(target_len * 0.7))
+            lines = probabilistic_hough_line(boundary.astype(np.uint8),
+                                             threshold=threshold,
+                                             line_length=min_len_param,
+                                             line_gap=line_gap)
+            if not lines:
+                return False
+            # Check if any segment is long enough
+            for (x0, y0), (x1, y1) in lines:
+                seg_len = float(np.hypot(x1 - x0, y1 - y0))
+                if seg_len >= target_len:
+                    return True
+            return False
+        except Exception as E:
+            # On any error, be conservative and return False
+            print(E)
+            return False
 
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
@@ -441,6 +676,293 @@ class ImageProcessor:
 
         for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell.ratio)
+
+    def save_preprocessing_checkpoint(self):
+        """Persist intermediate data before trimming by time windows."""
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+        enabled = bool(checkpoints_cfg.get("save_pre_start", False))
+
+        status_message = f"save_pre_start flag set to {enabled}."
+        try:
+            if getattr(self, "logger", None) is not None:
+                self.logger.log_and_print(message=status_message,
+                                          level=logging.INFO,
+                                          logger=self.logger)
+            else:
+                print(status_message)
+        except Exception:
+            print(status_message)
+
+        if not enabled:
+            return
+
+        checkpoint_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
+        manifest_entries = []
+        for idx, cell in enumerate(self.cell_list_for_processing):
+            cell_label = f"cell_{idx:04d}"
+
+            ratio_filename = f"{cell_label}_ratio.tif"
+            ratio_path = os.path.join(checkpoint_dir, ratio_filename)
+            if cell.ratio is None:
+                continue
+            io.imsave(ratio_path, cell.ratio.astype(np.float32))
+
+            channel1_filename = f"{cell_label}_channel1.npy"
+            channel1_path = os.path.join(checkpoint_dir, channel1_filename)
+            np.save(channel1_path, cell.give_image_channel1().astype(np.float32))
+
+            channel2_filename = f"{cell_label}_channel2.npy"
+            channel2_path = os.path.join(checkpoint_dir, channel2_filename)
+            np.save(channel2_path, cell.give_image_channel2().astype(np.float32))
+
+            cell_dataframe_filename = None
+            if getattr(cell, "cell_image_data_channel_2", None) is not None:
+                cell_dataframe_filename = f"{cell_label}_cell_data.pkl"
+                cell_dataframe_path = os.path.join(checkpoint_dir, cell_dataframe_filename)
+                cell.cell_image_data_channel_2.to_pickle(cell_dataframe_path)
+
+            mask_filename = None
+            if cell.frame_masks is not None:
+                mask_filename = f"{cell_label}_frame_masks.npy"
+                mask_path = os.path.join(checkpoint_dir, mask_filename)
+                np.save(mask_path, cell.frame_masks)
+
+            manifest_entries.append({
+                "cell_index": idx,
+                "ratio_file": ratio_filename,
+                "mask_file": mask_filename,
+                "channel1_file": channel1_filename,
+                "channel2_file": channel2_filename,
+                "cell_dataframe": cell_dataframe_filename,
+                "frame_number": int(cell.frame_number),
+                "starting_point": int(getattr(cell, "starting_point", 0)),
+                "starting_point_auto": int(getattr(cell, "starting_point_auto", -1))
+                if hasattr(cell, "starting_point_auto") else None,
+            })
+
+        manifest = {
+            "measurement": self.measurement_name,
+            "frame_rate": self.frames_per_second,
+            "time_before_start": self.parameters["properties_of_measurement"].get(
+                "time_of_measurement_before_starting_point"),
+            "time_after_start": self.parameters["properties_of_measurement"].get(
+                "time_of_measurement_after_starting_point"),
+            "raw_image_shape": list(self.channel1.shape) if getattr(self, "channel1", None) is not None else None,
+            "image_width": int(getattr(self, "x_max", 0)) if getattr(self, "x_max", None) is not None else None,
+            "cells": manifest_entries,
+        }
+
+        manifest_path = os.path.join(checkpoint_dir, "manifest.json")
+        with open(manifest_path, "w", encoding="utf-8") as manifest_file:
+            json.dump(manifest, manifest_file, indent=2)
+
+        message = (f"Saved preprocessing checkpoint with {len(manifest_entries)} cell(s) to "
+                   f"{checkpoint_dir}.")
+        try:
+            if getattr(self, "logger", None) is not None:
+                self.logger.log_and_print(message=message,
+                                          level=logging.INFO,
+                                          logger=self.logger)
+            else:
+                print(message)
+        except Exception:
+            print(message)
+
+    def should_load_preprocessing_checkpoint(self) -> bool:
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+        return bool(checkpoints_cfg.get("load_pre_start", False))
+
+    def load_preprocessing_checkpoint(self) -> bool:
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+
+        source_hint = str(checkpoints_cfg.get("source_dir", "")) or ""
+        candidate_dirs = []
+
+        if source_hint:
+            expanded = os.path.expanduser(source_hint)
+            if not os.path.isabs(expanded):
+                expanded = os.path.join(self.results_folder, expanded)
+            expanded = os.path.abspath(expanded)
+
+            if os.path.isfile(expanded):
+                if expanded.lower().endswith(".json"):
+                    candidate_dirs.append(os.path.dirname(expanded))
+            elif os.path.isdir(expanded):
+                possible_dirs = [
+                    expanded,
+                    os.path.join(expanded, "checkpoints"),
+                    os.path.join(expanded, "pre_start"),
+                    os.path.join(expanded, "checkpoints", "pre_start"),
+                ]
+                for candidate in possible_dirs:
+                    if os.path.isdir(candidate) and candidate not in candidate_dirs:
+                        candidate_dirs.append(candidate)
+
+        default_dir = os.path.join(self.save_path, "checkpoints", "pre_start")
+        candidate_dirs.append(default_dir)
+
+        checkpoint_dir = None
+        manifest_path = None
+        for candidate in candidate_dirs:
+            if not candidate:
+                continue
+            candidate_manifest = os.path.join(candidate, "manifest.json")
+            if os.path.isfile(candidate_manifest):
+                checkpoint_dir = candidate
+                manifest_path = candidate_manifest
+                break
+
+        if checkpoint_dir is None or manifest_path is None:
+            msg = ("No preprocessing checkpoint manifest found. "
+                   "Falling back to full preprocessing pipeline.")
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=msg,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(msg)
+            except Exception:
+                print(msg)
+            return False
+
+        measurement_dir = os.path.dirname(checkpoint_dir)
+        if os.path.basename(checkpoint_dir) != "pre_start":
+            measurement_dir = checkpoint_dir
+        elif os.path.basename(measurement_dir) == "checkpoints":
+            measurement_dir = os.path.dirname(measurement_dir)
+
+        with open(manifest_path, "r", encoding="utf-8") as manifest_file:
+            manifest = json.load(manifest_file)
+
+        manifest_measurement = manifest.get("measurement")
+        if manifest_measurement:
+            self.measurement_name = manifest_measurement
+            self.save_path = os.path.join(self.results_folder, self.measurement_name)
+
+        if os.path.isdir(measurement_dir):
+            self.save_path = measurement_dir
+
+        raw_shape = manifest.get("raw_image_shape")
+        if raw_shape:
+            try:
+                if len(raw_shape) == 3:
+                    self.t_max, self.y_max, self.x_max = raw_shape
+                elif len(raw_shape) == 2:
+                    self.y_max, self.x_max = raw_shape
+            except Exception:
+                pass
+
+        image_width = manifest.get("image_width", getattr(self, "x_max", None))
+
+        cells_loaded = []
+        for entry in manifest.get("cells", []):
+            try:
+                ratio_file = entry.get("ratio_file")
+                if not ratio_file:
+                    continue
+                ratio_path = os.path.join(checkpoint_dir, ratio_file)
+                if not os.path.isfile(ratio_path):
+                    continue
+                ratio = io.imread(ratio_path).astype(np.float32)
+
+                channel1_path = entry.get("channel1_file")
+                if channel1_path:
+                    channel1_abs = os.path.join(checkpoint_dir, channel1_path)
+                    if os.path.isfile(channel1_abs):
+                        channel1_array = np.load(channel1_abs)
+                    else:
+                        continue
+                else:
+                    continue
+
+                channel2_path = entry.get("channel2_file")
+                if channel2_path:
+                    channel2_abs = os.path.join(checkpoint_dir, channel2_path)
+                    if os.path.isfile(channel2_abs):
+                        channel2_array = np.load(channel2_abs)
+                    else:
+                        continue
+                else:
+                    continue
+
+                mask_array = None
+                mask_path = entry.get("mask_file")
+                if mask_path:
+                    mask_abs = os.path.join(checkpoint_dir, mask_path)
+                    if os.path.isfile(mask_abs):
+                        mask_array = np.load(mask_abs, allow_pickle=True)
+
+                cell_dataframe = None
+                df_path = entry.get("cell_dataframe")
+                if df_path:
+                    df_abs = os.path.join(checkpoint_dir, df_path)
+                    if os.path.isfile(df_abs):
+                        cell_dataframe = pd.read_pickle(df_abs)
+
+                channel1_image = ChannelImage(channel1_array, self.wl1)
+                channel2_image = ChannelImage(channel2_array, self.wl2)
+                cell_obj = CellImage(channel1_image,
+                                     channel2_image,
+                                     image_width if image_width is not None else channel1_array.shape[-1],
+                                     cell_dataframe,
+                                     mask_array)
+
+                cell_obj.ratio = ratio
+                cell_obj.frame_number = int(entry.get("frame_number", ratio.shape[0]))
+                cell_obj.starting_point = int(entry.get("starting_point", 0))
+                if entry.get("starting_point_auto") is not None:
+                    cell_obj.starting_point_auto = int(entry.get("starting_point_auto"))
+
+                cells_loaded.append(cell_obj)
+            except Exception as exc:
+                warning = f"Failed to load cell from checkpoint: {exc}"
+                try:
+                    if getattr(self, "logger", None) is not None:
+                        self.logger.log_and_print(message=warning,
+                                                  level=logging.WARNING,
+                                                  logger=self.logger)
+                    else:
+                        print(warning)
+                except Exception:
+                    print(warning)
+                continue
+
+        if not cells_loaded:
+            msg = "Checkpoint manifest could not be loaded or contained no cells."
+            try:
+                if getattr(self, "logger", None) is not None:
+                    self.logger.log_and_print(message=msg,
+                                              level=logging.WARNING,
+                                              logger=self.logger)
+                else:
+                    print(msg)
+            except Exception:
+                print(msg)
+            return False
+
+        self.cell_list = cells_loaded
+        self.cell_list_for_processing = self.cell_list
+        self.nb_rois = len(self.cell_list)
+
+        info_message = (f"Loaded preprocessing checkpoint with {len(self.cell_list)} cell(s) "
+                        f"from {checkpoint_dir}.")
+        try:
+            if getattr(self, "logger", None) is not None:
+                self.logger.log_and_print(message=info_message,
+                                          level=logging.INFO,
+                                          logger=self.logger)
+            else:
+                print(info_message)
+        except Exception:
+            print(info_message)
+
+        return True
 
     def global_measurement(self, info_saver):
         global_dataframe = info_saver.global_data
@@ -502,52 +1024,88 @@ class ImageProcessor:
 
 
     def determine_starting_points_local_no_beads(self):
+
+        for i, cell in enumerate(self.cell_list):
+            cell.starting_point_auto = self.automated_starting_point(cell)
+
+
+        for i, cell in enumerate(self.cell_list):
+            cell_GUI_no_beads_local = GUInoBeads_local(cell, i, self.parameters,self.ratio_converter, self)
+            cell_GUI_no_beads_local.run_main_loop()
+            manual_starting_frame = cell_GUI_no_beads_local.starting_frame
+            cell_denied = cell_GUI_no_beads_local.cell_denied_flag
+
+            del cell_GUI_no_beads_local
+
+            if cell_denied:
+                self.cell_list.remove(cell)
+                continue
+
+        # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
+        # B. First, the mean starting point of cells with starting point > 0 is calculated.
+        # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
+        #    point of  A.
+
+        try:
+            individual_valid_starting_points = [cell.starting_point for cell in self.cell_list_for_processing if
+                                                cell.starting_point > 0]
+            mean_individual_starting_point = sum(individual_valid_starting_points) / len(individual_valid_starting_points)
+            cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
+            for cell in cells_without_individual_starting_point:
+                cell.starting_point = int(mean_individual_starting_point)
+        except Exception as E:
+            print(E)
+            self.logger.log_and_print(message="Exception occurred: Error in starting point definition !",
+                                      level=logging.ERROR, logger=self.logger)
+
+
+    def automated_starting_point(self, cell):
+
         # Specify the desired slope threshold per unit change in frame rate
         slope_threshold_per_fps = 0.0025
+        # test
 
-        slope_treshold_per_second = slope_threshold_per_fps * self.frames_per_second
+        slope_threshold_per_second = slope_threshold_per_fps * self.frames_per_second
 
         # Adjust the slope threshold based on the actual frame rate, 40.0
         # slope_threshold = 0.25*slope_threshold_per_fps * (40.0/actual_fps)
 
+        cell.starting_point = 0
 
-        for i, cell in enumerate(self.cell_list_for_processing):
-            cell.starting_point = 0
+        time_points = np.arange(cell.frame_number)
+        global_signal = np.array(cell.mean_ratio_list)
 
-            time_points = np.arange(cell.frame_number)
-            global_signal = np.array(cell.mean_ratio_list)
+        # Smooth the global signal
+        smoothed_global_signal = savgol_filter(global_signal, window_length=5, polyorder=3)
 
-            # Smooth the global signal
-            smoothed_global_signal = savgol_filter(global_signal, window_length=15, polyorder=3)
+        # Calculate the first derivative (slope)
+        slope = np.gradient(smoothed_global_signal)
 
-            # Calculate the first derivative (slope)
-            slope = np.gradient(smoothed_global_signal)
+        # Smooth the slope using a Savitzky-Golay filter
+        smoothed_slope = savgol_filter(slope, window_length=5, polyorder=3)
 
-            # Smooth the slope using a Savitzky-Golay filter
-            smoothed_slope = savgol_filter(slope, window_length=15, polyorder=3)
+        # Find the point where the slope surpasses the threshold
+        transition_point = []
 
-            # Find the point where the slope surpasses the threshold
-            transition_point = 0
+        # Specify the consecutive frames threshold
+        consecutive_frames_threshold = 15
 
-            # Specify the consecutive frames threshold
-            consecutive_frames_threshold = self.frames_per_second
+        # Check if the slope exceeds the threshold for at least x frames
+        for t in range(len(time_points) - int(consecutive_frames_threshold)):
+            if np.all(smoothed_slope[t:t + int(consecutive_frames_threshold)] > slope_threshold_per_fps):
+                transition_point.append(t)
+                break
 
-            # Check if the slope exceeds the threshold for at least x frames
-            for t in range(len(time_points)-int(consecutive_frames_threshold)):
-                if np.all(smoothed_slope[t:t+int(consecutive_frames_threshold)] > slope_treshold_per_second):
-                    transition_point = t
-                    break
-
-            # Plot the original data, smoothed data, and the slope
-            
-            # plt.plot(time_points, global_signal, label='Original Data')
-            # plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
-            # plt.plot(time_points, slope, label='Slope')
-            # plt.axvline(x=transition_point, color='r', linestyle='--', label='Transition Point')
-            # plt.xlabel('Time Points')
-            # plt.ylabel('Global Signal')
-            # plt.legend()
-            # plt.show()
+        # Plot the original data, smoothed data, and the slope
+        # plt.plot(time_points, global_signal, label='Original Data')
+        #plt.plot(time_points, smoothed_global_signal, label='Smoothed Data')
+        #plt.plot(time_points, slope, label='Slope')
+        #for tp in transition_point:
+        #    plt.axvline(x=tp, color='r', linestyle='--', label='Transition Point')
+        #plt.xlabel('Time Points')
+        #plt.ylabel('Global Signal')
+        #plt.legend()
+        # plt.show()
 
             # print("Transition Point:", transition_point)
             
@@ -569,8 +1127,252 @@ class ImageProcessor:
         for cell in cells_without_individual_starting_point:
             cell.starting_point = int(mean_individual_starting_point)
 
+        if len(transition_point) > 0 and transition_point[0]>0:
+            cell.starting_point = transition_point[0]  # individual starting point
+        else:
+            cell.starting_point = -1  # no individual starting point
 
+        return cell.starting_point
+# Matlab version
+    def find_exp_start(self, cell, tol=0.1, av_factor=0.05, show_plot=False, debug=True):
+        """
+        Alternative starting point detection method based on exponential signal onset.
+        Python port of findExpStart.m
 
+        Parameters
+        ----------
+        cell : CellImage
+            Cell object containing the data to analyze
+        tol : float, default 0.1
+            Tolerance (in log-intensity units) for declaring onset:
+            first frame where |log(I) - linear_continuation| < tol.
+        av_factor : float, default 0.05
+            Moving-average window as a fraction of total frames.
+        show_plot : bool, default False
+            If True, show the diagnostic plot.
+        debug : bool, default True
+            If True, print debugging information to terminal.
+
+        Returns
+        -------
+        start_frame : int
+            Index of the detected start frame (0-based) or -1 if not found.
+        """
+
+        # Get data from cell
+        img_m = np.array(cell.mean_ratio_list)
+        N = img_m.size
+        
+        if debug:
+            print(f"[DEBUG] find_exp_start: Starting analysis with {N} frames")
+            print(f"[DEBUG] Signal range: {np.min(img_m):.4f} to {np.max(img_m):.4f}")
+        
+        if N < 5:
+            if debug:
+                print(f"[DEBUG] FAILURE: Time series too short ({N} frames, need at least 5)")
+            if show_plot:
+                print("Warning: Time series too short.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "time_series_too_short"}
+            return -1
+
+        # ---- 1) Smoothing and log ----
+        def movmean(x, w):
+            w = max(1, int(w))
+            if w == 1:
+                return x.copy()
+            k = np.ones(w, dtype=float) / w
+            return np.convolve(x, k, mode="same")
+
+        av = max(1, int(np.floor(av_factor * N)))
+        img_ms = movmean(img_m, av)
+
+        eps = np.finfo(float).eps
+        img_ms_log = np.log(np.maximum(img_ms, eps))
+        img_g = np.gradient(img_ms_log)
+        
+        if debug:
+            print(f"[DEBUG] Smoothing: window size = {av} frames")
+            print(f"[DEBUG] Log signal range: {np.min(img_ms_log):.4f} to {np.max(img_ms_log):.4f}")
+
+        # ---- 2) Zero-crossings of smoothed derivative ----
+        zc = np.where(np.diff(np.sign(movmean(img_g, av))) != 0)[0]
+        number_frames = img_ms_log.size
+        zc = np.r_[0, zc, number_frames - 1]
+        if debug:
+            print(f"[DEBUG] Found {zc.size} zero-crossings (extrema)")
+            if zc.size > 0:
+                print(f"[DEBUG] Zero-crossing positions: {zc}")
+        
+        if zc.size < 2:
+            # Not enough extrema to define a segment
+            if debug:
+                print(f"[DEBUG] FAILURE: Not enough extrema ({zc.size} found, need at least 2)")
+            if show_plot:
+                print("Warning: not enough extrema; no fit can be found.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "not_enough_extrema"}
+            return -1
+
+        # ---- 3) Pick relevant rising segment (≥ 30% total log range) ----
+        total_range = float(np.max(img_ms_log) - np.min(img_ms_log))
+        if debug:
+            print(f"[DEBUG] Total log range: {total_range:.4f}")
+            print(f"[DEBUG] Looking for segments with ≥30% rise (≥{0.3 * total_range:.4f})")
+        
+        if total_range <= 0:
+            if debug:
+                print(f"[DEBUG] FAILURE: Non-positive total range ({total_range:.4f})")
+            if show_plot:
+                print("Warning: non-positive total range; no fit can be found.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "non_positive_total_range"}
+            return -1
+
+        # Sort extrema by their log value (desc) and walk down until a valid rise is found
+        order = np.argsort(img_ms_log[zc])[::-1]  # indices into zc
+        x1 = x2 = None
+        range_size = None
+
+        if debug:
+            print(f"[DEBUG] Checking {len(order)} extrema pairs for valid rising segments...")
+
+        for ord_idx in order:
+            if ord_idx < 1:
+                continue
+            I = ord_idx
+            x1_candidate = int(zc[I - 1])
+            x2_candidate = int(zc[I])
+            y1 = img_ms_log[x1_candidate]
+            y2 = img_ms_log[x2_candidate]
+            rise = y2 - y1
+            if debug:
+                print(f"[DEBUG] Segment {x1_candidate}-{x2_candidate}: rise={rise:.4f} (need ≥{0.3 * total_range:.4f})")
+            if rise >= 0.3 * total_range:
+                x1, x2 = x1_candidate, x2_candidate
+                range_size = rise
+                if debug:
+                    print(f"[DEBUG] SUCCESS: Found valid segment {x1}-{x2} with rise={rise:.4f}")
+                break
+
+        if x1 is None or x2 is None or range_size is None:
+            if debug:
+                print(f"[DEBUG] FAILURE: No segment found with ≥30% rise (threshold: {0.3 * total_range:.4f})")
+            if show_plot:
+                print("Warning: no fit can be found (no segment with ≥30% rise).")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "no_segment_meets_30pct_threshold"}
+            return -1
+
+        # ---- 4) Find the linear ascending sub-segment and fit it ----
+        # Approximation of MATLAB ischange(...,'linear'): find the steepest
+        # m-length window in [x1, x2] by linear regression slope.
+        seg_len = x2 - x1 + 1
+        if debug:
+            print(f"[DEBUG] Chosen segment length: {seg_len} frames")
+        
+        if seg_len < 5:
+            if debug:
+                print(f"[DEBUG] FAILURE: Chosen segment too short ({seg_len} frames, need at least 5)")
+            if show_plot:
+                print("Warning: chosen segment too short.")
+            # Store failure diagnostics in cell object
+            if hasattr(cell, 'exp_start_diagnostics'):
+                cell.exp_start_diagnostics = {"reason": "segment_too_short", "x1": x1, "x2": x2}
+            return -1
+
+        m = max(10, int(0.2 * seg_len))
+        m = min(m, seg_len)  # clamp
+
+        if debug:
+            print(f"[DEBUG] Linear fit window size: {m} frames")
+            print(f"[DEBUG] Searching for steepest slope in segment {x1}-{x2}...")
+
+        best_slope = -np.inf
+        lin_start = x1
+        for s in range(x1, x2 - m + 2):
+            y = img_ms_log[s : s + m]
+            x = np.arange(m, dtype=float)
+            # linear least squares
+            A = np.vstack([x, np.ones_like(x)]).T
+            slope, intercept = np.linalg.lstsq(A, y, rcond=None)[0]
+            if slope > best_slope:
+                best_slope = slope
+                lin_start = s
+                lin_intercept = intercept
+
+        if debug:
+            print(f"[DEBUG] Best linear fit: start={lin_start}, slope={best_slope:.6f}")
+
+        lin_end = lin_start + m - 1
+        x = np.arange(m, dtype=float)
+        # final fit on chosen window
+        A = np.vstack([x, np.ones_like(x)]).T
+        slope, intercept = np.linalg.lstsq(A, img_ms_log[lin_start : lin_end + 1], rcond=None)[0]
+
+        # ---- 5) Extend the fitted line across all frames ----
+        # Align so that at frame = lin_start, line equals the first point of that window
+        t = np.arange(N, dtype=float)
+        lin_cont = slope * (t - lin_start) + intercept
+
+        # ---- 6) First frame within tolerance -> start_frame ----
+        d = np.abs(img_ms_log - lin_cont)
+        hits = np.where(d < tol)[0]
+        start_frame = int(hits[0]) if hits.size else -1
+        
+        if debug:
+            print(f"[DEBUG] Tolerance check: tol={tol}")
+            print(f"[DEBUG] Found {hits.size} frames within tolerance")
+            if hits.size > 0:
+                print(f"[DEBUG] First hit at frame: {start_frame}")
+            else:
+                print(f"[DEBUG] FAILURE: No frames found within tolerance {tol}")
+                print(f"[DEBUG] Minimum deviation: {np.min(d):.6f}")
+
+        # ---- 7) Plot (optional) ----
+        if show_plot:
+            plt.figure(figsize=(9, 5))
+            plt.plot(t, img_ms_log, label="Smoothed log-intensity")
+            plt.plot(t, lin_cont, "--", label="Linear fit continuation")
+            plt.axvspan(x1, x2, alpha=0.15, label="Chosen rising interval")
+            plt.plot(t, lin_cont + tol, ":", label="+tol")
+            plt.plot(t, lin_cont - tol, ":", label="-tol")
+            if start_frame >= 0:
+                plt.plot(start_frame, img_ms_log[start_frame], "D", label=f"Start: {start_frame}")
+            plt.title(f"Cell {cell} — start detection")
+            plt.xlabel("frames")
+            plt.ylabel("log(I)")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+        diagnostics = {
+            "x1": x1,
+            "x2": x2,
+            "range_size": range_size,
+            "total_range": total_range,
+            "lin_start": lin_start,
+            "lin_end": lin_end,
+            "slope": float(slope),
+            "intercept": float(intercept),
+        }
+        
+        # Store diagnostics in cell object for debugging if needed
+        if hasattr(cell, 'exp_start_diagnostics'):
+            cell.exp_start_diagnostics = diagnostics
+        
+        # Return only the starting frame to match the interface of automated_starting_point()
+        if debug:
+            if start_frame >= 0:
+                print(f"[DEBUG] SUCCESS: Starting point found at frame {start_frame}")
+            else:
+                print(f"[DEBUG] FAILURE: No starting point found")
+        
+        return start_frame
 
     def assign_bead_contacts_to_cells(self):
         for bead_contact in self.list_of_bead_contacts:
@@ -924,7 +1726,3 @@ class ImageProcessor:
         os.makedirs(save_path, exist_ok=True)
         for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(save_path + '/'+ self.measurement_name + cell.to_string(i) + '_ratio_image' + '.tif', cell.give_ratio_image(), check_contrast=False)
-
-
-        
-    
