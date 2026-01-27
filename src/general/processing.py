@@ -151,6 +151,7 @@ class ImageProcessor:
         self.segmentation = SegmentationSD(self.model)
 
         # background subtraction
+        self.background_subtractor = None
         if self.parameters["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
             if self.parameters["processing_pipeline"]["postprocessing"]["background_subtractor_algorithm"] == "Masked":
                 self.background_subtractor = BackgroundSubtractorMasked(self.segmentation)
@@ -307,6 +308,8 @@ class ImageProcessor:
 
 
     def clear_outside_of_cells(self):
+        if self.background_subtractor is None:
+            return
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
 
 
