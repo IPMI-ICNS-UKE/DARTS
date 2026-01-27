@@ -28,8 +28,13 @@ class CellTracker:
         :param image_frame:
         :return: The labels in the frame detected by the Stardist algorithm
         """
-        img_labels, img_details = model.predict_instances(normalize(image_frame),
-                                                               predict_kwargs=dict(verbose=False), scale=0.25)
+        # StarDist scale is derived from the measurement scale (pixels per micron). 9.765 = pixels_per_micron for 63x Enhancement
+        stardist_scale = 9.765 / self.scale_pixels_per_micron if self.scale_pixels_per_micron else 0.25
+        img_labels, img_details = model.predict_instances(
+            normalize(image_frame),
+            predict_kwargs=dict(verbose=False),
+            scale=stardist_scale,
+        )
         return img_labels, img_details
 
     def generate_trajectory(self, image_series, model):
