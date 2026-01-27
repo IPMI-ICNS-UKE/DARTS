@@ -70,7 +70,20 @@ def main(gui_enabled):
     files_for_further_processing = [file for file in files_for_further_processing if not file.startswith(".")]  # exclude hidden files..
 
     if parameters["input_output"]["image_conf"] == "single":
-        files_for_further_processing = [f for f in files_for_further_processing if fnmatch.fnmatch(f, '*_1.*')]  # loop only over channel 1 files
+        # Keep only channel-1 files for paired inputs: *_1.* or base files with a matching *_2.*.
+        available_files = set(files_for_further_processing)
+        filtered = []
+        for f in files_for_further_processing:
+            if fnmatch.fnmatch(f, '*_2.*'):
+                continue
+            name, ext = os.path.splitext(f)
+            if name.endswith("_1"):
+                candidate2 = name[:-2] + "_2" + ext
+            else:
+                candidate2 = name + "_2" + ext
+            if candidate2 in available_files:
+                filtered.append(f)
+        files_for_further_processing = filtered
 
     if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined
         # definition of bead contacts for each file

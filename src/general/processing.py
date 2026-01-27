@@ -217,9 +217,17 @@ class ImageProcessor:
             name, ext = os.path.splitext(filename)
             if name.endswith("_1"):
                 name2 = name[:-2] + "_2"
-            filename2 = name2 + ext
+                filename2 = name2 + ext
+                filename1 = filename
+            elif name.endswith("_2"):
+                name1 = name[:-2]
+                filename1 = name1 + ext
+                filename2 = filename
+            else:
+                filename1 = filename
+                filename2 = name + "_2" + ext
             try:
-                channel1 = load_data(filename, channel_format)
+                channel1 = load_data(filename1, channel_format)
                 channel2 = load_data(filename2, channel_format)
             except Exception as E:
                 print(E)
