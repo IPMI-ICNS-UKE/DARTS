@@ -376,6 +376,11 @@ class ImageProcessor:
 
         self._run_post_checkpoint_steps()
 
+    def start_preprocessing(self):
+        """Run preprocessing only (up to checkpoint), without postprocessing steps."""
+        self._resumed_from_checkpoint = False
+        self._run_pre_checkpoint_pipeline()
+
     def _run_pre_checkpoint_pipeline(self):
         # -- PROCESSING OF WHOLE IMAGE CHANNELS --
         if self.parameters["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
@@ -398,10 +403,15 @@ class ImageProcessor:
         if not self.parameters["properties_of_measurement"]["bead_contact"]:
             self.filter_partial_cells(edge_margin=0, frames_to_check=3, required_fraction=0.66)
 
+        defer_annotations = bool(self.parameters.get("processing_pipeline", {})
+                                 .get("checkpoints", {})
+                                 .get("defer_annotations", False))
         if self.parameters["properties_of_measurement"]["bead_contact"]:
-            self.assign_bead_contacts_to_cells()
+            if not defer_annotations:
+                self.assign_bead_contacts_to_cells()
         else:
-            if self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
+            if (self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global'
+                    and not defer_annotations):
                 for i, cell in enumerate(self.cell_list):
                     cell.starting_point = self.time_of_addition
 
@@ -423,6 +433,7 @@ class ImageProcessor:
         self.save_preprocessing_checkpoint()
 
     def _run_post_checkpoint_steps(self):
+        self._apply_deferred_annotations_if_needed()
         if not self.parameters["properties_of_measurement"]["bead_contact"]:
             try:
                 filtering_cfg = self.parameters.get("processing_pipeline", {}).get("filtering", {})
@@ -441,6 +452,22 @@ class ImageProcessor:
 
         if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
             self.determine_starting_points_local_no_beads()
+
+    def _apply_deferred_annotations_if_needed(self):
+        checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
+                           .get("checkpoints", {}))
+        if not checkpoints_cfg.get("defer_annotations", False):
+            return
+
+        if self.parameters["properties_of_measurement"]["bead_contact"]:
+            self.assign_bead_contacts_to_cells()
+            return
+
+        if self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
+            if self.time_of_addition is None:
+                return
+            for cell in self.cell_list:
+                cell.starting_point = self.time_of_addition
 
     def finalize_output_directory(self):
         # Keep the original run-time folder so outputs stay with debug PNGs.
