@@ -35,7 +35,7 @@ To install DARTS on your computer, a few steps need to be executed. Ideally, you
 - In the terminal window, navigate to the subfolder "src" inside the DARTS folder
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your 'src' folder
 - In the terminal window run ```chmod +x install_bioformats.sh```
-- run ```./install_bioformats.sh```
+- Run ```./install_bioformats.sh```
     
 For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
