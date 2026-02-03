@@ -34,19 +34,8 @@ To install DARTS on your computer, a few steps need to be executed. Ideally, you
 - In your file explorer, go to the folder "DARTS/src" and delete the (empty) folder 'TDEntropyDeconvolution'
 - In the terminal window, navigate to the subfolder "src" inside the DARTS folder
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your 'src' folder
-- In the terminal window, create a conda environment DARTS with a specific python version: ```conda create --name DARTS python=3.10.0```
-- Activate the conda environment: ```conda activate DARTS```
-- Install the necessary packages and their dependencies by executing this command in the terminal:
-```
-pip install matplotlib stardist trackpy tomli tensorflow alive-progress openpyxl pystackreg tkcalendar tomlkit simpleitk-simpleelastix
-```
-- Alternatively, install the packages separately (pip install <package>)
-
-- Install bioformats for python
-  - Make sure that a Java Runtime Environment is installed on your computer (https://www.oracle.com/de/java/technologies/downloads/ )
-  - Make sure to set the JAVA_HOME correctly to the JRE-path. 
-  - Next, execute ```pip install python-bioformats``` in the terminal.
-
+- In the terminal window run ```chmod +x install_bioformats.sh```
+- run ```./install_bioformats.sh```
     
 For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
