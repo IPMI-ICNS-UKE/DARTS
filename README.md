@@ -46,6 +46,25 @@ How to update DARTS:
 3. git checkout main
 4. git pull origin main
 
+## Input Files
+DARTS supports 2D+t image stacks. Z‑stacks are not supported.
+
+**Accepted formats**
+- `.tif` / `.tiff` (native)
+- Other microscopy formats supported by BioFormats (requires Java + `python-bioformats`)
+
+**Channel configuration**
+- **Two‑in‑one**: both channels are in the same file, either side‑by‑side in each frame or stored as separate channels in the BioFormats file.
+- **Single (one file per channel)**: two files per measurement are required.
+
+**Single file naming**
+DARTS automatically pairs files using the `_1` / `_2` suffix:
+- `sample_1.tif` + `sample_2.tif`
+- `sample.tif` + `sample_2.tif` (if channel‑1 file has no `_1` suffix)
+
+When you select a directory, DARTS only processes files that have a matching `_2` partner. Files ending in `_2` are treated as the second channel and won’t be processed by themselves.
+
+
 ## Usage
 0. Make sure that you navigated to the DARTS folder in the terminal. (To skip one folder layer up, use the command 'cd ../')
 1. DARTS is designed for the analysis of dual-channel fluorescence microscopy. Make sure, that the raw data are suitable (see [Documentation](https://ipmi-icns-uke.github.io/DARTS/))
