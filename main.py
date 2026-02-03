@@ -94,6 +94,33 @@ def main(gui_enabled):
         files_for_further_processing = filtered
         print(f"After single-channel pairing filter: {files_for_further_processing}")
 
+    checkpoints_cfg = parameters.get("processing_pipeline", {}).get("checkpoints", {})
+    preprocess_all_files = bool(checkpoints_cfg.get("preprocess_all_files", False))
+    resume_from_checkpoint = bool(checkpoints_cfg.get("load_pre_start", False))
+    two_phase_enabled = (preprocess_all_files
+                         and not resume_from_checkpoint
+                         and os.path.isdir(input_path)
+                         and len(files_for_further_processing) > 1)
+
+    if two_phase_enabled:
+        print("Two-phase workflow enabled: preprocessing all files before annotations.")
+        checkpoints_cfg["save_pre_start"] = True
+        checkpoints_cfg["load_pre_start"] = False
+        checkpoints_cfg["defer_annotations"] = True
+        parameters["processing_pipeline"]["checkpoints"] = checkpoints_cfg
+        parameters["input_output"]["end_frame"] = None
+
+        for file in files_for_further_processing:
+            parameters["input_output"]["filename"] = file
+            filename = os.path.join(input_directory, file)
+            Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition=None)
+            if Processor is None:
+                continue
+            print("Preprocessing file: " + file)
+            Processor.start_preprocessing()
+            del Processor
+            gc.collect()
+
     time_of_addition_dict = dict()
     if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined
         # definition of bead contacts for each file
@@ -126,6 +153,13 @@ def main(gui_enabled):
             #     del gui_no_beads_local
             pass
 
+    if two_phase_enabled:
+        checkpoints_cfg = parameters.get("processing_pipeline", {}).get("checkpoints", {})
+        checkpoints_cfg["save_pre_start"] = False
+        checkpoints_cfg["load_pre_start"] = True
+        checkpoints_cfg["defer_annotations"] = True
+        parameters["processing_pipeline"]["checkpoints"] = checkpoints_cfg
+
     for file in files_for_further_processing:
         if parameters["properties_of_measurement"]["bead_contact"]:
             list_of_bead_contacts = info_saver.bead_contact_dict[file]
@@ -147,6 +181,8 @@ def main(gui_enabled):
         parameters["input_output"]["filename"] = file
         filename = os.path.join(input_directory, file)
         Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition)
+        if Processor is None:
+            continue
 
 
         print("Now processing the following file: " + file)

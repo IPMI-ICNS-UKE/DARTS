@@ -52,6 +52,7 @@ time_of_measurement_after_starting_point = 15.0
 save_pre_start = true
 load_pre_start = false
 source_dir = ""
+preprocess_all_files = false
 
 [processing_pipeline.postprocessing]
 channel_alignment_in_pipeline = true

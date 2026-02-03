@@ -117,6 +117,17 @@ class TDarts_GUI():
         self.check_box_checkpoint_in_pipeline.grid(column=1, row=13, sticky="W")
         self.check_box_checkpoint_in_pipeline.deselect()
 
+        self.preprocess_all_files_first = IntVar()
+        self.check_box_preprocess_all_files = Checkbutton(
+            self.input_output_frame,
+            text="Preprocess all files before annotations",
+            variable=self.preprocess_all_files_first,
+            onvalue=1,
+            offvalue=0
+        )
+        self.check_box_preprocess_all_files.grid(column=1, row=14, sticky="W")
+        self.check_box_preprocess_all_files.deselect()
+
         self.resume_checkpoint_in_pipeline = IntVar(value=0)
         self.select_mode.trace_add("write", self.on_select_mode_change)
         self.on_select_mode_change()
@@ -758,7 +769,8 @@ class TDarts_GUI():
                 'checkpoints': {
                     'save_pre_start': self.checkpoint_in_pipeline.get() == 1,
                     'load_pre_start': self.resume_checkpoint_in_pipeline.get() == 1,
-                    'source_dir': self.checkpoint_path_value
+                    'source_dir': self.checkpoint_path_value,
+                    'preprocess_all_files': self.preprocess_all_files_first.get() == 1
                 }
             }
         }
@@ -796,6 +808,11 @@ class TDarts_GUI():
                 self.check_box_checkpoint_in_pipeline.select()
             else:
                 self.check_box_checkpoint_in_pipeline.deselect()
+
+            if checkpoints_cfg.get("preprocess_all_files", False):
+                self.check_box_preprocess_all_files.select()
+            else:
+                self.check_box_preprocess_all_files.deselect()
 
             self.checkpoint_path_value = checkpoints_cfg.get("source_dir", "")
             load_pre_start = bool(checkpoints_cfg.get("load_pre_start", False))
