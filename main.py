@@ -63,10 +63,13 @@ def main(gui_enabled):
     if os.path.isdir(input_path):
         input_directory = input_path
         files_for_further_processing = os.listdir(input_directory)
+        print(f"Input is a directory: {input_directory}")
     else:
         input_directory = os.path.dirname(input_path)
         # Process only the selected file when a file path is provided.
         files_for_further_processing = [os.path.basename(input_path)]
+        print(f"Input is a file: {input_path}")
+    print(f"Initial files_for_further_processing: {files_for_further_processing}")
     files_for_further_processing = [file for file in files_for_further_processing if not file.startswith(".")]  # exclude hidden files..
 
     if parameters["input_output"]["image_conf"] == "single":
@@ -83,7 +86,13 @@ def main(gui_enabled):
                 candidate2 = name + "_2" + ext
             if candidate2 in available_files:
                 filtered.append(f)
+            else:
+                # In file mode, check the filesystem for the paired channel file.
+                candidate2_path = os.path.join(input_directory, candidate2)
+                if os.path.isfile(candidate2_path):
+                    filtered.append(f)
         files_for_further_processing = filtered
+        print(f"After single-channel pairing filter: {files_for_further_processing}")
 
     time_of_addition_dict = dict()
     if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined
@@ -97,6 +106,7 @@ def main(gui_enabled):
         # save bead contacts on computer
         info_saver.save_bead_contact_information()
         files_for_further_processing = [file for file in files_for_further_processing if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
+        print(f"After bead-contact filter: {files_for_further_processing}")
     else:  # no bead contacts
         if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
             # time_of_addition_dict = dict()

@@ -1114,13 +1114,13 @@ class ImageProcessor:
         #plt.legend()
         # plt.show()
 
-            # print("Transition Point:", transition_point)
-            
-            if transition_point > 0:
-                cell.starting_point = transition_point  # individual starting point
+            if len(transition_point) > 0 and transition_point[0]>0:
+                cell.starting_point = transition_point[0]  # individual starting point
             else:
                 cell.starting_point = -1  # no individual starting point
-
+            
+            return cell.starting_point
+        
         # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
         # B. First, the mean starting point of cells with starting point > 0 is calculated.
         # C. Next, the starting points of the cells without a useful starting point (=-1) are set to the mean starting
