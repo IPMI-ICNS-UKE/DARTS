@@ -100,7 +100,7 @@ When you select a directory, DARTS only processes files that have a matching `_2
 3. Continue to start analysis.
 
 
-![NoBead contacts](docs/assets/img/noBeadGui.png)
+![NoBead contacts](docs/assets/img/noBeadGUI.png)
 
 
 Information: For each file, there might be several bead contacts. In order to save time, the time series will be cropped, so that the frames after the last starting point (e.g. bead contact at 600) + the measurement interval (e.g. 600 frames interval, so 1200 frames cutoff) are deleted as they are not needed.
