@@ -37,7 +37,7 @@ conda activate "${ENV_NAME}"
 
 echo "📦 Installing Python requirements …"
 python -m pip install -U pip
-python -m pip install "${PY_PACKAGES[@]}"
+python -m pip install -r requirements.txt
 
 echo "👉 Checking for Java Runtime …"
 if ! command -v java &>/dev/null ; then
@@ -68,12 +68,12 @@ if ! grep -q "JAVA_HOME" "${PROFILE_FILE}" ; then
   } >> "${PROFILE_FILE}"
   echo "    ℹ️  JAVA_HOME appended to ${PROFILE_FILE}"
 fi
+
 export JAVA_HOME="${JAVA_HOME_PATH}"
 export PATH="${JAVA_HOME}/bin:${PATH}"
 
 echo ""
-echo "🎉  DARTS installation finished!"
-echo "➡️   Next steps:"
+echo "  DARTS installation finished!"
+echo "  Next steps:"
 echo "   • Open a **new** terminal or run 'source ${PROFILE_FILE}'"
 echo "   • Activate the environment:    conda activate ${ENV_NAME}"
-echo "   • Start using the DARTS tools. Happy analysing! 🍀"

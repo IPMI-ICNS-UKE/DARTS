@@ -34,8 +34,8 @@ To install DARTS on your computer, a few steps need to be executed. Ideally, you
 - In your file explorer, go to the folder "DARTS/src" and delete the (empty) folder 'TDEntropyDeconvolution'
 - In the terminal window, navigate to the subfolder "src" inside the DARTS folder
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your 'src' folder
-- In the terminal window run ```chmod +x install_bioformats.sh```
-- Run ```./install_bioformats.sh```
+- In the terminal window run ```chmod +x install.sh```
+- Run ```./install.sh```
     
 For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
@@ -46,7 +46,7 @@ How to update DARTS:
 3. git checkout main
 4. git pull origin main
 
-## Input Files
+## Input Files: Propeties
 DARTS supports 2D+t image stacks. Z‑stacks are not supported.
 
 **Accepted formats**
@@ -57,7 +57,7 @@ DARTS supports 2D+t image stacks. Z‑stacks are not supported.
 - **Two‑in‑one**: both channels are in the same file, either side‑by‑side in each frame or stored as separate channels in the BioFormats file.
 - **Single (one file per channel)**: two files per measurement are required.
 
-**Single file naming**
+**File naming convention**\
 DARTS automatically pairs files using the `_1` / `_2` suffix:
 - `sample_1.tif` + `sample_2.tif`
 - `sample.tif` + `sample_2.tif` (if channel‑1 file has no `_1` suffix)
