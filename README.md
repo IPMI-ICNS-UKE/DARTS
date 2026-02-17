@@ -55,6 +55,7 @@ DARTS supports 2D+t image stacks. Z‑stacks are not supported.
 
 **Channel configuration**
 - **Two‑in‑one**: both channels are in the same file, either side‑by‑side in each frame or stored as separate channels in the BioFormats file.
+<img src="docs/assets/img/TwoInOneExample.png" alt="Two-in-one" width="70%">
 - **Single (one file per channel)**: two files per measurement are required.
 
 **File naming convention**\
