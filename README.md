@@ -72,6 +72,11 @@ When you select a directory, DARTS only processes files that have a matching `_2
 2. Store raw image files in a source directory. All common microscopy image formats can be opened, e.g. ics- or tif-files.
 3. Choose the analysis mode: local hotspots or global measurements (mean ratio over time), with or without beads.
 4. Run `python main.py` in the terminal / shell / PowerShell or IDE of your choice.
+   - The program now prefers the modern PySide6 main GUI when available and falls back to the legacy Tk GUI otherwise.
+   - You can force GUI mode with `DARTS_GUI_MODE`:
+     - `DARTS_GUI_MODE=auto` (default)
+     - `DARTS_GUI_MODE=modern`
+     - `DARTS_GUI_MODE=legacy`
 5. Configure the run in the GUI (see [Documentation](https://ipmi-icns-uke.github.io/DARTS/)). Most fields are required. You can save settings for reuse.
 6. Optional preprocessing: enable the denoising algorithm in the GUI if your data are noisy. This improves hotspot detection in low‑signal or high‑noise recordings.
 7. Optional checkpointing:
@@ -119,4 +124,3 @@ If DARTS is useful for a project that leads to publication, please acknowledge D
 [1]  Woelk L-M, Kovacevic D, Husseini H, Förster F, Gerlach F, Möckl F, Altfeld M, Guse AH, Diercks B-P and Werner R. DARTS: an open-source Python pipeline for Ca2+ microdomain analysis in live cell imaging data. Front. Immunol. 2024;14:1299435; doi: [https://doi.org/10.3389/fimmu.2023.1299435](https://doi.org/10.3389/fimmu.2023.1299435)
 
 [2] Diercks BP, Werner R, Schetelig D, Wolf IMA, Guse AH. High-Resolution Calcium Imaging Method for Local Calcium Signaling. Methods Mol Biol. 2019;1929:27-39. doi: [https://doi.org/10.1007/978-1-4939-9030-6_3](https://doi.org/10.1007/978-1-4939-9030-6_3)
-
