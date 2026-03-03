@@ -19,6 +19,8 @@ class CellImage:
         self.processing_flag = None
         self.cell_image_data_channel_2 = cell_image_data_channel_2
         self.frame_masks = frame_masks
+        self.ratio_centered_unmasked = None
+        self.ratio_unmasked = None
         self.frame_number = len(self.channel1.return_image())
         self.width = width
         self.normalized_ratio_image = None
@@ -345,4 +347,3 @@ class CellImageRegistrator:
         for frame in range(len(channel)):
             shifted_channel[frame] = shift(channel[frame], shift=(-x_offset, -y_offset), mode='constant')
         return shifted_channel
-

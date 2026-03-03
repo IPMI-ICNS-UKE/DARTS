@@ -530,6 +530,18 @@ class CellTracker:
                 image_series_channel_1_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel1, bbox_list, 10)
                 image_series_channel_2_bboxes, shift_correction_list = self.crop_image_series_with_rois(channel2, bbox_list, 10)
                 x_shift_image, y_shift_image = self.calculate_shift_in_each_frame(centroid_minus_bbox_offset,max_delta_x,max_delta_y, shift_correction_list)
+                roi1_uncentered = self.create_roi_image_series(
+                    empty_rois,
+                    image_series_channel_1_bboxes,
+                    [0] * len(image_series_channel_1_bboxes),
+                    [0] * len(image_series_channel_1_bboxes),
+                )
+                roi2_uncentered = self.create_roi_image_series(
+                    empty_rois,
+                    image_series_channel_2_bboxes,
+                    [0] * len(image_series_channel_2_bboxes),
+                    [0] * len(image_series_channel_2_bboxes),
+                )
                 roi1 = self.create_roi_image_series(empty_rois, image_series_channel_1_bboxes, x_shift_image, y_shift_image)
                 roi2 = self.create_roi_image_series(empty_rois, image_series_channel_2_bboxes, x_shift_image, y_shift_image)
 
@@ -540,8 +552,23 @@ class CellTracker:
 
                 shifted_frame_masks = self.generate_shifted_frame_masks(empty_rois, dataframe, particle, x_shift_bbox,
                                                                         y_shift_bbox)
+                uncentered_frame_masks = self.generate_shifted_frame_masks(
+                    empty_rois,
+                    dataframe,
+                    particle,
+                    [shift_x for shift_x, _ in shift_correction_list],
+                    [shift_y for _, shift_y in shift_correction_list],
+                )
 
-                roi_before_backgroundcor_dict[particle] = [roi1, roi2, particle_dataframe_subset, shifted_frame_masks]
+                roi_before_backgroundcor_dict[particle] = [
+                    roi1,
+                    roi2,
+                    particle_dataframe_subset,
+                    shifted_frame_masks,
+                    roi1_uncentered,
+                    roi2_uncentered,
+                    uncentered_frame_masks,
+                ]
             except Exception as E:
                 print(E)
                 print("Error Roi selection/ tracking")

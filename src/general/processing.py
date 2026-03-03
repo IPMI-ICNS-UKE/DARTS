@@ -90,9 +90,11 @@ class ImageProcessor:
         # self.image = cut_image_frames(self.image, self.start_frame, self.end_frame)
 
         self.cell_list = []
+        self.cell_list_uncentered = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
         self.cell_list_for_processing = self.cell_list
+        self.cell_list_for_processing_uncentered = self.cell_list_uncentered
         self.excluded_cells_list = []
 
         self.ratio_list = []
@@ -297,7 +299,7 @@ class ImageProcessor:
         print("\n"+ self.deconvolution.give_name() + ": ")
         with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
             time.sleep(.005)
-            for cell in self.cell_list_for_processing:
+            for idx, cell in enumerate(self.cell_list_for_processing):
                 roi_channel1, roi_channel2 = cell.channel1.image, cell.channel2.image
 
                 roi_channel1_decon, roi_channel2_decon = self.deconvolution.execute(roi_channel1, roi_channel2,
@@ -306,6 +308,17 @@ class ImageProcessor:
                 cell.set_image_channel1(roi_channel1_decon)
                 cell.set_image_channel2(roi_channel2_decon)
 
+                if idx < len(self.cell_list_for_processing_uncentered):
+                    cell_uncentered = self.cell_list_for_processing_uncentered[idx]
+                    roi_channel1_uncentered, roi_channel2_uncentered = cell_uncentered.channel1.image, cell_uncentered.channel2.image
+                    roi_channel1_uncentered_decon, roi_channel2_uncentered_decon = self.deconvolution.execute(
+                        roi_channel1_uncentered,
+                        roi_channel2_uncentered,
+                        self.parameters,
+                    )
+                    cell_uncentered.set_image_channel1(roi_channel1_uncentered_decon)
+                    cell_uncentered.set_image_channel2(roi_channel2_uncentered_decon)
+
                 bar()
 
 
@@ -313,6 +326,7 @@ class ImageProcessor:
         if self.background_subtractor is None:
             return
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
+        self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing_uncentered)
 
 
     def background_subtraction(self, channel_1, channel_2):
@@ -348,7 +362,15 @@ class ImageProcessor:
                                                     segmentation_result_dict[i][2],
                                                     segmentation_result_dict[i][3])
                                           )
+                    if len(segmentation_result_dict[i]) >= 7:
+                        self.cell_list_uncentered.append(CellImage(ChannelImage(segmentation_result_dict[i][4], self.wl1),
+                                                                   ChannelImage(segmentation_result_dict[i][5], self.wl2),
+                                                                   self.x_max,
+                                                                   segmentation_result_dict[i][2],
+                                                                   segmentation_result_dict[i][6])
+                                                        )
                 bar()
+        self.cell_list_for_processing_uncentered = self.cell_list_uncentered
 
     def correct_coordinates(self, ymin, ymax, xmin, xmax):
         ymin_corrected = ymin
@@ -404,8 +426,9 @@ class ImageProcessor:
             self.assign_bead_contacts_to_cells()
         else:
             if self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
-                for i, cell in enumerate(self.cell_list):
+                for cell, cell_uncentered in zip(self.cell_list, self.cell_list_uncentered):
                     cell.starting_point = self.time_of_addition
+                    cell_uncentered.starting_point = self.time_of_addition
 
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
             self.deconvolve_cell_images()
@@ -420,6 +443,15 @@ class ImageProcessor:
 
         if self.deconvolution.give_name() != "TDE Deconvolution":
             self.medianfilter("ratio")
+
+        # Preserve the processed ratio stacks before outside-cell masking so
+        # we can save full-ROI reference movies with background context.
+        for cell in self.cell_list_for_processing:
+            if cell.ratio is not None:
+                cell.ratio_centered_unmasked = cell.ratio.copy()
+        for cell_uncentered in self.cell_list_for_processing_uncentered:
+            if cell_uncentered.ratio is not None:
+                cell_uncentered.ratio_unmasked = cell_uncentered.ratio.copy()
 
         self.clear_outside_of_cells()
         self.save_preprocessing_checkpoint()
@@ -436,6 +468,9 @@ class ImageProcessor:
         self.finalize_output_directory()
 
         self.save_ratio_images()
+        self.save_centered_unmasked_ratio_images()
+        self.save_uncentered_ratio_images()
+        self.save_uncentered_unmasked_ratio_images()
         print(f"Final results saved to: {self.save_path}")
 
         for cell in self.cell_list_for_processing:
@@ -534,8 +569,9 @@ class ImageProcessor:
         Updates both self.cell_list and self.cell_list_for_processing to keep them in sync.
         """
         kept = []
+        kept_uncentered = []
         removed = 0
-        for cell in list(self.cell_list_for_processing):
+        for cell, cell_uncentered in zip(list(self.cell_list_for_processing), list(self.cell_list_for_processing_uncentered)):
             try:
                 if cell.is_preactivated(threshold):
                     removed += 1
@@ -544,10 +580,13 @@ class ImageProcessor:
                 # If anything goes wrong with the check, keep the cell and continue
                 print(E)
             kept.append(cell)
+            kept_uncentered.append(cell_uncentered)
 
         # Update lists consistently so later steps (including GUIs) only see kept cells
         self.cell_list_for_processing = kept
         self.cell_list = kept
+        self.cell_list_for_processing_uncentered = kept_uncentered
+        self.cell_list_uncentered = kept_uncentered
         if removed > 0:
             try:
                 self.logger.log_and_print(
@@ -584,8 +623,9 @@ class ImageProcessor:
         - required_fraction: fraction of tested frames that must touch a border to drop the cell
         """
         kept = []
+        kept_uncentered = []
         removed = 0
-        for cell in list(self.cell_list):
+        for cell, cell_uncentered in zip(list(self.cell_list), list(self.cell_list_uncentered)):
             try:
                 n_frames = min(frames_to_check, cell.frame_number)
                 hits = 0
@@ -607,9 +647,12 @@ class ImageProcessor:
                 # If in doubt, keep the cell to avoid false negatives
                 print(E)
             kept.append(cell)
+            kept_uncentered.append(cell_uncentered)
 
         self.cell_list = kept
         self.cell_list_for_processing = kept
+        self.cell_list_uncentered = kept_uncentered
+        self.cell_list_for_processing_uncentered = kept_uncentered
         if removed > 0:
             try:
                 self.logger.log_and_print(
@@ -666,18 +709,24 @@ class ImageProcessor:
     def bleaching_correction(self):
         print("\n" + self.bleaching.give_name() + ": ")
         with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
-            for cell in self.cell_list_for_processing:
+            for idx, cell in enumerate(self.cell_list_for_processing):
                 time.sleep(.005)
 
                 if self.bleaching is not None:
                     self.bleaching.run(cell, self.parameters, self.model)
+                    if idx < len(self.cell_list_for_processing_uncentered):
+                        self.bleaching.run(self.cell_list_for_processing_uncentered[idx], self.parameters, self.model)
 
                 bar()
 
     def generate_ratio_images(self):
-        for i, cell in enumerate(self.cell_list_for_processing):
+        for idx, cell in enumerate(self.cell_list_for_processing):
             cell.generate_ratio_image_series()
             cell.set_ratio_range(self.min_ratio, self.max_ratio)
+            if idx < len(self.cell_list_for_processing_uncentered):
+                cell_uncentered = self.cell_list_for_processing_uncentered[idx]
+                cell_uncentered.generate_ratio_image_series()
+                cell_uncentered.set_ratio_range(self.min_ratio, self.max_ratio)
 
     def save_ratio_images(self):
         savepath = self.save_path + '/ratio/'
@@ -685,6 +734,49 @@ class ImageProcessor:
 
         for i, cell in enumerate(self.cell_list_for_processing):
             io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell.ratio)
+
+    def save_uncentered_ratio_images(self):
+        if not self.cell_list_for_processing_uncentered:
+            return
+
+        savepath = self.save_path + '/ratio_uncentered/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if i >= len(self.cell_list_for_processing_uncentered):
+                break
+            cell_uncentered = self.cell_list_for_processing_uncentered[i]
+            io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell_uncentered.ratio)
+
+    def save_centered_unmasked_ratio_images(self):
+        savepath = self.save_path + '/ratio_centered_unmasked/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if cell.ratio_centered_unmasked is None:
+                continue
+            io.imsave(
+                savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif",
+                cell.ratio_centered_unmasked,
+            )
+
+    def save_uncentered_unmasked_ratio_images(self):
+        if not self.cell_list_for_processing_uncentered:
+            return
+
+        savepath = self.save_path + '/ratio_uncentered_unmasked/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if i >= len(self.cell_list_for_processing_uncentered):
+                break
+            cell_uncentered = self.cell_list_for_processing_uncentered[i]
+            if cell_uncentered.ratio_unmasked is None:
+                continue
+            io.imsave(
+                savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif",
+                cell_uncentered.ratio_unmasked,
+            )
 
     def save_preprocessing_checkpoint(self):
         """Persist intermediate data before trimming by time windows."""
@@ -957,6 +1049,8 @@ class ImageProcessor:
 
         self.cell_list = cells_loaded
         self.cell_list_for_processing = self.cell_list
+        self.cell_list_uncentered = []
+        self.cell_list_for_processing_uncentered = []
         self.nb_rois = len(self.cell_list)
 
         info_message = (f"Loaded preprocessing checkpoint with {len(self.cell_list)} cell(s) "
@@ -998,7 +1092,7 @@ class ImageProcessor:
          """
         print("\n Medianfilter " + channel + ": ")
         with alive_bar(len(self.cell_list_for_processing), force_tty=True) as bar:
-            for cell in self.cell_list_for_processing:
+            for idx, cell in enumerate(self.cell_list_for_processing):
                 if channel == "channels":
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -1010,6 +1104,17 @@ class ImageProcessor:
                         filtered_image_list.append(filtered_image)
                     cell.set_image_channel1(filtered_image_list[0])
                     cell.set_image_channel2(filtered_image_list[1])
+                    if idx < len(self.cell_list_for_processing_uncentered):
+                        cell_uncentered = self.cell_list_for_processing_uncentered[idx]
+                        filtered_image_list_uncentered = []
+                        channel_image_list_uncentered = [cell_uncentered.give_image_channel1(), cell_uncentered.give_image_channel2()]
+                        for channel_image in channel_image_list_uncentered:
+                            filtered_image = np.empty_like(channel_image)
+                            for frame in range(channel_image.shape[0]):
+                                filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
+                            filtered_image_list_uncentered.append(filtered_image)
+                        cell_uncentered.set_image_channel1(filtered_image_list_uncentered[0])
+                        cell_uncentered.set_image_channel2(filtered_image_list_uncentered[1])
                 elif channel == 'ratio':
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -1020,6 +1125,12 @@ class ImageProcessor:
                             filtered_image[frame] = skimage.filters.median(ratio_image[frame], footprint=window)
                         filtered_image_list.append(filtered_image)
                     cell.ratio = filtered_image_list[0]
+                    if idx < len(self.cell_list_for_processing_uncentered):
+                        cell_uncentered = self.cell_list_for_processing_uncentered[idx]
+                        filtered_image = np.empty_like(cell_uncentered.ratio)
+                        for frame in range(cell_uncentered.ratio.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(cell_uncentered.ratio[frame], footprint=window)
+                        cell_uncentered.ratio = filtered_image
                 bar()
 
  
@@ -1393,7 +1504,7 @@ class ImageProcessor:
             selected_position_inside_cell = bead_contact.return_selected_position_inside_cell()
             selected_x_position_inside_cell, selected_y_position_inside_cell = selected_position_inside_cell[0], selected_position_inside_cell[1]
 
-            for cell in self.cell_list:
+            for cell, cell_uncentered in zip(self.cell_list, self.cell_list_uncentered):
                 dataframe = cell.cell_image_data_channel_2
                 cell_data_for_frame = dataframe.loc[dataframe['frame'] == starting_point]
                 if cell_data_for_frame.empty:
@@ -1407,6 +1518,7 @@ class ImageProcessor:
 
                 if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:  # if bead contact inside bounding box of the cell
                     cell.starting_point = starting_point
+                    cell_uncentered.starting_point = starting_point
                     centroid_x_coord_cell = cell_data_for_frame['x'].values.tolist()[0]
                     centroid_y_coord_cell = cell_data_for_frame['y'].values.tolist()[0]
                     location_on_clock = bead_contact.calculate_contact_position(bead_contact_xpos,
@@ -1415,9 +1527,12 @@ class ImageProcessor:
                                                                                 centroid_y_coord_cell,
                                                                                 self.dartboard_number_of_sections)
                     cell.bead_contact_site = location_on_clock
+                    cell_uncentered.bead_contact_site = location_on_clock
                     cell.has_bead_contact = True
+                    cell_uncentered.has_bead_contact = True
 
         self.cell_list_for_processing = [cell for cell in self.cell_list if cell.has_bead_contact]
+        self.cell_list_for_processing_uncentered = [cell for cell in self.cell_list_uncentered if cell.has_bead_contact]
 
     def hotspot_detection(self, cells_dict):
         number_of_analyzed_cells = 0
