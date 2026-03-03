@@ -357,6 +357,8 @@ class TDarts_GUI:
         tab, card_layout = self._create_tab_scaffold(
             "Input and Output",
             "Select input mode, choose data paths, and configure checkpoint behavior.",
+            next_tab=1,
+            next_label="Next: Measurement",
         )
 
         self.mode_file_radio = QRadioButton("Select File")
@@ -424,7 +426,6 @@ class TDarts_GUI:
         self._add_form_row(grid, 3, "Results directory", results_widget)
         self._add_form_row(grid, 4, "Checkpoint", checkpoint_widget)
         card_layout.addLayout(grid)
-        card_layout.addLayout(self._tab_nav_layout(next_tab=1, next_label="Next: Measurement"))
 
         return tab
 
@@ -432,6 +433,10 @@ class TDarts_GUI:
         tab, card_layout = self._create_tab_scaffold(
             "Measurement Metadata",
             "Set acquisition metadata and experiment context. All values map 1:1 to the legacy configuration.",
+            prev_tab=0,
+            prev_label="Back: Input",
+            next_tab=2,
+            next_label="Next: Pipeline",
         )
 
         self.microscope_edit = QLineEdit()
@@ -518,9 +523,6 @@ class TDarts_GUI:
         self._add_form_row(grid, 10, "Seconds before starting point", self.duration_before_spin)
         self._add_form_row(grid, 11, "Seconds after starting point", self.duration_after_spin)
         card_layout.addLayout(grid)
-        card_layout.addLayout(
-            self._tab_nav_layout(prev_tab=0, prev_label="Back: Input", next_tab=2, next_label="Next: Pipeline")
-        )
 
         return tab
 
@@ -529,6 +531,8 @@ class TDarts_GUI:
             "Pipeline Configuration",
             "Configure modules with preserved legacy behavior. Advanced deconvolution fields are available on demand.",
             use_scroll=False,
+            prev_tab=1,
+            prev_label="Back: Measurement",
         )
 
         core_group, core_grid = self._make_module_section("Core Postprocessing")
@@ -746,11 +750,19 @@ class TDarts_GUI:
         pipeline_tabs.addTab(self._wrap_in_tab_page(decon_group), "Deconvolution")
         pipeline_tabs.addTab(self._wrap_in_tab_page(analysis_group), "Analysis")
         card_layout.addWidget(pipeline_tabs)
-        card_layout.addLayout(self._tab_nav_layout(prev_tab=1, prev_label="Back: Measurement"))
 
         return tab
 
-    def _create_tab_scaffold(self, title_text: str, subtitle_text: str, use_scroll: bool = True):
+    def _create_tab_scaffold(
+        self,
+        title_text: str,
+        subtitle_text: str,
+        use_scroll: bool = True,
+        prev_tab: int | None = None,
+        prev_label: str = "Back",
+        next_tab: int | None = None,
+        next_label: str = "Next",
+    ):
         tab = QWidget()
         outer = QVBoxLayout(tab)
         outer.setContentsMargins(14, 12, 14, 12)
@@ -766,9 +778,22 @@ class TDarts_GUI:
 
         card = QWidget()
         card.setObjectName("ContentCard")
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(16, 16, 16, 16)
+        card_shell_layout = QVBoxLayout(card)
+        card_shell_layout.setContentsMargins(16, 16, 16, 16)
+        card_shell_layout.setSpacing(14)
+
+        card_layout = QVBoxLayout()
+        card_layout.setContentsMargins(0, 0, 0, 0)
         card_layout.setSpacing(14)
+        card_shell_layout.addLayout(card_layout, stretch=1)
+        card_shell_layout.addLayout(
+            self._tab_nav_layout(
+                prev_tab=prev_tab,
+                prev_label=prev_label,
+                next_tab=next_tab,
+                next_label=next_label,
+            )
+        )
         if use_scroll:
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
