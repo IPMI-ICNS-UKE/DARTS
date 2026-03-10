@@ -1422,13 +1422,16 @@ class ImageProcessor:
 
             for cell in self.cell_list:
                 dataframe = cell.cell_image_data_channel_2
-                cell_data_for_frame = dataframe.loc[dataframe['frame'] == starting_point]
+                # Prefer global timeline indices for bead-contact lookup.
+                frame_column = 'frame_global' if 'frame_global' in dataframe.columns else 'frame'
+                cell_data_for_frame = dataframe.loc[dataframe[frame_column] == starting_point]
                 if cell_data_for_frame.empty:
-                    available_frames = dataframe['frame'].values.tolist()
+                    available_frames = dataframe[frame_column].values.tolist()
                     print(
-                        f"No tracked frame {starting_point} for this cell; "
+                        f"No tracked frame {starting_point} for this cell in {frame_column}; "
                         f"available frames: {available_frames}"
                     )
+                    continue
                 bbox_for_frame = cell_data_for_frame['bbox'].values.tolist()[0]
                 min_row, min_col, max_row, max_col = bbox_for_frame
 
