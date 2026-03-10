@@ -218,6 +218,57 @@ class CellTracker:
 
         return max_delta_x, max_delta_y
 
+    def build_stable_track_bbox(self, bbox_list, image_series, margin=15, size_percentile=95):
+        """
+        Build one fixed ROI for the whole track from:
+        - mean bbox center across time
+        - robust bbox size (percentile) across time
+        """
+        if not bbox_list:
+            raise ValueError("Cannot build stable track bbox without bbox data.")
+
+        centers_x = []
+        centers_y = []
+        widths = []
+        heights = []
+        for _, bbox in bbox_list:
+            min_row, min_col, max_row, max_col = bbox
+            widths.append(max_col - min_col)
+            heights.append(max_row - min_row)
+            centers_x.append(0.5 * (min_col + max_col))
+            centers_y.append(0.5 * (min_row + max_row))
+
+        center_x = float(np.mean(centers_x))
+        center_y = float(np.mean(centers_y))
+        width = int(np.ceil(np.percentile(widths, size_percentile))) + 2 * margin
+        height = int(np.ceil(np.percentile(heights, size_percentile))) + 2 * margin
+        width, height = self.equal_width_and_height(width, height)
+
+        _, y_max, x_max = image_series.shape
+        min_col = int(round(center_x - 0.5 * width))
+        min_row = int(round(center_y - 0.5 * height))
+        max_col = min_col + width
+        max_row = min_row + height
+
+        if min_col < 0:
+            max_col -= min_col
+            min_col = 0
+        if min_row < 0:
+            max_row -= min_row
+            min_row = 0
+        if max_col > x_max:
+            shift_left = max_col - x_max
+            min_col -= shift_left
+            max_col = x_max
+        if max_row > y_max:
+            shift_up = max_row - y_max
+            min_row -= shift_up
+            max_row = y_max
+
+        min_col = max(0, min_col)
+        min_row = max(0, min_row)
+        return min_row, min_col, max_row, max_col
+
     def generate_shifted_frame_masks(self, empty_rois, dataframe, particle, x_shift_all, y_shift_all):
         """
         Creates a series of boolean masks for a cell image series so that background subtraction can be performed later.
@@ -237,6 +288,57 @@ class CellTracker:
             label_container[frame] = shift(label_container[frame], shift=(x_shift, y_shift))
             boolean_mask[frame] = label_container[frame] == 0
 
+
+        return boolean_mask
+
+    def generate_frame_masks_for_fixed_bbox(self, empty_rois, particle_dataframe_subset, fixed_bbox, x_shift_all=None, y_shift_all=None):
+        """
+        Map original per-frame masks into the fixed-bbox ROI coordinate system.
+        """
+        boolean_mask = np.empty_like(empty_rois, dtype=bool)
+        fixed_min_row, fixed_min_col, _, _ = fixed_bbox
+        filled_images = particle_dataframe_subset["image filled"].values.tolist()
+        bbox_values = particle_dataframe_subset["bbox"].values.tolist()
+
+        if x_shift_all is None:
+            x_shift_all = [0] * len(filled_images)
+        if y_shift_all is None:
+            y_shift_all = [0] * len(filled_images)
+
+        for frame in range(len(filled_images)):
+            mask_canvas = np.zeros_like(empty_rois[frame], dtype=np.uint8)
+            current_mask = filled_images[frame].astype(np.uint8)
+            min_row, min_col, _, _ = bbox_values[frame]
+
+            row_start = int(min_row - fixed_min_row)
+            col_start = int(min_col - fixed_min_col)
+            row_end = row_start + current_mask.shape[0]
+            col_end = col_start + current_mask.shape[1]
+
+            target_height, target_width = mask_canvas.shape
+            target_row_start = max(0, row_start)
+            target_col_start = max(0, col_start)
+            target_row_end = min(target_height, row_end)
+            target_col_end = min(target_width, col_end)
+
+            source_row_start = max(0, -row_start)
+            source_col_start = max(0, -col_start)
+            source_row_end = source_row_start + (target_row_end - target_row_start)
+            source_col_end = source_col_start + (target_col_end - target_col_start)
+
+            if target_row_end <= target_row_start or target_col_end <= target_col_start:
+                boolean_mask[frame] = True
+                continue
+
+            mask_canvas[target_row_start:target_row_end, target_col_start:target_col_end] = current_mask[
+                source_row_start:source_row_end,
+                source_col_start:source_col_end,
+            ]
+
+            if x_shift_all[frame] != 0 or y_shift_all[frame] != 0:
+                mask_canvas = shift(mask_canvas, shift=(x_shift_all[frame], y_shift_all[frame]), order=0)
+
+            boolean_mask[frame] = mask_canvas == 0
 
         return boolean_mask
 
@@ -458,6 +560,15 @@ class CellTracker:
             cropped_images_list.append(cropped_image)
         return cropped_images_list, shift_correction_list
 
+    def crop_image_series_with_fixed_bbox(self, image_series, frame_indices, bbox):
+        min_row, min_col, max_row, max_col = bbox
+        cropped_images_list = []
+        shift_correction_list = []
+        for frame_idx in frame_indices:
+            cropped_images_list.append(image_series[frame_idx][min_row:max_row, min_col:max_col])
+            shift_correction_list.append((0, 0))
+        return cropped_images_list, shift_correction_list
+
     def create_roi_image_series(self, empty_rois, intensity_images_in_bbox, shift_x_list, shift_y_list):
         roi_image_series = empty_rois.copy()
 
@@ -465,8 +576,13 @@ class CellTracker:
             delta_x_image = len(intensity_images_in_bbox[i][0])
             delta_y_image = len(intensity_images_in_bbox[i])
 
-            # y,x = roi_image_series[i].shape
-            roi_image_series[i][0:delta_y_image, 0:delta_x_image] = intensity_images_in_bbox[i]
+            target_height, target_width = roi_image_series[i].shape
+            copy_height = min(delta_y_image, target_height)
+            copy_width = min(delta_x_image, target_width)
+            if copy_height <= 0 or copy_width <= 0:
+                continue
+
+            roi_image_series[i][0:copy_height, 0:copy_width] = intensity_images_in_bbox[i][0:copy_height, 0:copy_width]
 
             """
             if intensity_images_in_bbox[i].shape == roi_image_series[i].shape:
@@ -560,6 +676,62 @@ class CellTracker:
                     [shift_y for _, shift_y in shift_correction_list],
                 )
 
+                stable_bbox = self.build_stable_track_bbox(bbox_list, channel1)
+                stable_height = stable_bbox[2] - stable_bbox[0]
+                stable_width = stable_bbox[3] - stable_bbox[1]
+                empty_stable_rois = self.create_roi_template(channel1, stable_width, stable_height, len(bbox_list))
+                stable_roi1_bboxes, _ = self.crop_image_series_with_fixed_bbox(channel1, frame_list_before_correction, stable_bbox)
+                stable_roi2_bboxes, _ = self.crop_image_series_with_fixed_bbox(channel2, frame_list_before_correction, stable_bbox)
+                stable_roi1 = self.create_roi_image_series(
+                    empty_stable_rois,
+                    stable_roi1_bboxes,
+                    [0] * len(stable_roi1_bboxes),
+                    [0] * len(stable_roi1_bboxes),
+                )
+                stable_roi2 = self.create_roi_image_series(
+                    empty_stable_rois,
+                    stable_roi2_bboxes,
+                    [0] * len(stable_roi2_bboxes),
+                    [0] * len(stable_roi2_bboxes),
+                )
+                stable_frame_masks = self.generate_frame_masks_for_fixed_bbox(
+                    empty_stable_rois,
+                    particle_dataframe_subset,
+                    stable_bbox,
+                )
+                stable_centroid_minus_bbox_offset = list(
+                    zip(
+                        self.round_coord_list((particle_dataframe_subset["x"] - stable_bbox[1]).values.tolist()),
+                        self.round_coord_list((particle_dataframe_subset["y"] - stable_bbox[0]).values.tolist()),
+                    )
+                )
+                stable_shift_correction_list = [(0, 0)] * len(stable_roi1_bboxes)
+                stable_x_shift_image, stable_y_shift_image = self.calculate_shift_in_each_frame(
+                    stable_centroid_minus_bbox_offset,
+                    stable_width,
+                    stable_height,
+                    stable_shift_correction_list,
+                )
+                stable_roi1_centered = self.create_roi_image_series(
+                    empty_stable_rois,
+                    stable_roi1_bboxes,
+                    stable_x_shift_image,
+                    stable_y_shift_image,
+                )
+                stable_roi2_centered = self.create_roi_image_series(
+                    empty_stable_rois,
+                    stable_roi2_bboxes,
+                    stable_x_shift_image,
+                    stable_y_shift_image,
+                )
+                stable_centered_frame_masks = self.generate_frame_masks_for_fixed_bbox(
+                    empty_stable_rois,
+                    particle_dataframe_subset,
+                    stable_bbox,
+                    stable_x_shift_image,
+                    stable_y_shift_image,
+                )
+
                 roi_before_backgroundcor_dict[particle] = [
                     roi1,
                     roi2,
@@ -568,6 +740,12 @@ class CellTracker:
                     roi1_uncentered,
                     roi2_uncentered,
                     uncentered_frame_masks,
+                    stable_roi1,
+                    stable_roi2,
+                    stable_frame_masks,
+                    stable_roi1_centered,
+                    stable_roi2_centered,
+                    stable_centered_frame_masks,
                 ]
             except Exception as E:
                 print(E)

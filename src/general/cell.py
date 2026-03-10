@@ -21,6 +21,7 @@ class CellImage:
         self.frame_masks = frame_masks
         self.ratio_centered_unmasked = None
         self.ratio_unmasked = None
+        self.ratio_stable_bbox_unmasked = None
         self.frame_number = len(self.channel1.return_image())
         self.width = width
         self.normalized_ratio_image = None

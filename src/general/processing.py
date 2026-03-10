@@ -91,10 +91,14 @@ class ImageProcessor:
 
         self.cell_list = []
         self.cell_list_uncentered = []
+        self.cell_list_stable_bbox = []
+        self.cell_list_stable_bbox_centered = []
         self.segmentation_result_dict = {}
         self.deconvolution_result_dict = {}
         self.cell_list_for_processing = self.cell_list
         self.cell_list_for_processing_uncentered = self.cell_list_uncentered
+        self.cell_list_for_processing_stable_bbox = self.cell_list_stable_bbox
+        self.cell_list_for_processing_stable_bbox_centered = self.cell_list_stable_bbox_centered
         self.excluded_cells_list = []
 
         self.ratio_list = []
@@ -318,6 +322,26 @@ class ImageProcessor:
                     )
                     cell_uncentered.set_image_channel1(roi_channel1_uncentered_decon)
                     cell_uncentered.set_image_channel2(roi_channel2_uncentered_decon)
+                if idx < len(self.cell_list_for_processing_stable_bbox):
+                    cell_stable_bbox = self.cell_list_for_processing_stable_bbox[idx]
+                    roi_channel1_stable_bbox, roi_channel2_stable_bbox = cell_stable_bbox.channel1.image, cell_stable_bbox.channel2.image
+                    roi_channel1_stable_bbox_decon, roi_channel2_stable_bbox_decon = self.deconvolution.execute(
+                        roi_channel1_stable_bbox,
+                        roi_channel2_stable_bbox,
+                        self.parameters,
+                    )
+                    cell_stable_bbox.set_image_channel1(roi_channel1_stable_bbox_decon)
+                    cell_stable_bbox.set_image_channel2(roi_channel2_stable_bbox_decon)
+                if idx < len(self.cell_list_for_processing_stable_bbox_centered):
+                    cell_stable_bbox_centered = self.cell_list_for_processing_stable_bbox_centered[idx]
+                    roi_channel1_stable_bbox_centered, roi_channel2_stable_bbox_centered = cell_stable_bbox_centered.channel1.image, cell_stable_bbox_centered.channel2.image
+                    roi_channel1_stable_bbox_centered_decon, roi_channel2_stable_bbox_centered_decon = self.deconvolution.execute(
+                        roi_channel1_stable_bbox_centered,
+                        roi_channel2_stable_bbox_centered,
+                        self.parameters,
+                    )
+                    cell_stable_bbox_centered.set_image_channel1(roi_channel1_stable_bbox_centered_decon)
+                    cell_stable_bbox_centered.set_image_channel2(roi_channel2_stable_bbox_centered_decon)
 
                 bar()
 
@@ -327,6 +351,8 @@ class ImageProcessor:
             return
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing)
         self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing_uncentered)
+        self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing_stable_bbox)
+        self.background_subtractor.clear_outside_of_cells(self.cell_list_for_processing_stable_bbox_centered)
 
 
     def background_subtraction(self, channel_1, channel_2):
@@ -369,8 +395,24 @@ class ImageProcessor:
                                                                    segmentation_result_dict[i][2],
                                                                    segmentation_result_dict[i][6])
                                                         )
+                    if len(segmentation_result_dict[i]) >= 10:
+                        self.cell_list_stable_bbox.append(CellImage(ChannelImage(segmentation_result_dict[i][7], self.wl1),
+                                                                   ChannelImage(segmentation_result_dict[i][8], self.wl2),
+                                                                   self.x_max,
+                                                                   segmentation_result_dict[i][2],
+                                                                   segmentation_result_dict[i][9])
+                                                        )
+                    if len(segmentation_result_dict[i]) >= 13:
+                        self.cell_list_stable_bbox_centered.append(CellImage(ChannelImage(segmentation_result_dict[i][10], self.wl1),
+                                                                            ChannelImage(segmentation_result_dict[i][11], self.wl2),
+                                                                            self.x_max,
+                                                                            segmentation_result_dict[i][2],
+                                                                            segmentation_result_dict[i][12])
+                                                                 )
                 bar()
         self.cell_list_for_processing_uncentered = self.cell_list_uncentered
+        self.cell_list_for_processing_stable_bbox = self.cell_list_stable_bbox
+        self.cell_list_for_processing_stable_bbox_centered = self.cell_list_stable_bbox_centered
 
     def correct_coordinates(self, ymin, ymax, xmin, xmax):
         ymin_corrected = ymin
@@ -426,9 +468,14 @@ class ImageProcessor:
             self.assign_bead_contacts_to_cells()
         else:
             if self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
-                for cell, cell_uncentered in zip(self.cell_list, self.cell_list_uncentered):
+                for idx, cell in enumerate(self.cell_list):
+                    cell_uncentered = self.cell_list_uncentered[idx]
                     cell.starting_point = self.time_of_addition
                     cell_uncentered.starting_point = self.time_of_addition
+                    if idx < len(self.cell_list_stable_bbox):
+                        self.cell_list_stable_bbox[idx].starting_point = self.time_of_addition
+                    if idx < len(self.cell_list_stable_bbox_centered):
+                        self.cell_list_stable_bbox_centered[idx].starting_point = self.time_of_addition
 
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
             self.deconvolve_cell_images()
@@ -452,6 +499,12 @@ class ImageProcessor:
         for cell_uncentered in self.cell_list_for_processing_uncentered:
             if cell_uncentered.ratio is not None:
                 cell_uncentered.ratio_unmasked = cell_uncentered.ratio.copy()
+        for cell_stable_bbox in self.cell_list_for_processing_stable_bbox:
+            if cell_stable_bbox.ratio is not None:
+                cell_stable_bbox.ratio_stable_bbox_unmasked = cell_stable_bbox.ratio.copy()
+        for cell_stable_bbox_centered in self.cell_list_for_processing_stable_bbox_centered:
+            if cell_stable_bbox_centered.ratio is not None:
+                cell_stable_bbox_centered.ratio_centered_unmasked = cell_stable_bbox_centered.ratio.copy()
 
         self.clear_outside_of_cells()
         self.save_preprocessing_checkpoint()
@@ -471,6 +524,10 @@ class ImageProcessor:
         self.save_centered_unmasked_ratio_images()
         self.save_uncentered_ratio_images()
         self.save_uncentered_unmasked_ratio_images()
+        self.save_stable_bbox_masked_ratio_images()
+        self.save_stable_bbox_ratio_images()
+        self.save_stable_bbox_centered_ratio_images()
+        self.save_stable_bbox_centered_unmasked_ratio_images()
         print(f"Final results saved to: {self.save_path}")
 
         for cell in self.cell_list_for_processing:
@@ -570,8 +627,11 @@ class ImageProcessor:
         """
         kept = []
         kept_uncentered = []
+        kept_stable_bbox = []
+        kept_stable_bbox_centered = []
         removed = 0
-        for cell, cell_uncentered in zip(list(self.cell_list_for_processing), list(self.cell_list_for_processing_uncentered)):
+        for idx, cell in enumerate(list(self.cell_list_for_processing)):
+            cell_uncentered = self.cell_list_for_processing_uncentered[idx]
             try:
                 if cell.is_preactivated(threshold):
                     removed += 1
@@ -581,12 +641,20 @@ class ImageProcessor:
                 print(E)
             kept.append(cell)
             kept_uncentered.append(cell_uncentered)
+            if idx < len(self.cell_list_for_processing_stable_bbox):
+                kept_stable_bbox.append(self.cell_list_for_processing_stable_bbox[idx])
+            if idx < len(self.cell_list_for_processing_stable_bbox_centered):
+                kept_stable_bbox_centered.append(self.cell_list_for_processing_stable_bbox_centered[idx])
 
         # Update lists consistently so later steps (including GUIs) only see kept cells
         self.cell_list_for_processing = kept
         self.cell_list = kept
         self.cell_list_for_processing_uncentered = kept_uncentered
         self.cell_list_uncentered = kept_uncentered
+        self.cell_list_for_processing_stable_bbox = kept_stable_bbox
+        self.cell_list_stable_bbox = kept_stable_bbox
+        self.cell_list_for_processing_stable_bbox_centered = kept_stable_bbox_centered
+        self.cell_list_stable_bbox_centered = kept_stable_bbox_centered
         if removed > 0:
             try:
                 self.logger.log_and_print(
@@ -624,8 +692,11 @@ class ImageProcessor:
         """
         kept = []
         kept_uncentered = []
+        kept_stable_bbox = []
+        kept_stable_bbox_centered = []
         removed = 0
-        for cell, cell_uncentered in zip(list(self.cell_list), list(self.cell_list_uncentered)):
+        for idx, cell in enumerate(list(self.cell_list)):
+            cell_uncentered = self.cell_list_uncentered[idx]
             try:
                 n_frames = min(frames_to_check, cell.frame_number)
                 hits = 0
@@ -648,11 +719,19 @@ class ImageProcessor:
                 print(E)
             kept.append(cell)
             kept_uncentered.append(cell_uncentered)
+            if idx < len(self.cell_list_stable_bbox):
+                kept_stable_bbox.append(self.cell_list_stable_bbox[idx])
+            if idx < len(self.cell_list_stable_bbox_centered):
+                kept_stable_bbox_centered.append(self.cell_list_stable_bbox_centered[idx])
 
         self.cell_list = kept
         self.cell_list_for_processing = kept
         self.cell_list_uncentered = kept_uncentered
         self.cell_list_for_processing_uncentered = kept_uncentered
+        self.cell_list_stable_bbox = kept_stable_bbox
+        self.cell_list_for_processing_stable_bbox = kept_stable_bbox
+        self.cell_list_stable_bbox_centered = kept_stable_bbox_centered
+        self.cell_list_for_processing_stable_bbox_centered = kept_stable_bbox_centered
         if removed > 0:
             try:
                 self.logger.log_and_print(
@@ -716,6 +795,10 @@ class ImageProcessor:
                     self.bleaching.run(cell, self.parameters, self.model)
                     if idx < len(self.cell_list_for_processing_uncentered):
                         self.bleaching.run(self.cell_list_for_processing_uncentered[idx], self.parameters, self.model)
+                    if idx < len(self.cell_list_for_processing_stable_bbox):
+                        self.bleaching.run(self.cell_list_for_processing_stable_bbox[idx], self.parameters, self.model)
+                    if idx < len(self.cell_list_for_processing_stable_bbox_centered):
+                        self.bleaching.run(self.cell_list_for_processing_stable_bbox_centered[idx], self.parameters, self.model)
 
                 bar()
 
@@ -727,6 +810,14 @@ class ImageProcessor:
                 cell_uncentered = self.cell_list_for_processing_uncentered[idx]
                 cell_uncentered.generate_ratio_image_series()
                 cell_uncentered.set_ratio_range(self.min_ratio, self.max_ratio)
+            if idx < len(self.cell_list_for_processing_stable_bbox):
+                cell_stable_bbox = self.cell_list_for_processing_stable_bbox[idx]
+                cell_stable_bbox.generate_ratio_image_series()
+                cell_stable_bbox.set_ratio_range(self.min_ratio, self.max_ratio)
+            if idx < len(self.cell_list_for_processing_stable_bbox_centered):
+                cell_stable_bbox_centered = self.cell_list_for_processing_stable_bbox_centered[idx]
+                cell_stable_bbox_centered.generate_ratio_image_series()
+                cell_stable_bbox_centered.set_ratio_range(self.min_ratio, self.max_ratio)
 
     def save_ratio_images(self):
         savepath = self.save_path + '/ratio/'
@@ -776,6 +867,68 @@ class ImageProcessor:
             io.imsave(
                 savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif",
                 cell_uncentered.ratio_unmasked,
+            )
+
+    def save_stable_bbox_masked_ratio_images(self):
+        if not self.cell_list_for_processing_stable_bbox:
+            return
+
+        savepath = self.save_path + '/ratio_stable_bbox/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if i >= len(self.cell_list_for_processing_stable_bbox):
+                break
+            cell_stable_bbox = self.cell_list_for_processing_stable_bbox[i]
+            io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell_stable_bbox.ratio)
+
+    def save_stable_bbox_ratio_images(self):
+        if not self.cell_list_for_processing_stable_bbox:
+            return
+
+        savepath = self.save_path + '/ratio_stable_bbox_unmasked/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if i >= len(self.cell_list_for_processing_stable_bbox):
+                break
+            cell_stable_bbox = self.cell_list_for_processing_stable_bbox[i]
+            if cell_stable_bbox.ratio_stable_bbox_unmasked is None:
+                continue
+            io.imsave(
+                savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif",
+                cell_stable_bbox.ratio_stable_bbox_unmasked,
+            )
+
+    def save_stable_bbox_centered_ratio_images(self):
+        if not self.cell_list_for_processing_stable_bbox_centered:
+            return
+
+        savepath = self.save_path + '/ratio_stable_bbox_centered/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if i >= len(self.cell_list_for_processing_stable_bbox_centered):
+                break
+            cell_stable_bbox_centered = self.cell_list_for_processing_stable_bbox_centered[i]
+            io.imsave(savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif", cell_stable_bbox_centered.ratio)
+
+    def save_stable_bbox_centered_unmasked_ratio_images(self):
+        if not self.cell_list_for_processing_stable_bbox_centered:
+            return
+
+        savepath = self.save_path + '/ratio_stable_bbox_centered_unmasked/'
+        os.makedirs(savepath, exist_ok=True)
+
+        for i, cell in enumerate(self.cell_list_for_processing):
+            if i >= len(self.cell_list_for_processing_stable_bbox_centered):
+                break
+            cell_stable_bbox_centered = self.cell_list_for_processing_stable_bbox_centered[i]
+            if cell_stable_bbox_centered.ratio_centered_unmasked is None:
+                continue
+            io.imsave(
+                savepath + self.measurement_name + cell.to_string(i) + 'ratio' + ".tif",
+                cell_stable_bbox_centered.ratio_centered_unmasked,
             )
 
     def save_preprocessing_checkpoint(self):
@@ -1051,6 +1204,10 @@ class ImageProcessor:
         self.cell_list_for_processing = self.cell_list
         self.cell_list_uncentered = []
         self.cell_list_for_processing_uncentered = []
+        self.cell_list_stable_bbox = []
+        self.cell_list_for_processing_stable_bbox = []
+        self.cell_list_stable_bbox_centered = []
+        self.cell_list_for_processing_stable_bbox_centered = []
         self.nb_rois = len(self.cell_list)
 
         info_message = (f"Loaded preprocessing checkpoint with {len(self.cell_list)} cell(s) "
@@ -1115,6 +1272,28 @@ class ImageProcessor:
                             filtered_image_list_uncentered.append(filtered_image)
                         cell_uncentered.set_image_channel1(filtered_image_list_uncentered[0])
                         cell_uncentered.set_image_channel2(filtered_image_list_uncentered[1])
+                    if idx < len(self.cell_list_for_processing_stable_bbox):
+                        cell_stable_bbox = self.cell_list_for_processing_stable_bbox[idx]
+                        filtered_image_list_stable_bbox = []
+                        channel_image_list_stable_bbox = [cell_stable_bbox.give_image_channel1(), cell_stable_bbox.give_image_channel2()]
+                        for channel_image in channel_image_list_stable_bbox:
+                            filtered_image = np.empty_like(channel_image)
+                            for frame in range(channel_image.shape[0]):
+                                filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
+                            filtered_image_list_stable_bbox.append(filtered_image)
+                        cell_stable_bbox.set_image_channel1(filtered_image_list_stable_bbox[0])
+                        cell_stable_bbox.set_image_channel2(filtered_image_list_stable_bbox[1])
+                    if idx < len(self.cell_list_for_processing_stable_bbox_centered):
+                        cell_stable_bbox_centered = self.cell_list_for_processing_stable_bbox_centered[idx]
+                        filtered_image_list_stable_bbox_centered = []
+                        channel_image_list_stable_bbox_centered = [cell_stable_bbox_centered.give_image_channel1(), cell_stable_bbox_centered.give_image_channel2()]
+                        for channel_image in channel_image_list_stable_bbox_centered:
+                            filtered_image = np.empty_like(channel_image)
+                            for frame in range(channel_image.shape[0]):
+                                filtered_image[frame] = skimage.filters.median(channel_image[frame], footprint=window)
+                            filtered_image_list_stable_bbox_centered.append(filtered_image)
+                        cell_stable_bbox_centered.set_image_channel1(filtered_image_list_stable_bbox_centered[0])
+                        cell_stable_bbox_centered.set_image_channel2(filtered_image_list_stable_bbox_centered[1])
                 elif channel == 'ratio':
                     window = np.ones([int(self.median_filter_kernel), int(self.median_filter_kernel)])
                     filtered_image_list = []
@@ -1131,6 +1310,18 @@ class ImageProcessor:
                         for frame in range(cell_uncentered.ratio.shape[0]):
                             filtered_image[frame] = skimage.filters.median(cell_uncentered.ratio[frame], footprint=window)
                         cell_uncentered.ratio = filtered_image
+                    if idx < len(self.cell_list_for_processing_stable_bbox):
+                        cell_stable_bbox = self.cell_list_for_processing_stable_bbox[idx]
+                        filtered_image = np.empty_like(cell_stable_bbox.ratio)
+                        for frame in range(cell_stable_bbox.ratio.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(cell_stable_bbox.ratio[frame], footprint=window)
+                        cell_stable_bbox.ratio = filtered_image
+                    if idx < len(self.cell_list_for_processing_stable_bbox_centered):
+                        cell_stable_bbox_centered = self.cell_list_for_processing_stable_bbox_centered[idx]
+                        filtered_image = np.empty_like(cell_stable_bbox_centered.ratio)
+                        for frame in range(cell_stable_bbox_centered.ratio.shape[0]):
+                            filtered_image[frame] = skimage.filters.median(cell_stable_bbox_centered.ratio[frame], footprint=window)
+                        cell_stable_bbox_centered.ratio = filtered_image
                 bar()
 
  
@@ -1504,7 +1695,8 @@ class ImageProcessor:
             selected_position_inside_cell = bead_contact.return_selected_position_inside_cell()
             selected_x_position_inside_cell, selected_y_position_inside_cell = selected_position_inside_cell[0], selected_position_inside_cell[1]
 
-            for cell, cell_uncentered in zip(self.cell_list, self.cell_list_uncentered):
+            for idx, cell in enumerate(self.cell_list):
+                cell_uncentered = self.cell_list_uncentered[idx]
                 dataframe = cell.cell_image_data_channel_2
                 cell_data_for_frame = dataframe.loc[dataframe['frame'] == starting_point]
                 if cell_data_for_frame.empty:
@@ -1519,6 +1711,10 @@ class ImageProcessor:
                 if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:  # if bead contact inside bounding box of the cell
                     cell.starting_point = starting_point
                     cell_uncentered.starting_point = starting_point
+                    if idx < len(self.cell_list_stable_bbox):
+                        self.cell_list_stable_bbox[idx].starting_point = starting_point
+                    if idx < len(self.cell_list_stable_bbox_centered):
+                        self.cell_list_stable_bbox_centered[idx].starting_point = starting_point
                     centroid_x_coord_cell = cell_data_for_frame['x'].values.tolist()[0]
                     centroid_y_coord_cell = cell_data_for_frame['y'].values.tolist()[0]
                     location_on_clock = bead_contact.calculate_contact_position(bead_contact_xpos,
@@ -1530,9 +1726,17 @@ class ImageProcessor:
                     cell_uncentered.bead_contact_site = location_on_clock
                     cell.has_bead_contact = True
                     cell_uncentered.has_bead_contact = True
+                    if idx < len(self.cell_list_stable_bbox):
+                        self.cell_list_stable_bbox[idx].bead_contact_site = location_on_clock
+                        self.cell_list_stable_bbox[idx].has_bead_contact = True
+                    if idx < len(self.cell_list_stable_bbox_centered):
+                        self.cell_list_stable_bbox_centered[idx].bead_contact_site = location_on_clock
+                        self.cell_list_stable_bbox_centered[idx].has_bead_contact = True
 
         self.cell_list_for_processing = [cell for cell in self.cell_list if cell.has_bead_contact]
         self.cell_list_for_processing_uncentered = [cell for cell in self.cell_list_uncentered if cell.has_bead_contact]
+        self.cell_list_for_processing_stable_bbox = [cell for cell in self.cell_list_stable_bbox if cell.has_bead_contact]
+        self.cell_list_for_processing_stable_bbox_centered = [cell for cell in self.cell_list_stable_bbox_centered if cell.has_bead_contact]
 
     def hotspot_detection(self, cells_dict):
         number_of_analyzed_cells = 0
