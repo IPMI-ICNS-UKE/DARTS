@@ -38,6 +38,8 @@ class GUInoBeads_local:
             self.spotHeight = 72
         elif self.cell_type == 'NK':
             self.spotHeight = 72  # needs to be checked
+        elif self.cell_type == 'NK_human':
+            self.spotHeight = 72  # Platzhalter
         self.ratio_converter = ratioconverter
         self.number_of_frames, self.image_height, self.image_width = self.image.shape
         self.GUI_width, self.GUI_height = 1200, 900  # Increased height to prevent overlapping

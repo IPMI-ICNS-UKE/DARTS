@@ -61,6 +61,16 @@ class RatioConverter():
             threshold_ratio = aInv*math.e**(bInv*threshold_Calcium) + cInv*math.e**(dInv*threshold_Calcium)
             return corresponding_Ca_value, threshold_Calcium, threshold_ratio
 
+        elif celltype == 'NK_human':
+            # calibration: Ca = a * exp(b * ratio)
+            a = 50.39
+            b = 1.7
+
+            corresponding_Ca_value = a * math.e ** (b * ratio_value)
+            threshold_Calcium = corresponding_Ca_value + spotHeight
+            threshold_ratio = (math.log(threshold_Calcium / a)) / b
+            return corresponding_Ca_value, threshold_Calcium, threshold_ratio
+    
         else:
 
             kd_value = self.parameter_dict['KD value (of Ca2+ dye) [nM]']

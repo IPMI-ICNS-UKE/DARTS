@@ -169,7 +169,8 @@ class TDarts_GUI():
         self.cell_types = [
             "jurkat",
             "primary",
-            "NK"
+            "NK",
+            "NK_human"
         ]
         self.cell_type = StringVar(self.properties_of_measurement_frame)
         self.cell_type.set(self.cell_types[0])
@@ -1333,6 +1334,7 @@ class CellTypeManager:
         self.selected_cell_type = selected_cell_type
         self.parameters_dict = {"jurkat": {},
                                 "NK": {},
+                                "NK_human": {},
                                 "primary": {}}
 
     def open_manage_window(self):

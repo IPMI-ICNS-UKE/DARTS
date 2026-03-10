@@ -186,6 +186,8 @@ class ImageProcessor:
             self.spotHeight = 72
         elif self.cell_type == 'NK':
             self.spotHeight = 72  # needs to be checked
+        elif self.cell_type == "NK_human":
+            self.spotHeight = 72 # Platzhalter
         if self.parameters["properties_of_measurement"]["bead_contact"]:
             self.list_of_bead_contacts = self.parameters["properties_of_measurement"]["list_of_bead_contacts"]
         # self.selected_dartboard_areas = self.parameters["properties"]["selected_dartboard_areas_for_timeline"]
