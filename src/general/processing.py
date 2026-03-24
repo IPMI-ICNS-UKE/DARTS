@@ -955,6 +955,7 @@ class ImageProcessor:
                 cell_obj.ratio = ratio
                 cell_obj.frame_number = int(entry.get("frame_number", ratio.shape[0]))
                 cell_obj.starting_point = int(entry.get("starting_point", 0))
+                cell_obj.starting_point_original = int(entry.get("starting_point_original", entry.get("starting_point", 0)))
                 if entry.get("starting_point_auto") is not None:
                     cell_obj.starting_point_auto = int(entry.get("starting_point_auto"))
 
