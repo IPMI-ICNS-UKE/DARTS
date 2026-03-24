@@ -103,7 +103,7 @@ class TDarts_GUI:
 
         title = QLabel("DARTS - Analysis Setup")
         title.setStyleSheet("font-size: 20px; font-weight: 700;")
-        subtitle = QLabel("Clean configuration flow with full legacy parameter coverage")
+        subtitle = QLabel("Configure your analysis in three steps: set your data paths, describe your experiment, then choose the processing pipeline.")
         subtitle.setObjectName("SubtitleLabel")
 
         title_wrap = QVBoxLayout()
@@ -362,8 +362,11 @@ class TDarts_GUI:
         )
 
         self.mode_file_radio = QRadioButton("Select File")
+        self.mode_file_radio.setToolTip("Analyze a single image file.")
         self.mode_dir_radio = QRadioButton("Select Directory")
+        self.mode_dir_radio.setToolTip("Analyze all image files found in a folder.")
         self.mode_cp_radio = QRadioButton("Select Checkpoint")
+        self.mode_cp_radio.setToolTip("Resume a previously saved analysis without repeating preprocessing.")
         self.mode_file_radio.setChecked(True)
 
         self.mode_group_buttons = QButtonGroup(self.window)
@@ -392,7 +395,9 @@ class TDarts_GUI:
         path_layout.addWidget(self.select_path_button)
 
         self.image_single_radio = QRadioButton("one file per channel")
+        self.image_single_radio.setToolTip("Each fluorescence channel is stored in a separate image file.")
         self.image_two_in_one_radio = QRadioButton("both channels in one file")
+        self.image_two_in_one_radio.setToolTip("Both fluorescence channels are stored together in one multi-channel file (e.g. multi-channel TIFF).")
         self.image_two_in_one_radio.setChecked(True)
         image_widget = QWidget()
         image_layout = QHBoxLayout(image_widget)
@@ -413,6 +418,7 @@ class TDarts_GUI:
         results_layout.addWidget(self.choose_results_dir_button)
 
         self.checkpoint_save_checkbox = QCheckBox("Save after preprocessing")
+        self.checkpoint_save_checkbox.setToolTip("Save the preprocessed data to disk so you can reload and resume the analysis later without repeating the preprocessing step.")
         checkpoint_widget = QWidget()
         checkpoint_layout = QHBoxLayout(checkpoint_widget)
         checkpoint_layout.setContentsMargins(0, 0, 0, 0)
@@ -432,7 +438,7 @@ class TDarts_GUI:
     def _build_measurement_tab(self) -> QWidget:
         tab, card_layout = self._create_tab_scaffold(
             "Measurement Metadata",
-            "Set acquisition metadata and experiment context. All values map 1:1 to the legacy configuration.",
+            "Describe your microscopy setup and experiment. These settings are used to correctly interpret your imaging data.",
             prev_tab=0,
             prev_label="Back: Input",
             next_tab=2,
@@ -447,17 +453,20 @@ class TDarts_GUI:
         self.scale_spin.setRange(0.0, 1000000.0)
         self.scale_spin.setValue(0.0)
         self.scale_spin.setMaximumWidth(240)
+        self.scale_spin.setToolTip("Number of pixels per micron. Find this value in your microscope acquisition software.")
 
         self.fps_spin = QDoubleSpinBox()
         self.fps_spin.setDecimals(3)
         self.fps_spin.setRange(0.0, 100000.0)
         self.fps_spin.setValue(3.0)
         self.fps_spin.setMaximumWidth(240)
+        self.fps_spin.setToolTip("Number of image frames acquired per second during the time-lapse recording.")
 
         self.resolution_spin = QSpinBox()
         self.resolution_spin.setRange(1, 100000)
         self.resolution_spin.setValue(3)
         self.resolution_spin.setMaximumWidth(240)
+        self.resolution_spin.setToolTip("Spatial resolution in pixels used for cell segmentation and normalization.")
 
         self.cell_type_combo = QComboBox()
         self.cell_type_combo.addItems(self.cell_types)
@@ -484,7 +493,9 @@ class TDarts_GUI:
         self.experiment_name_edit.setMaximumWidth(520)
 
         self.local_radio = QRadioButton("local imaging (microdomains)")
+        self.local_radio.setToolTip("Detect discrete calcium hotspots at the cell membrane (microdomain analysis).")
         self.global_radio = QRadioButton("global imaging (ratio)")
+        self.global_radio.setToolTip("Measure the average calcium ratio across the entire cell (whole-cell analysis).")
         self.local_radio.setChecked(True)
         imaging_widget = QWidget()
         imaging_layout = QHBoxLayout(imaging_widget)
@@ -496,18 +507,21 @@ class TDarts_GUI:
 
         self.bead_checkbox = QCheckBox()
         self.bead_checkbox.setChecked(True)
+        self.bead_checkbox.setToolTip("Enable if cells were stimulated using beads. The bead contact point is used to define the start of stimulation.")
 
         self.duration_before_spin = QDoubleSpinBox()
         self.duration_before_spin.setDecimals(3)
         self.duration_before_spin.setRange(0.0, 100000.0)
         self.duration_before_spin.setValue(1.0)
         self.duration_before_spin.setMaximumWidth(240)
+        self.duration_before_spin.setToolTip("How many seconds of recording to include before the stimulation point.")
 
         self.duration_after_spin = QDoubleSpinBox()
         self.duration_after_spin.setDecimals(3)
         self.duration_after_spin.setRange(0.0, 100000.0)
         self.duration_after_spin.setValue(15.0)
         self.duration_after_spin.setMaximumWidth(240)
+        self.duration_after_spin.setToolTip("How many seconds of recording to include after the stimulation point.")
 
         grid = self._new_form_grid()
         self._add_form_row(grid, 0, "Used microscope", self.microscope_edit)
@@ -529,7 +543,7 @@ class TDarts_GUI:
     def _build_pipeline_tab(self) -> QWidget:
         tab, card_layout = self._create_tab_scaffold(
             "Pipeline Configuration",
-            "Configure modules with preserved legacy behavior. Advanced deconvolution fields are available on demand.",
+            "Enable or disable processing steps for your pipeline. Each module can be individually toggled and configured.",
             use_scroll=False,
             prev_tab=1,
             prev_label="Back: Measurement",
@@ -538,7 +552,9 @@ class TDarts_GUI:
         core_group, core_grid = self._make_module_section("Core Postprocessing")
         self.channel_alignment_checkbox = QCheckBox()
         self.channel_alignment_checkbox.setChecked(True)
+        self.channel_alignment_checkbox.setToolTip("Correct for any spatial offset between the two fluorescence channels caused by the optical setup.")
         self.frame_by_frame_checkbox = QCheckBox("Align each frame")
+        self.frame_by_frame_checkbox.setToolTip("Apply channel alignment independently to every time frame. Useful if there is mechanical drift during the recording.")
         self._add_module_row(
             core_grid,
             0,
@@ -549,12 +565,15 @@ class TDarts_GUI:
 
         self.background_checkbox = QCheckBox()
         self.background_checkbox.setChecked(True)
+        self.background_checkbox.setToolTip("Remove background fluorescence that is not from the cell itself.")
         self.background_algorithm_combo = QComboBox()
         self.background_algorithm_combo.addItems(["Masked", "Wavelet"])
         self.background_algorithm_combo.setMinimumWidth(220)
+        self.background_algorithm_combo.setToolTip("Masked: estimates background using regions outside the cell mask.\nWavelet: removes background using frequency-domain filtering.")
         self.wavelet_algorithm_combo = QComboBox()
         self.wavelet_algorithm_combo.addItems(["No", "Weak-HI", "Strong-HI", "Weak-LI", "Strong-LI"])
         self.wavelet_algorithm_combo.setMinimumWidth(220)
+        self.wavelet_algorithm_combo.setToolTip("Strength of wavelet background removal.\nHI = high-intensity images, LI = low-intensity images.\nWeak/Strong controls how aggressively background is removed.")
         self._add_module_row(
             core_grid,
             1,
@@ -565,9 +584,11 @@ class TDarts_GUI:
         )
 
         self.upsampling_checkbox = QCheckBox()
+        self.upsampling_checkbox.setToolTip("Increase the image resolution for improved spatial precision in downstream analysis.")
         self.upsampling_algorithm_combo = QComboBox()
         self.upsampling_algorithm_combo.addItems(["Fourier", "Spatial"])
         self.upsampling_algorithm_combo.setMinimumWidth(220)
+        self.upsampling_algorithm_combo.setToolTip("Fourier: upsamples in frequency space (better for periodic structures).\nSpatial: upsamples using interpolation in image space.")
         self._add_module_row(
             core_grid,
             2,
@@ -589,9 +610,11 @@ class TDarts_GUI:
         )
 
         self.denoising_checkbox = QCheckBox()
+        self.denoising_checkbox.setToolTip("Reduce image noise while preserving cell structures and signal features.")
         self.denoising_algorithm_combo = QComboBox()
         self.denoising_algorithm_combo.addItems(["SparseHessian"])
         self.denoising_algorithm_combo.setMinimumWidth(220)
+        self.denoising_algorithm_combo.setToolTip("SparseHessian: denoising algorithm that preserves edges and fine structures using second-order image derivatives.")
         self._add_module_row(
             core_grid,
             4,
@@ -602,6 +625,7 @@ class TDarts_GUI:
 
         self.bleaching_checkbox = QCheckBox()
         self.bleaching_checkbox.setChecked(True)
+        self.bleaching_checkbox.setToolTip("Correct for the gradual loss of fluorescence signal over time caused by photobleaching.")
         self.bleaching_algorithm_combo = QComboBox()
         self.bleaching_algorithm_combo.addItems(
             [
@@ -611,6 +635,11 @@ class TDarts_GUI:
             ]
         )
         self.bleaching_algorithm_combo.setMinimumWidth(220)
+        self.bleaching_algorithm_combo.setToolTip(
+            "additiv no fit: subtracts a simple additive bleaching estimate without curve fitting.\n"
+            "multiplicative simple ratio: scales the signal using the ratio of baseline to current intensity.\n"
+            "biexponential fit additiv: fits a double-exponential decay curve to model and remove bleaching."
+        )
         self._add_module_row(
             core_grid,
             5,
@@ -634,9 +663,15 @@ class TDarts_GUI:
         decon_group, decon_grid = self._make_module_section("Deconvolution")
         self.deconvolution_checkbox = QCheckBox()
         self.deconvolution_checkbox.setChecked(True)
+        self.deconvolution_checkbox.setToolTip("Improve image sharpness by computationally reversing the blurring caused by the microscope's point spread function (PSF).")
         self.deconvolution_algorithm_combo = QComboBox()
         self.deconvolution_algorithm_combo.addItems(["LR", "TDE", "LW"])
         self.deconvolution_algorithm_combo.setMinimumWidth(220)
+        self.deconvolution_algorithm_combo.setToolTip(
+            "LR: Lucy-Richardson — classic iterative deconvolution, robust and widely used.\n"
+            "TDE: Time-Dependent Entropy — regularized method suited for time-lapse data.\n"
+            "LW: Landweber — linear iterative method, fast and stable."
+        )
 
         self.decon_advanced_toggle = QToolButton()
         self.decon_advanced_toggle.setCheckable(True)
@@ -720,6 +755,7 @@ class TDarts_GUI:
         analysis_group, analysis_grid = self._make_module_section("Analysis Dependencies")
         self.shape_normalization_checkbox = QCheckBox()
         self.shape_normalization_checkbox.setChecked(True)
+        self.shape_normalization_checkbox.setToolTip("Normalize all cell shapes to a common template, enabling direct comparison of signals across different cells.")
         self._add_module_row(
             analysis_grid,
             0,
@@ -729,6 +765,7 @@ class TDarts_GUI:
 
         self.hotspot_checkbox = QCheckBox()
         self.hotspot_checkbox.setChecked(True)
+        self.hotspot_checkbox.setToolTip("Automatically detect and quantify discrete calcium microdomain events at the cell membrane.")
         self._add_module_row(
             analysis_grid,
             1,
@@ -738,6 +775,7 @@ class TDarts_GUI:
 
         self.dartboard_checkbox = QCheckBox()
         self.dartboard_checkbox.setChecked(True)
+        self.dartboard_checkbox.setToolTip("Map the spatial distribution of calcium signals onto a concentric-ring diagram (dartboard) showing signal intensity by location on the cell.")
         self._add_module_row(
             analysis_grid,
             2,
@@ -786,14 +824,7 @@ class TDarts_GUI:
         card_layout.setContentsMargins(0, 0, 0, 0)
         card_layout.setSpacing(14)
         card_shell_layout.addLayout(card_layout, stretch=1)
-        card_shell_layout.addLayout(
-            self._tab_nav_layout(
-                prev_tab=prev_tab,
-                prev_label=prev_label,
-                next_tab=next_tab,
-                next_label=next_label,
-            )
-        )
+
         if use_scroll:
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
@@ -809,6 +840,15 @@ class TDarts_GUI:
             outer.addWidget(scroll, stretch=1)
         else:
             outer.addWidget(card, stretch=1)
+
+        outer.addLayout(
+            self._tab_nav_layout(
+                prev_tab=prev_tab,
+                prev_label=prev_label,
+                next_tab=next_tab,
+                next_label=next_label,
+            )
+        )
 
         return tab, card_layout
 
