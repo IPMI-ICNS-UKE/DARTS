@@ -31,7 +31,7 @@ from src.postprocessing.upsampling import BaseUpsample, FourierUpsampling, Spati
 from src.postprocessing.denoising import SparseHessian
 from src.general.load_data import load_data
 from scipy.signal import savgol_filter
-from src.analysis.GUInoBeads_local import GUInoBeads_local
+from src.analysis.GUInoBeads_local_modern import GUInoBeads_local
 
 try:
     import SimpleITK as sitk

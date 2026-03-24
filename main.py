@@ -13,8 +13,8 @@ except Exception as gui_import_exc:
     modern_gui_import_error = gui_import_exc
 from GUI import TDarts_GUI as LegacyTDarts_GUI
 from src.general.logger import Logger
-from src.analysis.Bead_Contact_GUI import BeadContactGUI
-from src.analysis.GUI_no_beads import GUInoBeads
+from src.analysis.Bead_Contact_GUI_modern import BeadContactGUI
+from src.analysis.GUI_no_beads_modern import GUInoBeads
 import gc
 from src.general.InfoToComputer import InfoToComputer
 import fnmatch
