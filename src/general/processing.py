@@ -416,6 +416,7 @@ class ImageProcessor:
                     and not defer_annotations):
                 for i, cell in enumerate(self.cell_list):
                     cell.starting_point = self.time_of_addition
+                    cell.starting_point_original = self.time_of_addition
 
         if self.parameters["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
             self.deconvolve_cell_images()
@@ -470,6 +471,7 @@ class ImageProcessor:
                 return
             for cell in self.cell_list:
                 cell.starting_point = self.time_of_addition
+                cell.starting_point_original = self.time_of_addition
 
     def finalize_output_directory(self):
         # Keep the original run-time folder so outputs stay with debug PNGs.
@@ -775,6 +777,7 @@ class ImageProcessor:
                 "cell_dataframe": cell_dataframe_filename,
                 "frame_number": int(cell.frame_number),
                 "starting_point": int(getattr(cell, "starting_point", 0)),
+                "starting_point_original": int(getattr(cell, "starting_point_original", getattr(cell, "starting_point", 0))),
                 "starting_point_auto": int(getattr(cell, "starting_point_auto", -1))
                 if hasattr(cell, "starting_point_auto") else None,
             })
@@ -1089,6 +1092,8 @@ class ImageProcessor:
             cells_without_individual_starting_point = [cell for cell in self.cell_list_for_processing if cell.starting_point == -1]
             for cell in cells_without_individual_starting_point:
                 cell.starting_point = int(mean_individual_starting_point)
+            for cell in self.cell_list_for_processing:
+                cell.starting_point_original = cell.starting_point
         except Exception as E:
             print(E)
             self.logger.log_and_print(message="Exception occurred: Error in starting point definition !",
@@ -1422,13 +1427,12 @@ class ImageProcessor:
 
             for cell in self.cell_list:
                 dataframe = cell.cell_image_data_channel_2
-                # Prefer global timeline indices for bead-contact lookup.
-                frame_column = 'frame_global' if 'frame_global' in dataframe.columns else 'frame'
-                cell_data_for_frame = dataframe.loc[dataframe[frame_column] == starting_point]
+                lookup_col = 'frame_global' if 'frame_global' in dataframe.columns else 'frame'
+                cell_data_for_frame = dataframe.loc[dataframe[lookup_col] == starting_point]
                 if cell_data_for_frame.empty:
-                    available_frames = dataframe[frame_column].values.tolist()
+                    available_frames = dataframe[lookup_col].values.tolist()
                     print(
-                        f"No tracked frame {starting_point} for this cell in {frame_column}; "
+                        f"No tracked frame {starting_point} for this cell; "
                         f"available frames: {available_frames}"
                     )
                     continue
@@ -1436,7 +1440,8 @@ class ImageProcessor:
                 min_row, min_col, max_row, max_col = bbox_for_frame
 
                 if min_row <= selected_y_position_inside_cell <= max_row and min_col <= selected_x_position_inside_cell <= max_col:  # if bead contact inside bounding box of the cell
-                    cell.starting_point = starting_point
+                    cell.starting_point = int(cell_data_for_frame['frame'].values.tolist()[0])  # re-indexed frame for analysis
+                    cell.starting_point_original = starting_point  # original TIF frame number for naming/manifest
                     centroid_x_coord_cell = cell_data_for_frame['x'].values.tolist()[0]
                     centroid_y_coord_cell = cell_data_for_frame['y'].values.tolist()[0]
                     location_on_clock = bead_contact.calculate_contact_position(bead_contact_xpos,

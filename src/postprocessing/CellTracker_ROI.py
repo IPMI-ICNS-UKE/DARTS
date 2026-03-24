@@ -517,9 +517,7 @@ class CellTracker:
             bbox_list = list(zip(frame_list_before_correction, self.get_bboxes_list(particle_dataframe_subset)))
 
             corrected_frame_list = list(range(len(particle_dataframe_subset.index)))
-            # Keep original timeline frame index for later bead-contact matching.
             particle_dataframe_subset['frame_global'] = frame_list_before_correction
-            # Use local contiguous frame indices for ROI-aligned per-cell arrays.
             particle_dataframe_subset['frame'] = corrected_frame_list
 
 
