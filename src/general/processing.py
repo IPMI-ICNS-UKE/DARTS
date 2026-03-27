@@ -447,14 +447,14 @@ class ImageProcessor:
 
         self.finalize_output_directory()
 
-        self.save_ratio_images()
-        print(f"Final results saved to: {self.save_path}")
-
         for cell in self.cell_list_for_processing:
             cell.mean_ratio_list = cell.measure_mean_ratio_in_all_frames()
 
         if not self.parameters["properties_of_measurement"]["bead_contact"] and self.parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
             self.determine_starting_points_local_no_beads()
+
+        self.save_ratio_images()
+        print(f"Final results saved to: {self.save_path}")
 
     def _apply_deferred_annotations_if_needed(self):
         checkpoints_cfg = (self.parameters.get("processing_pipeline", {})
@@ -882,10 +882,20 @@ class ImageProcessor:
         manifest_measurement = manifest.get("measurement")
         if manifest_measurement:
             self.measurement_name = manifest_measurement
+            self.excel_filename_one_measurement = self.measurement_name + '_microdomain_data'
             self.save_path = os.path.join(self.results_folder, self.measurement_name)
 
         if os.path.isdir(measurement_dir):
             self.save_path = measurement_dir
+
+        os.makedirs(self.save_path, exist_ok=True)
+
+        if getattr(self, "hotspotdetector", None) is not None:
+            self.hotspotdetector.save_path = self.save_path
+            self.hotspotdetector.excel_filename_one_measurement = self.excel_filename_one_measurement
+        if getattr(self, "dartboard_generator", None) is not None:
+            self.dartboard_generator.save_path = self.save_path
+            self.dartboard_generator.measurement_name = self.measurement_name
 
         raw_shape = manifest.get("raw_image_shape")
         if raw_shape:
@@ -1080,6 +1090,9 @@ class ImageProcessor:
             if cell_denied:
                 self.cell_list.remove(cell)
                 continue
+
+            if manual_starting_frame is not None:
+                cell.starting_point = manual_starting_frame
 
         # A. some cells have a starting point > 0, see above. Other cells don't have a starting point (=-1).
         # B. First, the mean starting point of cells with starting point > 0 is calculated.
