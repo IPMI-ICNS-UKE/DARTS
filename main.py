@@ -5,16 +5,10 @@ import json
 import time
 import argparse
 from src.general.processing import ImageProcessor
-try:
-    from GUI_modern import TDarts_GUI as ModernTDarts_GUI
-    modern_gui_import_error = None
-except Exception as gui_import_exc:
-    ModernTDarts_GUI = None
-    modern_gui_import_error = gui_import_exc
-from GUI import TDarts_GUI as LegacyTDarts_GUI
+from GUI import TDarts_GUI
 from src.general.logger import Logger
-from src.analysis.Bead_Contact_GUI_modern import BeadContactGUI
-from src.analysis.GUI_no_beads_modern import GUInoBeads
+from src.analysis.bead_contact_gui import BeadContactGUI
+from src.analysis.gui_no_beads import GUInoBeads
 import gc
 from src.general.InfoToComputer import InfoToComputer
 import fnmatch
@@ -49,27 +43,7 @@ def main(gui_enabled):
         javabridge.call(rootLogger, "setLevel", "(Lch/qos/logback/classic/Level;)V", logLevel)
 
     if gui_enabled:
-        gui_mode = os.environ.get("DARTS_GUI_MODE", "auto").strip().lower()
-        gui_class = LegacyTDarts_GUI
-        if gui_mode == "legacy":
-            gui_class = LegacyTDarts_GUI
-        elif gui_mode == "modern":
-            if ModernTDarts_GUI is not None:
-                gui_class = ModernTDarts_GUI
-            else:
-                print(
-                    "DARTS_GUI_MODE=modern requested, but modern GUI is unavailable.",
-                    "Falling back to legacy Tk GUI:",
-                    modern_gui_import_error,
-                )
-        else:  # auto
-            gui_class = ModernTDarts_GUI if ModernTDarts_GUI is not None else LegacyTDarts_GUI
-            if ModernTDarts_GUI is None and modern_gui_import_error is not None:
-                print(
-                    "Modern GUI unavailable, falling back to legacy Tk GUI:",
-                    modern_gui_import_error,
-                )
-        gui = gui_class()
+        gui = TDarts_GUI()
         gui_result = gui.run_main_loop()
         if gui_result is False or getattr(gui, "cancelled", False):
             if bf_avail:
