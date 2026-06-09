@@ -4,6 +4,17 @@ from skimage import restoration
 import numpy as np
 
 
+def _ensure_stack(array):
+    """
+    Return the input as a (frames, y, x) stack and flag if it was 2-D.
+    """
+    if array.ndim == 2:
+        return array[np.newaxis, ...], True
+    if array.ndim == 3:
+        return array, False
+    raise ValueError(f"Unsupported input shape for deconvolution: {array.shape}")
+
+
 class BaseDecon:
     def execute(self, input_roi_channel1, input_roi_channel2, parameters):
         processed_roi_channel1, processed_roi_channel2 = self.deconvolve(input_roi_channel1, input_roi_channel2,
@@ -17,15 +28,16 @@ class BaseDecon:
         return input_roi_channel1, input_roi_channel2
 
     def get_psf(self, input_roi_channel1, parameters):
-        if input_roi_channel1.ndim == 2:
-            xdims = input_roi_channel1.shape
-        elif input_roi_channel1.ndim == 3:
-            xdims = (input_roi_channel1.shape[1], input_roi_channel1.shape[2])
+        if input_roi_channel1.ndim in (2, 3):
+            spatial_shape = input_roi_channel1.shape[-2:]
+            xdims = spatial_shape
         else:
+            spatial_shape = None
             xdims = None
 
         psf_data = parameters["processing_pipeline"]["postprocessing"]["psf"]
-        psf_data['xysize'] = input_roi_channel1.shape[1]
+        if spatial_shape:
+            psf_data['xysize'] = spatial_shape[-1]
 
         psf_data_ch1 = psf_data.copy()
         psf_data_ch1['lambdaEx'] = psf_data['lambdaEx_ch1']
@@ -66,12 +78,25 @@ class LRDeconvolution(BaseDecon):
         super().__init__()
 
     def deconvolve(self, input_roi_channel1, input_roi_channel2, parameters):
-        psf_ch1, psf_ch2 = self.get_psf(input_roi_channel1, parameters)
-        channel1_deconvolved = np.empty_like(input_roi_channel1).astype(float)
-        channel2_deconvolved = np.empty_like(input_roi_channel2).astype(float)
-        for frame in range(input_roi_channel1.shape[0]):
-            channel1_deconvolved[frame, :, :] = restoration.richardson_lucy(input_roi_channel1[frame, :, :], psf_ch1.data, num_iter=4, clip=False)
-            channel2_deconvolved[frame, :, :] = restoration.richardson_lucy(input_roi_channel2[frame, :, :], psf_ch2.data, num_iter=4, clip=False)
+        stack_ch1, squeeze_ch1 = _ensure_stack(np.asarray(input_roi_channel1, dtype=float))
+        stack_ch2, squeeze_ch2 = _ensure_stack(np.asarray(input_roi_channel2, dtype=float))
+
+        psf_ch1, psf_ch2 = self.get_psf(stack_ch1, parameters)
+        channel1_deconvolved = np.empty_like(stack_ch1, dtype=float)
+        channel2_deconvolved = np.empty_like(stack_ch2, dtype=float)
+        for frame in range(stack_ch1.shape[0]):
+            channel1_deconvolved[frame] = restoration.richardson_lucy(
+                stack_ch1[frame], psf_ch1.data, num_iter=4, clip=False
+            )
+            channel2_deconvolved[frame] = restoration.richardson_lucy(
+                stack_ch2[frame], psf_ch2.data, num_iter=4, clip=False
+            )
+
+        if squeeze_ch1:
+            channel1_deconvolved = channel1_deconvolved[0]
+        if squeeze_ch2:
+            channel2_deconvolved = channel2_deconvolved[0]
+
         return channel1_deconvolved, channel2_deconvolved
 
     def give_name(self):
@@ -83,24 +108,27 @@ class LWDeconvolution(BaseDecon):
         super().__init__()
     
     def deconvolve(self, input_roi_channel1, input_roi_channel2, parameters):
-        xp = np #change if work with cupy
+        xp = np  # change if work with cupy
  
-        psf_ch1, psf_ch2 = self.get_psf(input_roi_channel1, parameters)
+        stack_ch1, squeeze_ch1 = _ensure_stack(xp.asarray(input_roi_channel1, dtype=float))
+        stack_ch2, squeeze_ch2 = _ensure_stack(xp.asarray(input_roi_channel2, dtype=float))
+
+        psf_ch1, psf_ch2 = self.get_psf(stack_ch1, parameters)
 
         n_iter = parameters["processing_pipeline"]["postprocessing"]["decon_iter"]
 
         # pre-compute the OTF (= FFT of the PSF) once per channel
-        otf_ch1 = xp.fft.fftn(psf_ch1.data,s=input_roi_channel1.shape[-2:])
-        otf_ch2 = xp.fft.fftn(psf_ch2.data,s=input_roi_channel2.shape[-2:])
+        otf_ch1 = xp.fft.fftn(psf_ch1.data, s=stack_ch1.shape[-2:])
+        otf_ch2 = xp.fft.fftn(psf_ch2.data, s=stack_ch2.shape[-2:])
 
         # allocate output arrays, float32/float64 depending on input
-        ch1_deconv = xp.empty_like(input_roi_channel1).astype(float)
-        ch2_deconv = xp.empty_like(input_roi_channel2).astype(float)
+        ch1_deconv = xp.empty_like(stack_ch1)
+        ch2_deconv = xp.empty_like(stack_ch2)
 
         #PROCESS EACH FRAME (first axis) INDEPENDENTLY
-        for f in range(input_roi_channel1.shape[0]):   #iterate over z-slices / time frames
-            data1 = input_roi_channel1[f].astype(float)  
-            data2 = input_roi_channel2[f].astype(float)  
+        for f in range(stack_ch1.shape[0]):   #iterate over z-slices / time frames
+            data1 = stack_ch1[f]
+            data2 = stack_ch2[f]
 
             # parameters & initial guesses
             t      = 1.0                               
@@ -111,7 +139,7 @@ class LWDeconvolution(BaseDecon):
             xk2_old = xk2                              
             
             #main itereration loop
-            for i in range(n_iter):
+            for i in range(int(n_iter)):
                 if i == 0:
                     # residual r = y – H x
                     r1 = xp.fft.fftn(data1) - otf_ch1 * xp.fft.fftn(xk1)
@@ -137,7 +165,8 @@ class LWDeconvolution(BaseDecon):
 
                     # enforce non-negativity 
                     y1 = xp.maximum(y1, 1e-6, dtype='float32')
-                    y2 = xp.maximum(y2, 1e-6, dtype='float32')
+                    y1 = xp.maximum(y1, 1e-6)
+                    y2 = xp.maximum(y2, 1e-6)
 
                     #roll iterates forward
                     gamma1  = gamma2                   
@@ -148,6 +177,11 @@ class LWDeconvolution(BaseDecon):
 
             ch1_deconv[f] = xk1                       
             ch2_deconv[f] = xk2                       
+
+        if squeeze_ch1:
+            ch1_deconv = ch1_deconv[0]
+        if squeeze_ch2:
+            ch2_deconv = ch2_deconv[0]
 
         return ch1_deconv, ch2_deconv                 
 

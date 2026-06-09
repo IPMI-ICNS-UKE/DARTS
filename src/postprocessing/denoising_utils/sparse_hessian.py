@@ -5,7 +5,7 @@ import numpy as np
 try:
     import cupy as cp
 except ImportError:
-    cupy = None
+    cp = None
 
 xp = np if cp is None else cp
 if xp is not cp:
@@ -72,7 +72,8 @@ def sparse_hessian(f, iteration_num = 100, fidelity = 150, sparsity = 10, contiz
     normlize = (fidelity/mu) + (sparsity**2) + operationfft
     del xxfft,yyfft,zzfft,xyfft,xzfft,yzfft,operationfft
     gc.collect()
-    xp.clear_memo()
+    if xp is cp:
+        xp.clear_memo()
     ## initialize b
     bxx = xp.zeros(imgsize,dtype='float32')
     byy = bxx

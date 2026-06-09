@@ -1,10 +1,12 @@
 import gc
-from .denoising.sparse_hessian import *
+from .denoising_utils.sparse_hessian import sparse_hessian
 import numpy as np
+import warnings
+
 try:
     import cupy as cp
 except ImportError:
-    cupy = None
+    cp = None
 xp = np if cp is None else cp
 if xp is not cp:
     warnings.warn("could not import cupy... falling back to numpy & cpu.")
@@ -27,11 +29,23 @@ class SparseHessian(BaseDenoise):
         super().__init__()
     
     def denoise(self, input_roi_channel1, input_roi_channel2, parameters):
-        iters    = parameters["processing_pipeline"]["postprocessing"]["denoise"]["iterations"]
-        fidelity = parameters["processing_pipeline"]["postprocessing"]["denoise"]["fidelity"]
-        sparsity = parameters["processing_pipeline"]["postprocessing"]["denoise"]["sparsity"]
-        contiz   = parameters["processing_pipeline"]["postprocessing"]["denoise"]["contiz"]
-        mu       = parameters["processing_pipeline"]["postprocessing"]["denoise"]["mu"]
+
+        denoise_cfg = parameters.get("processing_pipeline", {}).get("postprocessing", {}).get("denoise", {})
+
+        def _get_param(name, default, cast):
+            raw = denoise_cfg.get(name, default)
+            if raw in ("", None):
+                return default
+            try:
+                return cast(raw)
+            except (ValueError, TypeError):
+                return default
+
+        iters = int(_get_param("iterations", 100, int))
+        fidelity = float(_get_param("fidelity", 150, float))
+        sparsity = float(_get_param("sparsity", 10, float))
+        contiz = float(_get_param("contiz", 0.5, float))
+        mu = float(_get_param("mu", 1, float))
         
         out1 = np.empty_like(input_roi_channel1, dtype=float)
         out2 = np.empty_like(input_roi_channel2, dtype=float)

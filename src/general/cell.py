@@ -29,6 +29,7 @@ class CellImage:
         self.dartboard_timeline_data = None
         self.normalized_dartboard_data_table = None
         self.starting_point = 0  # start_frame; former time of bead contact
+        self.starting_point_original = 0  # original TIF frame number (used for naming/manifest)
         self.bead_contact_site = 0  # init value
         self.has_bead_contact = False
         self.is_excluded = False
@@ -36,7 +37,7 @@ class CellImage:
 
 
     def to_string(self, index):
-        return "cell_image_" + str(index)+"_starting_point_" + str(self.starting_point) + "_bead_contact_site_" + str(self.bead_contact_site)
+        return "cell_image_" + str(index)+"_starting_point_" + str(self.starting_point_original) + "_bead_contact_site_" + str(self.bead_contact_site)
 
     def calculate_mean_value_in_channel_frame(self,frame,channel):
         inverted_frame_mask = ~self.frame_masks[frame]

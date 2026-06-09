@@ -50,21 +50,78 @@ def main(gui_enabled):
     parameters = tomli.loads(Path("config.toml").read_text(encoding="utf-8"))
     logger.info(json.dumps(parameters, sort_keys=False, indent=4))
 
+    # stamp a unique run time (date + seconds + millis) for this start click/run
+    now = time.time()
+    parameters["properties_of_measurement"]["run_datetime"] = time.strftime(
+        "%Y-%m-%d_%H-%M-%S", time.localtime(now)
+    ) + f"_{int((now % 1) * 1000):03d}"
+
     info_saver = InfoToComputer(parameters)
     info_saver.save_version_DARTS(version_DARTS)
 
     input_path = parameters["input_output"]["path"]
-
     if os.path.isdir(input_path):
         input_directory = input_path
+        files_for_further_processing = os.listdir(input_directory)
+        print(f"Input is a directory: {input_directory}")
     else:
         input_directory = os.path.dirname(input_path)
-    files_for_further_processing = os.listdir(input_directory)
+        # Process only the selected file when a file path is provided.
+        files_for_further_processing = [os.path.basename(input_path)]
+        print(f"Input is a file: {input_path}")
+    print(f"Initial files_for_further_processing: {files_for_further_processing}")
     files_for_further_processing = [file for file in files_for_further_processing if not file.startswith(".")]  # exclude hidden files..
 
     if parameters["input_output"]["image_conf"] == "single":
-        files_for_further_processing = [f for f in files_for_further_processing if fnmatch.fnmatch(f, '*_1.*')]  # loop only over channel 1 files
+        # Keep only channel-1 files for paired inputs: *_1.* or base files with a matching *_2.*.
+        available_files = set(files_for_further_processing)
+        filtered = []
+        for f in files_for_further_processing:
+            if fnmatch.fnmatch(f, '*_2.*'):
+                continue
+            name, ext = os.path.splitext(f)
+            if name.endswith("_1"):
+                candidate2 = name[:-2] + "_2" + ext
+            else:
+                candidate2 = name + "_2" + ext
+            if candidate2 in available_files:
+                filtered.append(f)
+            else:
+                # In file mode, check the filesystem for the paired channel file.
+                candidate2_path = os.path.join(input_directory, candidate2)
+                if os.path.isfile(candidate2_path):
+                    filtered.append(f)
+        files_for_further_processing = filtered
+        print(f"After single-channel pairing filter: {files_for_further_processing}")
 
+    checkpoints_cfg = parameters.get("processing_pipeline", {}).get("checkpoints", {})
+    preprocess_all_files = bool(checkpoints_cfg.get("preprocess_all_files", False))
+    resume_from_checkpoint = bool(checkpoints_cfg.get("load_pre_start", False))
+    two_phase_enabled = (preprocess_all_files
+                         and not resume_from_checkpoint
+                         and os.path.isdir(input_path)
+                         and len(files_for_further_processing) > 1)
+
+    if two_phase_enabled:
+        print("Two-phase workflow enabled: preprocessing all files before annotations.")
+        checkpoints_cfg["save_pre_start"] = True
+        checkpoints_cfg["load_pre_start"] = False
+        checkpoints_cfg["defer_annotations"] = True
+        parameters["processing_pipeline"]["checkpoints"] = checkpoints_cfg
+        parameters["input_output"]["end_frame"] = None
+
+        for file in files_for_further_processing:
+            parameters["input_output"]["filename"] = file
+            filename = os.path.join(input_directory, file)
+            Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition=None)
+            if Processor is None:
+                continue
+            print("Preprocessing file: " + file)
+            Processor.start_preprocessing()
+            del Processor
+            gc.collect()
+
+    time_of_addition_dict = dict()
     if parameters["properties_of_measurement"]["bead_contact"]:  # if bead contacts are defined
         # definition of bead contacts for each file
         for file in files_for_further_processing:
@@ -76,9 +133,10 @@ def main(gui_enabled):
         # save bead contacts on computer
         info_saver.save_bead_contact_information()
         files_for_further_processing = [file for file in files_for_further_processing if info_saver.bead_contact_dict[file]]  # only files with cells that have a bead contact
+        print(f"After bead-contact filter: {files_for_further_processing}")
     else:  # no bead contacts
         if parameters["properties_of_measurement"]["imaging_local_or_global"] == 'global':
-            time_of_addition_dict = dict()
+            # time_of_addition_dict = dict()
             for file in files_for_further_processing:
                 file_path = os.path.join(input_directory, file)
                 gui_no_beads = GUInoBeads(file, file_path, parameters)
@@ -86,7 +144,21 @@ def main(gui_enabled):
                 time_of_addition_dict[file] = gui_no_beads.get_time_of_addition()
                 del gui_no_beads
         elif parameters["properties_of_measurement"]["imaging_local_or_global"] == 'local':
+            # cell_positions_dict = dict()
+            # for file in files_for_further_processing:
+            #     file_path = os.path.join(input_directory, file)
+            #     gui_no_beads_local = GUInoBeads_local(file, file_path, parameters)
+            #     gui_no_beads_local.run_main_loop()
+            #     cell_positions_dict[file] = gui_no_beads_local.get_cell_positions()
+            #     del gui_no_beads_local
             pass
+
+    if two_phase_enabled:
+        checkpoints_cfg = parameters.get("processing_pipeline", {}).get("checkpoints", {})
+        checkpoints_cfg["save_pre_start"] = False
+        checkpoints_cfg["load_pre_start"] = True
+        checkpoints_cfg["defer_annotations"] = True
+        parameters["processing_pipeline"]["checkpoints"] = checkpoints_cfg
 
     for file in files_for_further_processing:
         if parameters["properties_of_measurement"]["bead_contact"]:
@@ -105,9 +177,12 @@ def main(gui_enabled):
             else:  # local measurement + no beads => definition in Processor.start_postprocessing() for each cell individually
                 time_of_addition = None
 
+
         parameters["input_output"]["filename"] = file
         filename = os.path.join(input_directory, file)
         Processor = ImageProcessor.fromfilename(filename, parameters, logger, time_of_addition)
+        if Processor is None:
+            continue
 
 
         print("Now processing the following file: " + file)
@@ -135,7 +210,7 @@ def main(gui_enabled):
             info_saver.add_signal_information(microdomains_timelines_dict)
             info_saver.general_mean_amplitude_list += Processor.give_mean_amplitude_list()
 
-        if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline; only possible if shape normlization in pipeline
+        if parameters["processing_pipeline"]["analysis"]["dartboard_projection"]:  # if dartboard projection in pipeline; only possible if shape normalization in pipeline
             Processor.dartboard(cells_dict, info_saver)
 
         del Processor

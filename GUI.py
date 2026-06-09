@@ -43,19 +43,28 @@ class TDarts_GUI():
         self.label_batch = Label(self.input_output_frame, text="Batch or single processing")
         self.label_batch.grid(column=0, row=0, sticky="W")
         self.select_mode = StringVar(value="file")
-        self.choose_single = Radiobutton(self.input_output_frame, text="Select File", variable=self.select_mode,
+        self.last_input_mode = "file"
+        self.input_path_value = ""
+        self.checkpoint_path_value = ""
+        self.mode_choice_frame = Frame(self.input_output_frame)
+        self.mode_choice_frame.grid(column=0, row=1, columnspan=3, sticky="W")
+        self.choose_single = Radiobutton(self.mode_choice_frame, text="Select File", variable=self.select_mode,
                                          value="file")
-        self.choose_single.grid(column=0, row=1, sticky="W")
+        self.choose_single.pack(anchor="w")
 
-        self.choose_dir = Radiobutton(self.input_output_frame, text="Select Directory", variable=self.select_mode,
+        self.choose_dir = Radiobutton(self.mode_choice_frame, text="Select Directory", variable=self.select_mode,
                                       value="dir")
-        self.choose_dir.grid(column=1, row=1, sticky="W")
+        self.choose_dir.pack(anchor="w")
+        self.choose_checkpoint = Radiobutton(self.mode_choice_frame, text="Select Checkpoint",
+                                             variable=self.select_mode,
+                                             value="cp")
+        self.choose_checkpoint.pack(anchor="w")
 
-        self.label_path = Label(self.input_output_frame, text="path to input", anchor="e")
+        self.label_path = Label(self.input_output_frame, text="Selected path", anchor="e")
         self.label_path.grid(row=2, column=0, sticky="E")
         self.text_path = Text(self.input_output_frame, height=1, width=20)
         self.text_path.grid(row=2, column=1, sticky="W")
-        self.selection_button = Button(self.input_output_frame, text="Choose files or directory",
+        self.selection_button = Button(self.input_output_frame, text="Select path",
                                        command=self.select_files_or_directory)
         self.selection_button.grid(row=3, column=0, sticky="W")
 
@@ -96,6 +105,32 @@ class TDarts_GUI():
         self.choose_results_directory_button = Button(self.input_output_frame, text="Choose a results directory",
                                                       command=self.choose_results_directory_clicked)
         self.choose_results_directory_button.grid(row=12, column=0, sticky="W")
+        #
+        self.label_checkpoint = Label(self.input_output_frame, text="Checkpoint:  ")
+        self.label_checkpoint.grid(column=0, row=13, sticky="W")
+        self.checkpoint_in_pipeline = IntVar()
+        self.check_box_checkpoint_in_pipeline = Checkbutton(self.input_output_frame,
+                                                            text="Save after preprocessing",
+                                                            variable=self.checkpoint_in_pipeline,
+                                                            onvalue=1,
+                                                            offvalue=0)
+        self.check_box_checkpoint_in_pipeline.grid(column=1, row=13, sticky="W")
+        self.check_box_checkpoint_in_pipeline.deselect()
+
+        self.preprocess_all_files_first = IntVar()
+        self.check_box_preprocess_all_files = Checkbutton(
+            self.input_output_frame,
+            text="Preprocess all files before annotations",
+            variable=self.preprocess_all_files_first,
+            onvalue=1,
+            offvalue=0
+        )
+        self.check_box_preprocess_all_files.grid(column=1, row=14, sticky="W")
+        self.check_box_preprocess_all_files.deselect()
+
+        self.resume_checkpoint_in_pipeline = IntVar(value=0)
+        self.select_mode.trace_add("write", self.on_select_mode_change)
+        self.on_select_mode_change()
 
         #####################################################################################
 
@@ -134,7 +169,8 @@ class TDarts_GUI():
         self.cell_types = [
             "jurkat",
             "primary",
-            "NK"
+            "NK",
+            "NK_human"
         ]
         self.cell_type = StringVar(self.properties_of_measurement_frame)
         self.cell_type.set(self.cell_types[0])
@@ -255,10 +291,11 @@ class TDarts_GUI():
                                                                variable=self.background_subtraction_in_pipeline,
                                                                onvalue=1,
                                                                offvalue=0,
-                                                               command=None)
+                                                               command=self.update_background
+                                                               )
         self.check_box_background_subtraction_in_pipeline.grid(column=2, row=14, sticky="W")
         self.check_box_background_subtraction_in_pipeline.select()
-        # self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
+        #self.check_box_background_subtraction_in_pipeline.config(state=DISABLED)
 
         background_subtraction_algorithms = [
             "Masked",
@@ -266,6 +303,8 @@ class TDarts_GUI():
         ]
         self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
         self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
+
+        """
         self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline, self.background_subtraction_algorithm, *background_subtraction_algorithms, command=self.update_background)
         # command=self.decon_selection_changed
         # self.option_menu_deconvolution.config(state=DISABLED)
@@ -275,15 +314,51 @@ class TDarts_GUI():
         self.update_background()
         #
 
+        self.background_subtraction_algorithm = StringVar(self.label_processing_pipeline)
+        self.background_subtraction_algorithm.set(background_subtraction_algorithms[0])
+        """
+        self.option_menu_background_substraction = OptionMenu(self.label_processing_pipeline,
+                                                              self.background_subtraction_algorithm,
+                                                              *background_subtraction_algorithms,
+                                                              command=self.update_wavelet
+                                                              )
+        # command=self.decon_selection_changed
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_background_substraction.grid(column=3, row=14, sticky="W")
+
+        self.background_text_boxes = []
+
+        #
+        wavelets_algorithms = [
+            "No",
+            "Weak-HI",
+            "Strong-HI",
+            "Weak-LI",
+            "Strong-LI"
+        ]
+
+        self.wavelet_algorithm = StringVar(self.label_processing_pipeline)
+        self.wavelet_algorithm.set(wavelets_algorithms[0])
+        self.option_menu_wavelet = OptionMenu(self.label_processing_pipeline, self.wavelet_algorithm,
+                                              *wavelets_algorithms, command=self.update_wavelet)  # TODO update
+        # command=self.decon_selection_changed
+        # self.option_menu_deconvolution.config(state=DISABLED)
+        self.option_menu_wavelet.grid(column=4, row=14, sticky="W")
+
+        self.wavelet_text_boxes = []
+        self.update_wavelet()
+        self.update_background()
+
+
         self.label_upsampling = Label(self.label_processing_pipeline, text="Upsampling:  ")
-        self.label_upsampling.grid(column=4, row=14, sticky="W")
+        self.label_upsampling.grid(column=5, row=14, sticky="W")
         self.upsampling_in_pipeline = IntVar()
         self.check_box_upsampling_in_pipeline = Checkbutton(self.label_processing_pipeline,
                                                                         variable=self.upsampling_in_pipeline,
                                                                         onvalue=1,
                                                                         offvalue=0,
                                                                         command=self.update_upsampling) #todo
-        self.check_box_upsampling_in_pipeline.grid(column=5, row=14, sticky="W")
+        self.check_box_upsampling_in_pipeline.grid(column=6, row=14, sticky="W")
         self.check_box_upsampling_in_pipeline.deselect() #default: 0 / off
         
         #
@@ -296,7 +371,7 @@ class TDarts_GUI():
         self.upsampling_algorithm.set(upsampling_algorithms[0])
         self.option_menu_upsampling = OptionMenu(self.label_processing_pipeline, self.upsampling_algorithm, *upsampling_algorithms, command=self.decon_selection_changed)
         # self.option_menu_deconvolution.config(state=DISABLED)
-        self.option_menu_upsampling.grid(column=6, row=14, sticky="W")
+        self.option_menu_upsampling.grid(column=7, row=14, sticky="W")
         self.upsampling_text_boxes = []
         self.update_upsampling()
         #
@@ -443,9 +518,9 @@ class TDarts_GUI():
         # ToDo
         self.label_Iterations = Label(self.label_processing_pipeline, text="iterations")
         self.label_Iterations.grid(column=3, row=21, sticky="W")
-        self.text_iterartions = Text(self.label_processing_pipeline, height=1, width=10)
-        self.text_iterartions.grid(column=4, row=21, sticky="W")
-        self.deconvolution_text_boxes.append(self.text_iterartions)
+        self.text_iterations = Text(self.label_processing_pipeline, height=1, width=10)
+        self.text_iterations.grid(column=4, row=21, sticky="W")
+        self.deconvolution_text_boxes.append(self.text_iterations)
 
         self.label_bleaching_correction = Label(self.label_processing_pipeline, text="Bleaching correction:  ")
         self.label_bleaching_correction.grid(column=1, row=22, sticky="W")
@@ -606,11 +681,18 @@ class TDarts_GUI():
         webbrowser.open(website)
 
     def get_parameters(self):
+        current_display_path = self.text_path.get("1.0", "end-1c").strip()
+        mode = self.select_mode.get()
+        if mode in ("file", "dir"):
+            self.input_path_value = current_display_path
+        elif mode == "cp":
+            self.checkpoint_path_value = current_display_path
+
         data = {
             'input_output': {
-                'file_or_directory': self.select_mode.get(),
+                'file_or_directory': self.last_input_mode,
                 'image_conf': self.get_image_configuration(),
-                'path': self.text_path.get("1.0", "end-1c"),
+                'path': self.input_path_value,
                 # 'path_to_input_1': self.text_single_path_to_input_channel1.get("1.0", "end-1c"),
                 # 'path_to_input_2': self.text_single_path_to_input_channel2.get("1.0", "end-1c"),
                 # 'path_to_input_combined': self.text_path_to_input_combined.get("1.0", "end-1c"),
@@ -647,12 +729,15 @@ class TDarts_GUI():
                     'denoising_algorithm': str(self.denoising_algorithm.get()),
                     'background_sub_in_pipeline': self.background_subtraction_in_pipeline.get() == 1,
                     'background_subtractor_algorithm': str(self.background_subtraction_algorithm.get()),
+                    'wavelet_algorithm': str(self.wavelet_algorithm.get()),
                     'cell_segmentation_tracking_in_pipeline': self.segmentation_tracking_in_pipeline.get() == 1,
                     'deconvolution_in_pipeline': self.deconvolution_in_pipeline.get() == 1,
                     'deconvolution_algorithm': str(self.deconvolution_algorithm.get()),
-                    'decon_iter': (self.text_iterartions.get("1.0", END)),
-                    'TDE_lambda': self.text_TDE_lambda.get("1.0", "end-1c"),
-                    'TDE_lambda_t': self.text_TDE_lambda_t.get("1.0", "end-1c"),
+                    'decon_iter': self._get_str_from_text_widget(self.text_iterations),
+                    'TDE_lambda': (self._get_float_from_text_widget(self.text_TDE_lambda)
+                                   if self._get_float_from_text_widget(self.text_TDE_lambda) is not None else ""),
+                    'TDE_lambda_t': (self._get_float_from_text_widget(self.text_TDE_lambda_t)
+                                     if self._get_float_from_text_widget(self.text_TDE_lambda_t) is not None else ""),
                     'psf': {
                         'type': str(self.text_psf_type.get("1.0", "end-1c")),  # accepted types: "confocal" and "widefield"
                         'lambdaEx_ch1': int(self.text_psf_lambdaEx_ch1.get("1.0", END)),
@@ -681,6 +766,12 @@ class TDarts_GUI():
                 'analysis': {
                     'hotspot_detection': self.hotspot_detection_in_pipeline.get() == 1,
                     'dartboard_projection': self.dartboard_projection_in_pipeline.get() == 1
+                },
+                'checkpoints': {
+                    'save_pre_start': self.checkpoint_in_pipeline.get() == 1,
+                    'load_pre_start': self.resume_checkpoint_in_pipeline.get() == 1,
+                    'source_dir': self.checkpoint_path_value,
+                    'preprocess_all_files': self.preprocess_all_files_first.get() == 1
                 }
             }
         }
@@ -698,20 +789,38 @@ class TDarts_GUI():
 
 
 
-    def load_settings_from_computer(self): #Todo Upsampling, Denoising, BackgroundSubtraction
+    def load_settings_from_computer(self):
         config_file_path = tkinter.filedialog.askopenfilename()
         with open(config_file_path, mode="rt", encoding="utf-8") as fp:
             config = tomlkit.load(fp)
             # INPUT OUTPUT
-            self.select_mode.set(config["input_output"]["file_or_directory"])
+            self.last_input_mode = config["input_output"]["file_or_directory"]
             image_config = self.convert_image_config_to_number(config['input_output']['image_conf'])
             self.selected_image_configuration.set(image_config)
-            self.text_path.delete(1.0, END)
-            self.text_path.insert(1.0, config["input_output"]["path"])
+            self.input_path_value = config["input_output"]["path"]
+            self.update_path_display(self.input_path_value)
 
             self.text_results_directory.delete(1.0, END)
             self.text_results_directory.insert(1.0, config["input_output"]["results_dir"])
             self.excel_filename_microdomain_data = config["input_output"]["excel_filename_microdomain_data"]
+            
+            checkpoints_cfg = dict(config["processing_pipeline"].get("checkpoints", {}))
+            if checkpoints_cfg.get("save_pre_start", False):
+                self.check_box_checkpoint_in_pipeline.select()
+            else:
+                self.check_box_checkpoint_in_pipeline.deselect()
+
+            if checkpoints_cfg.get("preprocess_all_files", False):
+                self.check_box_preprocess_all_files.select()
+            else:
+                self.check_box_preprocess_all_files.deselect()
+
+            self.checkpoint_path_value = checkpoints_cfg.get("source_dir", "")
+            load_pre_start = bool(checkpoints_cfg.get("load_pre_start", False))
+            if load_pre_start:
+                self.select_mode.set("cp")
+            else:
+                self.select_mode.set(self.last_input_mode)
 
             # PROPERTIES OF MEASUREMENT
             self.text_microscope.delete(1.0, END)
@@ -759,94 +868,128 @@ class TDarts_GUI():
 
             # PROCESSING PIPELINE
             ## POSTPROCESSING
-            if config["processing_pipeline"]["postprocessing"]["channel_alignment_in_pipeline"]:
+            post_cfg = config.get("processing_pipeline", {}).get("postprocessing", {})
+
+            if post_cfg.get("channel_alignment_in_pipeline", False):
                 self.check_box_channel_alignment.select()
             else:
                 self.check_box_channel_alignment.deselect()
-            if config["processing_pipeline"]["postprocessing"]["channel_alignment_each_frame"]:
+            if post_cfg.get("channel_alignment_each_frame", False):
                 self.check_box_frame_by_frame_registration.select()
             else:
                 self.check_box_frame_by_frame_registration.deselect()
-            self.registration_method = config["processing_pipeline"]["postprocessing"]["registration_method"]
+            self.registration_method = post_cfg.get("registration_method", "SITK")
 
-            if config["processing_pipeline"]["postprocessing"]["background_sub_in_pipeline"]:
+            if post_cfg.get("background_sub_in_pipeline", False):
                 self.check_box_background_subtraction_in_pipeline.select()
+                background_algorithm = post_cfg.get("background_subtractor_algorithm")
+                if background_algorithm is None:
+                    background_algorithm = post_cfg.get("background_subtraction_algorithm")
+                if background_algorithm:
+                    self.background_subtraction_algorithm.set(background_algorithm)
+                    wavelet_algorithm = post_cfg.get("wavelet_algorithm")
+                    if wavelet_algorithm is None:
+                        wavelet_algorithm = post_cfg.get("wavelet_background")
+                    if self.background_subtraction_algorithm.get() == "Wavelet" and wavelet_algorithm:
+                        self.wavelet_algorithm.set(wavelet_algorithm)
             else:
                 self.check_box_background_subtraction_in_pipeline.deselect()
-            if config["processing_pipeline"]["postprocessing"]["cell_segmentation_tracking_in_pipeline"]:
+
+            if post_cfg.get("upsampling_in_pipeline", False):
+                self.check_box_upsampling_in_pipeline.select()
+                if post_cfg.get("upsampling_algorithm"):
+                    self.upsampling_algorithm.set(post_cfg["upsampling_algorithm"])
+
+            if post_cfg.get("denoising_in_pipeline", False):
+                self.check_box_denoising_in_pipeline.select()
+                if post_cfg.get("denoising_algorithm"):
+                    self.denoising_algorithm.set(post_cfg["denoising_algorithm"])
+
+
+            if post_cfg.get("cell_segmentation_tracking_in_pipeline", False):
                 self.check_box_segmentation_tracking_in_pipeline.select()
             else:
                 self.check_box_segmentation_tracking_in_pipeline.deselect()
-            if config["processing_pipeline"]["postprocessing"]["deconvolution_in_pipeline"]:
+            if post_cfg.get("deconvolution_in_pipeline", False):
                 self.check_box_deconvolution_in_pipeline.select()
 
-                self.deconvolution_algorithm.set(config["processing_pipeline"]["postprocessing"]["deconvolution_algorithm"])
+                self.deconvolution_algorithm.set(post_cfg.get("deconvolution_algorithm", "LR"))
                 self.option_menu_deconvolution.config(state=NORMAL)
                 if self.deconvolution_algorithm.get() == "TDE":
                     self.text_TDE_lambda.config(state=NORMAL)
                     self.text_TDE_lambda_t.config(state=NORMAL)
                     self.text_TDE_lambda.delete(1.0, END)
-                    self.text_TDE_lambda.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda"])
+                    tde_lambda_val = post_cfg.get("TDE_lambda")
+                    if tde_lambda_val is not None:
+                        self.text_TDE_lambda.insert(1.0, str(tde_lambda_val))
                     self.text_TDE_lambda_t.delete(1.0, END)
-                    self.text_TDE_lambda_t.insert(1.0, config["processing_pipeline"]["postprocessing"]["TDE_lambda_t"])
+                    tde_lambda_t_val = post_cfg.get("TDE_lambda_t")
+                    if tde_lambda_t_val is not None:
+                        self.text_TDE_lambda_t.insert(1.0, str(tde_lambda_t_val))
                 
                 if self.deconvolution_algorithm.get()=="LW":
-                    self.text_iterartions.config(state=NORMAL)
-                    self.text_iterartions.delete
-                    self.text_iterartions.insert(1.0, config["processing_pipeline"]["postprocessing"]["iterations"])                 
+                    self.text_iterations.config(state=NORMAL)
+                    self.text_iterations.delete(1.0, END)
+                    decon_iter = post_cfg.get("decon_iter")
+                    if decon_iter is None:
+                        decon_iter = post_cfg.get("iterations")
+                    if decon_iter is not None:
+                        self.text_iterations.insert(1.0, str(decon_iter))
 
                 self.text_psf_type.delete(1.0, END)
-                self.text_psf_type.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["type"])
+                psf_cfg = post_cfg.get("psf", {})
+
+                self.text_psf_type.insert(1.0, psf_cfg.get("type", "confocal"))
                 self.text_psf_lambdaEx_ch1.delete(1.0, END)
-                self.text_psf_lambdaEx_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEx_ch1"])
+                self.text_psf_lambdaEx_ch1.insert(1.0, psf_cfg.get("lambdaEx_ch1", ""))
                 self.text_psf_lambdaEm_ch1.delete(1.0, END)
-                self.text_psf_lambdaEm_ch1.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEm_ch1"])
+                self.text_psf_lambdaEm_ch1.insert(1.0, psf_cfg.get("lambdaEm_ch1", ""))
                 self.text_psf_lambdaEx_ch2.delete(1.0, END)
-                self.text_psf_lambdaEx_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEx_ch2"])
+                self.text_psf_lambdaEx_ch2.insert(1.0, psf_cfg.get("lambdaEx_ch2", ""))
                 self.text_psf_lambdaEm_ch2.delete(1.0, END)
-                self.text_psf_lambdaEm_ch2.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["lambdaEm_ch2"])
+                self.text_psf_lambdaEm_ch2.insert(1.0, psf_cfg.get("lambdaEm_ch2", ""))
                 self.text_psf_numAper.delete(1.0, END)
-                self.text_psf_numAper.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["numAper"])
+                self.text_psf_numAper.insert(1.0, psf_cfg.get("numAper", ""))
                 self.text_psf_magObj.delete(1.0, END)
-                self.text_psf_magObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["magObj"])
+                self.text_psf_magObj.insert(1.0, psf_cfg.get("magObj", ""))
                 self.text_psf_rindexObj.delete(1.0, END)
-                self.text_psf_rindexObj.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["rindexObj"])
+                self.text_psf_rindexObj.insert(1.0, psf_cfg.get("rindexObj", ""))
                 self.text_psf_rindexSp.delete(1.0, END)
-                self.text_psf_rindexSp.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["rindexSp"])
+                self.text_psf_rindexSp.insert(1.0, psf_cfg.get("rindexSp", ""))
                 self.text_psf_ccdSize.delete(1.0, END)
-                self.text_psf_ccdSize.insert(1.0, config["processing_pipeline"]["postprocessing"]["psf"]["ccdSize"])
+                self.text_psf_ccdSize.insert(1.0, psf_cfg.get("ccdSize", ""))
             else:
                 self.check_box_deconvolution_in_pipeline.deselect()
                 self.option_menu_deconvolution.config(state=DISABLED)
 
-            if config["processing_pipeline"]["postprocessing"]["bleaching_correction_in_pipeline"]:
+            if post_cfg.get("bleaching_correction_in_pipeline", False):
                 self.check_box_bleaching_correction.select()
-                self.bleaching_correction_algorithm.set(config["processing_pipeline"]["postprocessing"]["bleaching_correction_algorithm"])
+                self.bleaching_correction_algorithm.set(post_cfg.get("bleaching_correction_algorithm", "additiv no fit"))
                 self.option_menu_bleaching_correction.config(state=NORMAL)
             else:
                 self.check_box_bleaching_correction.deselect()
                 self.option_menu_bleaching_correction.config(state=DISABLED)
-            if config["processing_pipeline"]["postprocessing"]["ratio_images"]:
+            if post_cfg.get("ratio_images", False):
                 self.check_box_ratio_generation.select()
             else:
                 self.check_box_ratio_generation.deselect()
-            self.median_filter_kernel = config["processing_pipeline"]["postprocessing"]["median_filter_kernel"]
+            self.median_filter_kernel = post_cfg.get("median_filter_kernel", 3)
 
             ## SHAPE NORMALIZATION
-            if config["processing_pipeline"]["shape_normalization"]["shape_normalization"]:
+            if config.get("processing_pipeline", {}).get("shape_normalization", {}).get("shape_normalization", False):
                 self.check_box_shape_normalization.config(state=NORMAL)
                 self.check_box_shape_normalization.select()
             else:
                 self.check_box_shape_normalization.deselect()
 
             ## ANALYSIS
-            if config["processing_pipeline"]["analysis"]["hotspot_detection"]:
+            if config.get("processing_pipeline", {}).get("analysis", {}).get("hotspot_detection", False):
                 self.check_box_hotspot_detection.select()
                 self.check_box_hotspot_detection.config(state=NORMAL)
             else:
                 self.check_box_hotspot_detection.deselect()
 
-            if config["processing_pipeline"]["analysis"]["dartboard_projection"]:
+            if config.get("processing_pipeline", {}).get("analysis", {}).get("dartboard_projection", False):
                 self.check_box_dartboard_projection.select()
                 self.check_box_dartboard_projection.config(state=NORMAL)
             else:
@@ -899,13 +1042,34 @@ class TDarts_GUI():
     def update_background(self):
         if self.background_subtraction_in_pipeline.get() == 0:
             self.option_menu_background_substraction.config(state=DISABLED)
+            self.option_menu_wavelet.config(state=DISABLED)
+            for textbox in self.background_text_boxes + self.wavelet_text_boxes:
+                textbox.config(state=DISABLED)
+        else:
+            self.option_menu_background_substraction.config(state=NORMAL)
+            for textbox in self.background_text_boxes:
+                textbox.config(state=NORMAL)
+            self.update_wavelet()
+
+
+        """if self.background_subtraction_in_pipeline.get() == 0:
+            self.option_menu_background_substraction.config(state=DISABLED)
             for textbox in self.background_text_boxes:
                 textbox.config(state=DISABLED)
         elif self.background_subtraction_in_pipeline.get() == 1:
             self.option_menu_background_substraction.config(state=NORMAL)
             for textbox in self.background_text_boxes:
-                textbox.config(state=NORMAL)
+                textbox.config(state=NORMAL)"""
 
+    def update_wavelet(self, *args):
+        if self.background_subtraction_algorithm.get() != "Wavelet":
+            self.option_menu_wavelet.config(state=DISABLED)
+            for textbox in self.wavelet_text_boxes:
+                textbox.config(state=DISABLED)
+        elif self.background_subtraction_algorithm.get() == "Wavelet":
+            self.option_menu_wavelet.config(state=NORMAL)
+            for textbox in self.wavelet_text_boxes:
+                textbox.config(state=NORMAL)
     def update_upsampling(self):
         if self.upsampling_in_pipeline.get() == 0:
             self.option_menu_upsampling.config(state=DISABLED)
@@ -959,6 +1123,19 @@ class TDarts_GUI():
         else:
             return "no configuration chosen"
 
+    def _get_float_from_text_widget(self, widget):
+        value = widget.get("1.0", "end-1c").strip()
+        if not value:
+            return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
+
+    def _get_str_from_text_widget(self, widget):
+        value = widget.get("1.0", "end-1c").strip()
+        return value
+
     def convert_image_config_to_number(self, image_config):
         if image_config == "single":
             return 1
@@ -972,11 +1149,17 @@ class TDarts_GUI():
         if chosen_decon_algorithm == "TDE":
             self.text_TDE_lambda.config(state=NORMAL)
             self.text_TDE_lambda_t.config(state=NORMAL)
-        elif chosen_decon_algorithm =="LR":
+        else:
             self.text_TDE_lambda.delete(1.0, END)
             self.text_TDE_lambda.config(state=DISABLED)
             self.text_TDE_lambda_t.delete(1.0, END)
             self.text_TDE_lambda_t.config(state=DISABLED)
+
+        if chosen_decon_algorithm == "LW":
+            self.text_iterations.config(state=NORMAL)
+        else:
+            self.text_iterations.delete(1.0, END)
+            self.text_iterations.config(state=DISABLED)
     #def select_directory(self):
     #    chosen_image_configuration = self.get_image_configuration()
 
@@ -1003,13 +1186,47 @@ class TDarts_GUI():
     #        self.text_single_path_to_input_channel2.delete('1.0', END)
 
     def select_files_or_directory(self):
-        if self.select_mode.get() == "file":
-            paths = fd.askopenfilename(title="Select File")
-        else:
-            paths = fd.askdirectory(title="Select Directory")
+        mode = self.select_mode.get()
+        selected_path = ""
+        if mode == "file":
+            selected_path = fd.askopenfilename(title="Select File")
+        elif mode == "dir":
+            selected_path = fd.askdirectory(title="Select Directory")
+        elif mode == "cp":
+            selected_path = fd.askdirectory(title="Select Checkpoint Directory")
 
+        if not selected_path:
+            return
+
+        if mode in ("file", "dir"):
+            self.input_path_value = selected_path
+            self.update_path_display(self.input_path_value)
+        elif mode == "cp":
+            self.set_checkpoint_path_value(selected_path)
+
+    def update_path_display(self, value):
         self.text_path.delete('1.0', END)
-        self.text_path.insert(1.0, paths)
+        if value:
+            self.text_path.insert('1.0', value)
+
+    def on_select_mode_change(self, *_):
+        mode = self.select_mode.get()
+        if mode in ("file", "dir"):
+            self.last_input_mode = mode
+            self.resume_checkpoint_in_pipeline.set(0)
+            self.update_path_display(self.input_path_value)
+        elif mode == "cp":
+            self.resume_checkpoint_in_pipeline.set(1 if self.checkpoint_path_value else 0)
+            self.update_path_display(self.checkpoint_path_value)
+        else:
+            self.resume_checkpoint_in_pipeline.set(0)
+            self.update_path_display("")
+
+    def set_checkpoint_path_value(self, value):
+        self.checkpoint_path_value = value
+        if self.select_mode.get() == "cp":
+            self.update_path_display(self.checkpoint_path_value)
+        self.resume_checkpoint_in_pipeline.set(1 if self.checkpoint_path_value else 0)
 
     #def enable_text_boxes(self):
     #    self.text_path_to_input_combined['state'] = 'normal'
@@ -1117,6 +1334,7 @@ class CellTypeManager:
         self.selected_cell_type = selected_cell_type
         self.parameters_dict = {"jurkat": {},
                                 "NK": {},
+                                "NK_human": {},
                                 "primary": {}}
 
     def open_manage_window(self):
@@ -1278,10 +1496,3 @@ class CellTypeManager:
 
         # Set default value to the first option in the new list
         self.selected_cell_type.set(self.cell_types[0])
-
-
-
-
-
-
-

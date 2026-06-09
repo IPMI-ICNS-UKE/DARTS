@@ -9,6 +9,9 @@ import pandas as pd
 from tkinter import filedialog
 
 class DartboardGenerator:
+    AREA_NAMES = ["outer", "middle", "inner"]
+    AREA_NAME_TO_INDEX = {name: idx for idx, name in enumerate(AREA_NAMES)}
+
     def __init__(self, save_path, frame_rate, measurement_name, experiment_name, results_folder):
         self.save_path = save_path
         self.frames_per_second = frame_rate
@@ -112,13 +115,50 @@ class DartboardGenerator:
         signals_coords_list_in_one_frame = list(zip(x_values, y_values))
         return signals_coords_list_in_one_frame
 
+    def _format_area_label(self, section_idx, area_idx):
+        if section_idx is None or area_idx is None:
+            return "bulls eye"
+        if area_idx < 0 or area_idx >= len(self.AREA_NAMES):
+            raise ValueError(f"Invalid area index: {area_idx}")
+        return f"{section_idx + 1} {self.AREA_NAMES[area_idx]}"
+
+    def _parse_area_label(self, selected_area):
+        if isinstance(selected_area, str):
+            value = selected_area.strip()
+            if value.lower() == "bulls eye":
+                return None, None, "bulls eye"
+            parts = value.split()
+            if len(parts) < 2:
+                raise ValueError(f"Invalid dartboard area label: {selected_area}")
+            section_idx = int(parts[0]) - 1
+            area_key = parts[1].lower()
+            if area_key not in self.AREA_NAME_TO_INDEX:
+                raise ValueError(f"Unknown area name '{area_key}' in label '{selected_area}'")
+            area_idx = self.AREA_NAME_TO_INDEX[area_key]
+            return section_idx, area_idx, self._format_area_label(section_idx, area_idx)
+
+        if isinstance(selected_area, (tuple, list)) and len(selected_area) >= 2:
+            raw_section = selected_area[0]
+            raw_area = selected_area[1]
+            if raw_section is None or raw_area is None:
+                return None, None, "bulls eye"
+            section_idx = int(raw_section)
+            area_idx = int(raw_area)
+            return section_idx, area_idx, self._format_area_label(section_idx, area_idx)
+
+        raise ValueError(f"Unsupported dartboard area representation: {selected_area}")
+
     def normalize_dartboard_area_to_bead_contact(self, dartboard_area, bead_contact_site, normalized_bead_contact_site):
         bead_contact_site_list = np.arange(1, 13)
-        dartboard_area_number_index = int(dartboard_area.split(" ")[0]) - 1
-        section = dartboard_area.split(" ")[1]
+        section_idx, area_idx, label = self._parse_area_label(dartboard_area)
+        if section_idx is None or area_idx is None:
+            return label
         n = bead_contact_site - normalized_bead_contact_site
         normalized_bead_contact_site_list = np.roll(bead_contact_site_list,n)
-        normalized_dartboard_area = str(normalized_bead_contact_site_list[dartboard_area_number_index]) + ' ' + section
+        normalized_dartboard_area = self._format_area_label(
+            normalized_bead_contact_site_list[section_idx] - 1,
+            area_idx,
+        )
         return normalized_dartboard_area
 
     def generate_dartboard_data_one_frame(self, frame_dict, signal_in_frame_coords_list, centroid_coords, radius_after_normalization, cell):
@@ -175,17 +215,18 @@ class DartboardGenerator:
 
             sum = 0
             for selected_area in selected_dartboard_areas:
-                selected_dartboard_section_index = selected_area[0]
+                section_idx, area_idx, area_label = self._parse_area_label(selected_area)
 
-                selected_dartboard_area_within_section_index = selected_area[1]
+                if section_idx is None or area_idx is None:
+                    continue
 
-                number_of_signals_in_selected_area = normalized_dartboard_data[selected_dartboard_area_within_section_index][selected_dartboard_section_index]
+                number_of_signals_in_selected_area = normalized_dartboard_data[area_idx][section_idx]
 
                 infosaver.timeline_single_dartboard_areas.at[
-                    int(frame - start_frame), str(selected_area)] += number_of_signals_in_selected_area
+                    int(frame - start_frame), area_label] += number_of_signals_in_selected_area
 
                 dartboard_timeline_data_single_cell.at[
-                    int(frame - start_frame), str(selected_area)] = number_of_signals_in_selected_area
+                    int(frame - start_frame), area_label] = number_of_signals_in_selected_area
                 sum += number_of_signals_in_selected_area
 
             dartboard_timeline_data_single_cell.at[int(frame-start_frame), 'sum'] = sum
@@ -364,4 +405,3 @@ class DartboardGenerator:
             os.makedirs(directory)
 
         plt.savefig(directory + image_identifier + '.tiff', dpi=450)
-

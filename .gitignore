@@ -90,6 +90,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+CLAUDE.md
 
 # IPython
 profile_default/

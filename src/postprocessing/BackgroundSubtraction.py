@@ -2,18 +2,57 @@ import skimage.measure
 import numpy as np
 from skimage.filters import threshold_mean
 import pywt
+from abc import ABC, abstractmethod
 
-class BackgroundSubtractor():
-    def __init__(self, segmentation):
+
+class BaseBackgroundSubtractor(ABC):
+    def execute(self, imgs, parameters=None):
+        return self.subtract_background(imgs, parameters)
+
+    @abstractmethod
+    def subtract_background(self, imgs, parameters=None):
+        """
+        Algorithm‑specific background removal.
+        Subclasses *must* override.
+        """
+        return imgs
+
+    def give_name(self):
+        return "...background subtraction..."
+
+
+class BackgroundSubtractorMasked(BaseBackgroundSubtractor):
+    def __init__(self, segmentation=None):
         self.segmentation = segmentation
 
     def clear_outside_of_cells(self, cells_with_bead_contact):
         for cell in cells_with_bead_contact:
-            cell.set_image_channel1(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel1()))
-            cell.set_image_channel2(self.set_background_to_zero(cell.frame_masks, cell.give_image_channel2()))
-            cell.ratio = self.set_background_to_zero(cell.frame_masks, cell.ratio)
+            frame_masks = self._get_frame_masks(cell)
+            if frame_masks is None:
+                continue
+            cell.frame_masks = frame_masks
+            cell.set_image_channel1(self.set_background_to_zero(frame_masks, cell.give_image_channel1()))
+            cell.set_image_channel2(self.set_background_to_zero(frame_masks, cell.give_image_channel2()))
+            cell.ratio = self.set_background_to_zero(frame_masks, cell.ratio)
 
-
+    def _get_frame_masks(self, cell):
+        """
+        Return existing masks if present; otherwise, if a segmentation model is
+        available, create masks on the fly for the cell ROI (background=True).
+        """
+        if cell.frame_masks is not None:
+            return cell.frame_masks
+        if self.segmentation is None:
+            return None
+        try:
+            imgs = cell.give_image_channel2()
+            masks = np.zeros_like(imgs, dtype=bool)
+            for idx in range(len(imgs)):
+                labels = self.segmentation.stardist_segmentation_in_frame(imgs[idx])
+                masks[idx] = labels == 0  # background is label 0
+            return masks
+        except Exception:
+            return None
 
     def set_background_to_zero(self, frame_masks, cell_image_series):
         """
@@ -50,7 +89,7 @@ class BackgroundSubtractor():
         background_mean_intensity = round(region[0].intensity_mean)
         return background_mean_intensity
 
-    def subtract_background(self, channel_image_series):
+    def subtract_background(self, channel_image_series, parameters=None):
 
         # mean intensity of background in first frame
         mean_background_first_frame = self.measure_mean_background_intensity(channel_image_series[0])
@@ -78,10 +117,10 @@ class BackgroundSubtractor():
         return background_subtracted_channel
 
     def give_name(self):
-        return "Background Substraction Masked"
+        return "Background Subtraction Masked"
 
 
-class WaveletBackgroundSubtractor:
+class WaveletBackgroundSubtractor(BaseBackgroundSubtractor):
     """
     Wavelet-based per-pixel background estimator (refactored from the original
     procedural code).  Usage:
@@ -107,16 +146,12 @@ class WaveletBackgroundSubtractor:
 
     def __init__(
         self,
-        background_flag: int = 1,
         th: float = 1.0,
         dlevel: int = 7,
         wavename: str = "db6",
         max_iter: int = 3,
         dtype=np.float32,
     ):
-        if background_flag not in (1, 2, 3, 4, 5):
-            raise ValueError("background_flag must be 1 … 5")
-        self.flag = background_flag
         self.th = th
         self.dlevel = dlevel
         self.wavename = wavename
@@ -124,7 +159,7 @@ class WaveletBackgroundSubtractor:
         self.dtype = dtype
 
 
-    def subtract_background(self, imgs):
+    def subtract_background(self, imgs, parameters):
         """
         Apply wavelet background removal.
 
@@ -150,7 +185,8 @@ class WaveletBackgroundSubtractor:
         imgs = imgs / scaler
 
         # Pre-condition according to the chosen flag
-        imgs_pc = self._precondition(imgs)
+        background_method = parameters["processing_pipeline"]["postprocessing"]["wavelet_algorithm"]
+        imgs_pc = self._precondition(imgs, background_method)
 
         # Estimate background
         bg = self._background_estimation(imgs_pc)
@@ -164,38 +200,46 @@ class WaveletBackgroundSubtractor:
 
     
     #INTERNAL HELPERS
-    def _precondition(self, img):
+    def _precondition(self, img, background_method):
         """
         Implements the five branches of the original method1.
         Operates on a float32 array already normalised to [0, 1].
         """
-        if self.flag == 1:
+        if background_method in (None, "", "None"):
+            return img
+        if background_method == "Weak-HI":
             return img / 2.5
-        if self.flag == 2:
+        if background_method == "Strong-HI":
             return img / 2.0
         # flags 3-5: clip bright pixels before background estimation
         mean_val = np.mean(img)
-        if self.flag == 3:
+        if background_method == "Weak-LI":
             clip_val = mean_val / 2.5
-        elif self.flag == 4:
-            clip_val = mean_val / 2.0
-        else:  # flag 5
+        elif background_method == "Strong-LI":
             clip_val = mean_val
+        elif background_method == "Medium-HI":
+            clip_val = img
+        else:
+            clip_val = mean_val / 2.0
+
         img_clipped = img.copy()
         img_clipped[img > clip_val] = clip_val
         return img_clipped
 
     #wavelet helpers
     @staticmethod
-    def _low_freq_only(coeffs, dlevel):
+    def _low_freq_only(coeffs):
         """
-        Zeroes detail coefficients so that inverse transform returns the
-        approximation (low-frequency) component only.
+        Return a coefficient tree in which all detail bands are zeroed
+        **using each level's own shape**, so `pywt.waverec2` never sees
+        mismatched array sizes.
         """
+
         vec = [coeffs[0]]  # keep cA_n
-        for _ in range(1, dlevel + 1):
-            cH = np.zeros_like(coeffs[1][0])
-            vec.append((cH, cH, cH))
+
+        for ch, cv, cd in coeffs[1:]:
+            z = np.zeros_like(ch)       # template from *this* level
+            vec.append((z, z, z))
         return vec
 
     @staticmethod
@@ -224,11 +268,17 @@ class WaveletBackgroundSubtractor:
         Estimate background for a single 2-D frame.
         """
         h, w = img.shape
+
+        # Clamp the wavelet depth so the smallest sub‑band is at least 1×1
+        max_lvl = pywt.dwt_max_level(min(h, w), pywt.Wavelet(self.wavename).dec_len)
+        level = min(self.dlevel, max_lvl)
+
         res = img.copy()
 
         for _ in range(self.max_iter):
-            coeffs = pywt.wavedec2(res, wavelet=self.wavename, level=self.dlevel)
-            vec = self._low_freq_only(coeffs, self.dlevel)
+            coeffs = pywt.wavedec2(res, wavelet=self.wavename, level=level)
+            vec = self._low_freq_only(coeffs)
+
             b_iter = pywt.waverec2(vec, wavelet=self.wavename)
             b_iter = self._trim_to_original(b_iter, (h, w))
 
@@ -241,3 +291,11 @@ class WaveletBackgroundSubtractor:
                 break  # no clipping requested
 
         return b_iter.astype(self.dtype)
+
+    def give_name(self):
+        return "Background Subtraction Wavelet"
+
+
+# Backward compatibility: older code imports BackgroundSubtractor
+# from this module. Keep an alias so the import still works.
+BackgroundSubtractor = BackgroundSubtractorMasked

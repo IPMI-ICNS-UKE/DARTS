@@ -1,5 +1,43 @@
 #!/usr/bin/env bash
-# chmod +x installJustJava.sh 
+# install_darts.sh  — one-shot installer for the DARTS pipeline on macOS ≥ 10.15 (Intel)
+
+set -euo pipefail
+
+############################################
+# Configurable bits — tweak if you like
+ENV_NAME="DARTS"
+PY_VERSION="3.10.0"
+PY_PACKAGES=(
+  matplotlib stardist trackpy tomli tensorflow alive-progress
+  openpyxl pystackreg tkcalendar tomlkit simpleitk-simpleelastix
+  python-bioformats
+)
+PROFILE_FILE="${HOME}/.zshrc"   # change to ~/.bash_profile if you use Bash
+############################################
+
+echo "🔍 Verifying conda …"
+if ! command -v conda &>/dev/null ; then
+  echo "❌  Conda not found. Install Anaconda/Miniconda first:"
+  echo "    https://docs.anaconda.com/free/anaconda/install/"
+  exit 1
+fi
+
+# Conda must be initialised for non-interactive shells
+source "$(conda info --base)/etc/profile.d/conda.sh"
+
+if conda env list | grep -qE "^${ENV_NAME}\s" ; then
+  echo "✅  Conda env '${ENV_NAME}' already exists."
+else
+  echo "⏳ Creating conda env '${ENV_NAME}' (Python ${PY_VERSION}) …"
+  conda create -y -n "${ENV_NAME}" "python=${PY_VERSION}"
+fi
+
+echo "⚙️  Activating env '${ENV_NAME}' …"
+conda activate "${ENV_NAME}"
+
+echo "📦 Installing Python requirements …"
+python -m pip install -U pip
+python -m pip install "${PY_PACKAGES[@]}"
 
 echo "👉 Checking for Java Runtime …"
 if ! command -v java &>/dev/null ; then
@@ -30,12 +68,12 @@ if ! grep -q "JAVA_HOME" "${PROFILE_FILE}" ; then
   } >> "${PROFILE_FILE}"
   echo "    ℹ️  JAVA_HOME appended to ${PROFILE_FILE}"
 fi
-
 export JAVA_HOME="${JAVA_HOME_PATH}"
 export PATH="${JAVA_HOME}/bin:${PATH}"
 
 echo ""
-echo "  DARTS installation finished!"
-echo "  Next steps:"
+echo "🎉  DARTS installation finished!"
+echo "➡️   Next steps:"
 echo "   • Open a **new** terminal or run 'source ${PROFILE_FILE}'"
 echo "   • Activate the environment:    conda activate ${ENV_NAME}"
+echo "   • Start using the DARTS tools. Happy analysing! 🍀"
