@@ -6,7 +6,7 @@
 ## About
 **DARTS** is an integrated tool originally designed for the analysis of Ca<sup>2+</sup> microdomains in immune cells (Jurkat T cells, primary murine cells, NK). It is not limited
 to these data, but can also be used to analyze other intracellular signals in other cell types. Moreover, the global signal can me measured, too.
-For detailed information, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/).
+For detailed information, see the origin release [Documentation](https://ipmi-icns-uke.github.io/DARTS/).
 
 It combines the following modules:
 
@@ -24,7 +24,7 @@ It combines the following modules:
 Most of these modules can be switched on or off, depending on the individual analysis (see Usage).
 
 ## Installation
-To install DARTS on your computer, a few steps need to be executed. Ideally, you are using a Mac computer with macOS Catalina (10.15) or higher and Intel processor. These settings have been tested extensively. 
+To install DARTS on your computer, a few steps need to be executed. Tested PC configurations include: Mac with macOS Catalina (10.15) or higher; Ubuntu 22.04.5 LTS. These settings have been tested extensively. 
 
 - Install Python 3.10.0, following the instructions on the official website (https://www.python.org/downloads/release/python-3100/)
 - Install Anaconda (https://docs.anaconda.com/free/anaconda/install/index.html)
@@ -37,7 +37,7 @@ To install DARTS on your computer, a few steps need to be executed. Ideally, you
 - In the terminal window run ```chmod +x install.sh```
 - Run ```./install.sh```
     
-For more information regarding the installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
+For information on the origin installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
 ## Update DARTS
 How to update DARTS:
