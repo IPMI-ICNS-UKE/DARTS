@@ -38,8 +38,18 @@ class TDarts_GUI():
 
         self.window.title("Welcome to DARTS")
 
-        self.frame = Frame(self.window)
-        self.frame.pack()
+        self.main_canvas = tk.Canvas(self.window, borderwidth=0, highlightthickness=0)
+        self.v_scrollbar = tk.Scrollbar(self.window, orient="vertical", command=self.main_canvas.yview)
+        self.h_scrollbar = tk.Scrollbar(self.window, orient="horizontal", command=self.main_canvas.xview)
+        self.main_canvas.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+
+        self.v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.frame = Frame(self.main_canvas)
+        self.main_canvas.create_window((0, 0), window=self.frame, anchor="nw")
+        self.frame.bind("<Configure>", self._on_frame_configure)
 
 
         ########################################################################
@@ -666,6 +676,9 @@ class TDarts_GUI():
         # About DARTS button
         self.about_DARTS_button = Button(self.label_control_buttons, text='About DARTS', command=self.open_github_page)
         self.about_DARTS_button.grid(row=4, column=1, sticky="W")
+
+    def _on_frame_configure(self, event):
+        self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
 
     def pick_date(self, event):
         global calendar, date_window
