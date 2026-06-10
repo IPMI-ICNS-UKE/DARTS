@@ -83,7 +83,7 @@ When you select a directory, DARTS only processes files that have a matching `_2
 
 
 
-![Main](docs/assets/img/main_gui_new.png)
+![Main](docs/assets/img/DARTS_GUI.png)
 
 **Bead contact workflow**
 1. Use the slider to find the bead‑cell contact time.
