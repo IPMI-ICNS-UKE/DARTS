@@ -8,7 +8,7 @@ url: https://ipmi-icns-uke.github.io/DARTS/
 baseurl: /docs
 
 favicon_ico: favicon.ico
-color_scheme: foo
+#color_scheme: foo
 
 math: katex
 
