@@ -27,14 +27,14 @@ class TDarts_GUI():
 
         desired_width = 1650
         desired_height = 1000
-        margin = 40  # leave a border so it does not touch screen edges
+        margin_x = 40  # leave a border so it does not touch screen edges
+        margin_y = 120
 
-        width = min(desired_width, screen_width - margin)
-        height = min(desired_height, screen_height - margin)
+        width = min(desired_width, screen_width - margin_x)
+        height = min(desired_height, screen_height - margin_y)
 
         self.window.geometry(f"{width}x{height}")
         self.window.minsize(800, 600)
-
 
         self.window.title("Welcome to DARTS")
 
