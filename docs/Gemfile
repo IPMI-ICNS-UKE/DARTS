@@ -1,8 +1,14 @@
 source 'https://rubygems.org'
 
-gem "jekyll", "~> 4.3.2" # installed by `gem jekyll`
-# gem "webrick"        # required when using Ruby >= 3 and Jekyll <= 4.2.2
+# Force a modern version of the github-pages bundle that supports Ruby 3.x
+gem "github-pages", "~> 231", group: :jekyll_plugins
 
-gem "just-the-docs", "0.4.0"
+# Specify jekyll cleanly (github-pages will automatically manage the exact jekyll version)
+gem "just-the-docs"
+
+# old
+# gem "jekyll", "~> 4.3.2" # installed by `gem jekyll`
+# gem "webrick"        # required when using Ruby >= 3 and Jekyll <= 4.2.2
+# gem "just-the-docs", "0.4.0"
 
 
