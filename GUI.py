@@ -21,10 +21,19 @@ class TDarts_GUI():
     def __init__(self):
 
         self.window = Tk()
-        # self.window.resizable(False, False)
-        width = 1650
-        height = 1000
-        self.window.geometry(str(width) + "x" + str(height))
+        
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
+
+        desired_width = 1650
+        desired_height = 1000
+        margin = 40  # leave a border so it does not touch screen edges
+
+        width = min(desired_width, screen_width - margin)
+        height = min(desired_height, screen_height - margin)
+
+        self.window.geometry(f"{width}x{height}")
+        self.window.minsize(800, 600)
 
 
         self.window.title("Welcome to DARTS")
