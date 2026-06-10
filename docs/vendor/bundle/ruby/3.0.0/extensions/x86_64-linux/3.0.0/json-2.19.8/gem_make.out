@@ -1,0 +1,23 @@
+current directory: /home/david/DARTS/docs/vendor/bundle/ruby/3.0.0/gems/json-2.19.8/ext/json/ext/parser
+/usr/bin/ruby3.0 -I /usr/lib/ruby/vendor_ruby -r ./siteconf20260610-497210-abwbkz.rb extconf.rb
+checking for rb_enc_interned_str() in ruby/encoding.h... yes
+checking for rb_str_to_interned_str() in ruby.h... yes
+checking for rb_hash_new_capa() in ruby.h... no
+checking for rb_hash_bulk_insert() in ruby.h... yes
+checking for RUBY_TYPED_EMBEDDABLE in ruby.h... no
+checking for whether -std=c99 is accepted as CFLAGS... yes
+checking for x86intrin.h... yes
+checking for cpuid.h... yes
+creating Makefile
+
+current directory: /home/david/DARTS/docs/vendor/bundle/ruby/3.0.0/gems/json-2.19.8/ext/json/ext/parser
+make DESTDIR\= clean
+
+current directory: /home/david/DARTS/docs/vendor/bundle/ruby/3.0.0/gems/json-2.19.8/ext/json/ext/parser
+make DESTDIR\=
+compiling parser.c
+linking shared-object json/ext/parser.so
+
+current directory: /home/david/DARTS/docs/vendor/bundle/ruby/3.0.0/gems/json-2.19.8/ext/json/ext/parser
+make DESTDIR\= install
+/usr/bin/install -c -m 0755 parser.so ./.gem.20260610-497210-nhy71g/json/ext
