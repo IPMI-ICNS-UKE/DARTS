@@ -34,8 +34,8 @@ To install DARTS on your computer, a few steps need to be executed. Tested PC co
 - In your file explorer, go to the folder "DARTS/src" and delete the (empty) folder 'TDEntropyDeconvolution'
 - In the terminal window, navigate to the subfolder "src" inside the DARTS folder
 - Type ```git clone https://github.com/IPMI-ICNS-UKE/TDEntropyDeconvolution.git``` to clone this module to your 'src' folder
-- In the terminal window run ```chmod +x install.sh```
-- Run ```./install.sh```
+- In the terminal window run ```chmod +x install_MAC.sh``` or ```chmod +x install_Ubuntu.sh``` depending on your system
+- Run ```./install_MAC.sh``` or ```./install_Ubuntu.sh``` 
     
 For information on the origin installation, see the [Documentation](https://ipmi-icns-uke.github.io/DARTS/)
 
