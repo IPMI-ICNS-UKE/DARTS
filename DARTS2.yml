@@ -1,7 +1,0 @@
-name: darts-temp
-channels:
-  - defaults
-dependencies:
-  - python=3.10
-  - numpy[version='<2']
-prefix: /Users/felixwissel/miniconda3/envs/darts-temp
